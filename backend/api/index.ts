@@ -1,9 +1,21 @@
-// The whole API is one Vercel Function: vercel.json rewrites /api/* here and
-// this file routes by pathname. Fewer cold starts, one shared DB/auth setup.
+// The whole API in one fetch handler, routed by pathname. server.ts serves it.
 import { DEFAULT_RULES } from '@bwf/engine'
 import { auth, requireUser } from '../lib/auth.js'
-import { isDatabaseConfigured } from '../lib/db.js'
+import { sql } from 'drizzle-orm'
+import { db } from '../lib/db.js'
 import { HttpError, json } from '../lib/http.js'
+import {
+  createGroup,
+  getGroup,
+  getInvite,
+  joinGroup,
+  kickMember,
+  leaveGroup,
+  listGroups,
+  patchGroup,
+  renewCode,
+} from '../routes/groups.js'
+import { getLeague, postPay } from '../routes/league.js'
 import { getTable, postPlay } from '../routes/play.js'
 import { getProfile, patchProfile } from '../routes/profile.js'
 
@@ -17,9 +29,9 @@ const routes: Routes = {
       json({
         ok: true,
         time: new Date().toISOString(),
-        database: isDatabaseConfigured(),
-        email: Boolean(process.env.RESEND_API_KEY),
-        // Proves the shared engine is bundled with the function.
+        // The container's healthcheck: fails if the database can't be read.
+        database: db().get<{ ok: number }>(sql`select 1 as ok`)?.ok === 1,
+        // Proves the shared engine is wired in.
         rules: DEFAULT_RULES,
       }),
   },
@@ -34,6 +46,15 @@ const routes: Routes = {
     GET: getTable,
     POST: postPlay,
   },
+  '/api/league': { GET: getLeague },
+  '/api/league/pay': { POST: postPay },
+  '/api/groups': { GET: listGroups, POST: createGroup },
+  '/api/groups/join': { POST: joinGroup },
+  '/api/group': { GET: getGroup, PATCH: patchGroup },
+  '/api/group/leave': { POST: leaveGroup },
+  '/api/group/renew': { POST: renewCode },
+  '/api/group/kick': { POST: kickMember },
+  '/api/invite': { GET: getInvite },
 }
 
 async function route(request: Request): Promise<Response> {

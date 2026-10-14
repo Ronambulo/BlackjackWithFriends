@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Arcade — jugando</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@600;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#ffc83d}a:hover{color:#ffd970}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; position: relative; overflow: hidden; font-family: Rubik, system-ui, sans-serif; color: #fff; background: #12152b">
+
+  <!-- Top bar -->
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 16px 12px">
+    <button type="button" style="display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border: 0; border-radius: 12px; background: #232848; color: #fff; font: 800 14px Rubik, sans-serif; box-shadow: 0 3px 0 #0b0d1c">
+      Sin grupo
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+    </button>
+    <div style="display: flex; gap: 8px">
+      <div style="display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 12px; border-radius: 12px; background: #232848; font-weight: 900; font-size: 16px; box-shadow: 0 3px 0 #0b0d1c">
+        <span style="width: 18px; height: 18px; box-sizing: border-box; border-radius: 50%; border: 4px dashed #fff; background: #1fae6b"></span>
+        510
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 12px; border-radius: 12px; background: #232848; font-weight: 900; font-size: 16px; box-shadow: 0 3px 0 #0b0d1c">
+        <span style="width: 18px; height: 18px; border-radius: 50%; background: #ffc83d; box-shadow: inset 0 -3px 0 #d99a12"></span>
+        0
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div style="flex: 1; margin: 0 12px; border-radius: 32px; background: #138a6c; box-shadow: inset 0 0 0 5px #0d6b53, inset 0 6px 0 5px #18a37f, 0 6px 0 #0a1a28; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 22px 12px 20px; position: relative">
+
+    <!-- Dealer -->
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px">
+      <div style="display: flex; align-items: center; gap: 8px">
+        <span style="width: 34px; height: 34px; border-radius: 50%; background: #0d6b53; display: flex; align-items: center; justify-content: center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
+        </span>
+        <span style="font-weight: 800; font-size: 14px; letter-spacing: 0.06em">BANCA</span>
+        <span style="padding: 4px 12px; border-radius: 10px; background: #fff; color: #12152b; font-weight: 900; font-size: 16px; box-shadow: 0 3px 0 #0d6b53">2</span>
+      </div>
+      <div style="display: flex">
+        <div style="width: 72px; height: 100px; box-sizing: border-box; padding: 6px 8px; border-radius: 10px; background: #fff; color: #12152b; box-shadow: 0 5px 0 rgba(0,0,0,0.25); transform: rotate(-5deg); display: flex; flex-direction: column; justify-content: space-between">
+          <div style="font-weight: 900; font-size: 22px; line-height: 1">2</div>
+          <div style="align-self: center; font-size: 36px; line-height: 1">♣︎</div>
+          <div style="height: 8px"></div>
+        </div>
+        <div style="width: 72px; height: 100px; margin-left: -18px; box-sizing: border-box; border-radius: 10px; border: 5px solid #fff; background-color: #4c3fd1; background-image: radial-gradient(circle at 50% 50%, #ffc83d 0 9px, transparent 10px); box-shadow: 0 5px 0 rgba(0,0,0,0.25); transform: rotate(5deg)"></div>
+      </div>
+    </div>
+
+    <!-- Center plate -->
+    <div style="padding: 6px 16px; border-radius: 999px; background: rgba(0,0,0,0.18); font-weight: 800; font-size: 12px; letter-spacing: 0.1em; color: rgba(255,255,255,0.75)">BLACKJACK PAGA 3:2</div>
+
+    <!-- Player -->
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px">
+      <div style="display: flex">
+        <div style="width: 84px; height: 118px; box-sizing: border-box; padding: 7px 9px; border-radius: 12px; background: #fff; color: #12152b; box-shadow: 0 6px 0 rgba(0,0,0,0.25); transform: rotate(-6deg); display: flex; flex-direction: column; justify-content: space-between">
+          <div style="font-weight: 900; font-size: 26px; line-height: 1">J</div>
+          <div style="align-self: center; font-size: 42px; line-height: 1">♠︎</div>
+          <div style="height: 8px"></div>
+        </div>
+        <div style="width: 84px; height: 118px; margin-left: -20px; margin-top: 8px; box-sizing: border-box; padding: 7px 9px; border-radius: 12px; background: #fff; color: #e0344d; box-shadow: 0 6px 0 rgba(0,0,0,0.25); transform: rotate(6deg); display: flex; flex-direction: column; justify-content: space-between">
+          <div style="font-weight: 900; font-size: 26px; line-height: 1">K</div>
+          <div style="align-self: center; font-size: 42px; line-height: 1">♦︎</div>
+          <div style="height: 8px"></div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px">
+        <span style="padding: 6px 16px; border-radius: 12px; background: #ffc83d; color: #2a1d00; font-weight: 900; font-size: 22px; box-shadow: 0 4px 0 #c48d0b">20</span>
+        <span style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 12px; background: rgba(0,0,0,0.22); font-weight: 800; font-size: 15px">
+          <span style="width: 16px; height: 16px; box-sizing: border-box; border-radius: 50%; border: 3px dashed #fff; background: #3a73d8"></span>
+          10
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 16px 12px 6px">
+    <button type="button" style="height: 72px; border: 0; border-radius: 18px; background: #ffc83d; color: #2a1d00; font: 800 13px Rubik, sans-serif; box-shadow: 0 5px 0 #c48d0b; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+      Pedir
+    </button>
+    <button type="button" style="height: 72px; border: 0; border-radius: 18px; background: #ff6b57; color: #2b0904; font: 800 13px Rubik, sans-serif; box-shadow: 0 5px 0 #c7402f; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11V6a1.5 1.5 0 0 1 3 0v4M10 10V4.5a1.5 1.5 0 0 1 3 0V10M13 10V5.5a1.5 1.5 0 0 1 3 0V11M16 11V8a1.5 1.5 0 0 1 3 0v6a7 7 0 0 1-7 7h-1a6 6 0 0 1-5-2.7L3.5 14a1.6 1.6 0 0 1 2.6-1.8L7 13.5"></path></svg>
+      Plantarse
+    </button>
+    <button type="button" style="height: 72px; border: 0; border-radius: 18px; background: #4c7dff; color: #fff; font: 800 13px Rubik, sans-serif; box-shadow: 0 5px 0 #2e55c4; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px">
+      <span style="font-size: 20px; font-weight: 900; line-height: 24px">x2</span>
+      Doblar
+    </button>
+    <button type="button" disabled style="height: 72px; border: 0; border-radius: 18px; background: #232848; color: #5d6390; font: 800 13px Rubik, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20v-7M12 13 6 5M12 13l6-8M6 5v4M6 5h4M18 5v4M18 5h-4"></path></svg>
+      Dividir
+    </button>
+  </div>
+  <button type="button" style="align-self: center; height: 40px; border: 0; background: none; color: #8e94c2; font: 800 13px Rubik, sans-serif; padding: 0 12px">Rendirse</button>
+
+  <!-- Floating dock -->
+  <nav aria-label="Principal" style="margin: 4px 16px 20px; height: 64px; box-sizing: border-box; padding: 0 8px; border-radius: 22px; background: #232848; box-shadow: 0 4px 0 #0b0d1c; display: flex; align-items: center; justify-content: space-between">
+    <a href="#" aria-label="Inicio" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: #8e94c2">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg>
+    </a>
+    <a href="#" aria-label="Ranking" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: #8e94c2">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"></path></svg>
+    </a>
+    <a href="#" aria-current="page" style="height: 48px; padding: 0 18px; border-radius: 16px; background: #ffc83d; color: #2a1d00; display: flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 900; font-size: 15px; box-shadow: 0 3px 0 #c48d0b">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="11" height="15" rx="2"></rect><path d="m9 3.5 9.5 1.5a2 2 0 0 1 1.7 2.3l-2 12"></path></svg>
+      Jugar
+    </a>
+    <a href="#" aria-label="Social" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: #8e94c2">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"></path></svg>
+    </a>
+    <a href="#" aria-label="Perfil" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: #8e94c2">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

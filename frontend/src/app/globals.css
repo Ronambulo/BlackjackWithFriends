@@ -17,12 +17,23 @@
   --felt: #0b6b3a;
   --danger: #ff6b6b;
   --success: #4ade80;
+  /* Solid layers, from the page up: cards, menus and sheets, pressed/selected */
+  --layer-1: #14171b;
+  --layer-2: #1b1f24;
+  --layer-3: #262b31;
+  --nav-bg: #0d1013;
+  /* The green of the balance and invite cards */
+  --felt-card: #0f5c35;
+  --danger-solid: #e5484d;
+  --danger-soft: #ff8a8a;
 
-  --radius: 18px;
+  --radius: 20px;
   --radius-sm: 12px;
   --blur: blur(18px) saturate(140%);
   --tabbar-height: 64px;
   --topbar-height: 60px;
+  /* The visible height; StandaloneFix replaces it with the screen height on iOS home screen apps */
+  --app-height: 100dvh;
   --page-x: 16px;
 
   font-family: var(--font-sans), system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -53,7 +64,7 @@ label {
 
 body {
   margin: 0;
-  min-height: 100dvh;
+  min-height: var(--app-height);
   background:
     radial-gradient(120% 60% at 50% -10%, var(--bg-glow), transparent 70%),
     var(--bg);
@@ -99,17 +110,25 @@ select {
 
 .card {
   padding: 18px;
-  border: 1px solid var(--border);
+  border: 1px solid rgb(255 255 255 / 0.07);
   border-radius: var(--radius);
-  background: var(--surface);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
+  background: var(--layer-1);
 }
 
 .card-title {
   margin-bottom: 6px;
-  font-size: 1rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+/* Small uppercase heading above a card or a group of rows */
+.label {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.75rem;
   font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .muted {
@@ -124,7 +143,7 @@ select {
   min-height: 50px;
   padding: 0 20px;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: 16px;
   font-weight: 700;
   cursor: pointer;
   transition:
@@ -147,8 +166,12 @@ select {
 }
 
 .btn-secondary {
-  border-color: var(--border);
-  background: var(--surface-strong);
+  background: rgb(255 255 255 / 0.07);
+}
+
+.btn-outline {
+  border-color: rgb(255 255 255 / 0.14);
+  background: none;
 }
 
 .btn-ghost {
@@ -161,8 +184,14 @@ select {
 
 .btn-danger {
   border-color: rgb(255 107 107 / 0.35);
-  background: rgb(255 107 107 / 0.1);
-  color: var(--danger);
+  background: none;
+  color: var(--danger-soft);
+}
+
+/* The red one that does the irreversible thing, inside a confirmation */
+.btn-destructive {
+  background: var(--danger-solid);
+  color: #fff;
 }
 
 .btn-block {
@@ -185,9 +214,9 @@ select {
   width: 100%;
   min-height: 52px;
   padding: 0 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: rgb(0 0 0 / 0.35);
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 14px;
+  background: var(--nav-bg);
   /* 16px or more so iOS doesn't zoom in on focus */
   font-size: 1.05rem;
   transition: border-color 0.15s ease;
@@ -216,25 +245,79 @@ select {
   display: flex;
   gap: 4px;
   padding: 4px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: rgb(0 0 0 / 0.3);
+  border-radius: 14px;
+  background: var(--layer-1);
 }
 
 .segmented button {
   flex: 1;
-  min-height: 40px;
+  min-height: 38px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 10px;
   background: none;
   color: var(--text-dim);
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
 }
 
 .segmented button[aria-pressed='true'] {
-  background: var(--surface-strong);
+  background: var(--layer-3);
   color: var(--text);
+}
+
+/* On/off toggle: a button with role="switch" and aria-checked */
+.switch {
+  position: relative;
+  flex: none;
+  width: 48px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #2a2f36;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.switch::after {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--text);
+  content: '';
+  transition:
+    left 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.switch[aria-checked='true'] {
+  background: var(--accent);
+}
+
+.switch[aria-checked='true']::after {
+  left: 23px;
+  background: var(--accent-text);
+}
+
+.switch:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Initial in a coloured circle; the colour comes from avatarColor() */
+.avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: var(--bg);
+  font-size: 0.875rem;
+  font-weight: 800;
 }
 
 .sr-only {

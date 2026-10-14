@@ -4,7 +4,7 @@
   justify-content: center;
   width: 100%;
   max-width: 420px;
-  min-height: 100dvh;
+  min-height: var(--app-height);
   margin: 0 auto;
   padding: calc(24px + env(safe-area-inset-top)) var(--page-x) calc(24px + env(safe-area-inset-bottom));
 }

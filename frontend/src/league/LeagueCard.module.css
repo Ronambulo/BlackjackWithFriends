@@ -1,0 +1,86 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 24px;
+  background: var(--felt-card);
+}
+
+.top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.label {
+  color: #b9dcc7;
+}
+
+.balance {
+  margin-top: 6px;
+  font-family: var(--font-felt), Georgia, serif;
+  font-size: 2.9rem;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.up,
+.down {
+  margin-top: 8px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.up {
+  color: #8ff0b0;
+}
+
+.down {
+  color: #ffb3b3;
+}
+
+.position {
+  flex: none;
+  text-align: right;
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+
+.position .up,
+.position .down {
+  margin-top: 4px;
+  font-size: 0.8rem;
+}
+
+.of {
+  color: #b9dcc7;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.countdown {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #d6ecdf;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.claim {
+  min-height: 52px;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.claimed {
+  color: #d6ecdf;
+  font-size: 0.85rem;
+  text-align: center;
+}

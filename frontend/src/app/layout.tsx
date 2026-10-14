@@ -17,9 +17,8 @@ const appleTouchIcon = `data:image/png;base64,${readFileSync(
   join(process.cwd(), 'public/apple-touch-icon-180x180.png'),
 ).toString('base64')}`
 
-// Link previews need absolute image URLs. Fixed rather than VERCEL_PROJECT_PRODUCTION_URL,
-// which can point at a stale *.vercel.app alias. SITE_URL overrides it (e.g. a custom domain).
-const siteUrl = process.env.SITE_URL ?? (process.env.VERCEL ? 'https://blackjackwithfriends.vercel.app' : 'http://localhost:5173')
+// Link previews need absolute image URLs: SITE_URL is the address the app is reached at.
+const siteUrl = process.env.SITE_URL ?? 'http://localhost:5173'
 
 const title = 'Blackjack with Friends'
 const description = 'Tu liga semanal de blackjack con amigos. Juega cada día, sube en el ranking y gana la semana.'

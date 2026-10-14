@@ -4,6 +4,7 @@ import type { Action, Card, HandValue, Outcome } from '@bwf/engine'
 import { useEffect, useId, useState, type CSSProperties, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { currentLanguage } from '@/i18n'
+import { useClaimPay, useLeague } from '@/league/useLeague'
 import { ApiError } from '@/lib/api'
 import { formatNumber } from '@/lib/format'
 import { MinusIcon, PlusIcon, SplitIcon } from '@/ui/icons'
@@ -165,6 +166,8 @@ export function Table() {
   const { data: table, isPending, isError, refetch } = useTable()
   const play = usePlay()
   const clearHand = useClearFinishedHand()
+  const { data: league } = useLeague()
+  const claimPay = useClaimPay()
   // While a new hand is on its way the bet already sits on the felt, so the tap
   // answers at once instead of after the round trip.
   const pendingBet = play.isPending && play.variables.action === 'bet' ? play.variables.bet : null
@@ -229,7 +232,7 @@ export function Table() {
         )}
 
         {/* Right above the chips you bet with */}
-        <span className={styles.pill} aria-label={`${t('play.practice')}: ${t('play.chips', { count: chips })}`}>
+        <span className={styles.pill} aria-label={`${t('play.balance')}: ${t('play.chips', { count: chips })}`}>
           <span className={styles.chipIcon} aria-hidden="true" />
           {fmt(chips)}
         </span>
@@ -241,9 +244,13 @@ export function Table() {
         {!hand && table.chips < table.minBet && (
           <>
             <p className={styles.note}>{t('play.broke')}</p>
-            <button className={styles.gold} disabled={busy} onClick={() => play.mutate({ action: 'refill' })}>
-              {t('play.refill', { amount: fmt(1000) })}
-            </button>
+            {league && league.pendingPay > 0 ? (
+              <button className={styles.gold} disabled={busy || claimPay.isPending} onClick={() => claimPay.mutate()}>
+                {t('league.claim', { amount: fmt(league.pendingPay) })}
+              </button>
+            ) : (
+              <p className={styles.note}>{t('play.waitForPay')}</p>
+            )}
           </>
         )}
 

@@ -22,7 +22,7 @@ Una **liga semanal de blackjack entre amigos**. Cada jugador juega **solo contra
 | Para qué | Apostar y competir en la liga | Comprar cosméticos en la tienda |
 | Ámbito | Por usuario (uno solo, común a todos sus grupos) | Por usuario (global) |
 | Duración | Se reinician cada semana | Permanentes |
-| Cómo se ganan | Paga diaria, ganar manos, retos diarios | Quedar en el podio semanal, logros |
+| Cómo se ganan | Paga diaria, ganar manos | Quedar en el podio semanal, retos diarios, logros |
 
 Separarlas es clave: gastar en la tienda **nunca** te baja en el ranking.
 
@@ -34,7 +34,7 @@ Separarlas es clave: gastar en la tienda **nunca** te baja en el ranking.
 - 🔧 6 barajas, **barajado nuevo en cada mano** (equivale a una barajadora continua: no se pueden contar cartas).
 - La banca **se planta en 17 suave** (S17).
 - Blackjack paga **3:2**.
-- **Doblar** con cualquier par de cartas iniciales, también después de dividir.
+- **Doblar** solo con 9, 10 u 11 en las dos primeras cartas (`doubleOn` en `packages/engine/src/rules.ts`), también después de dividir.
 - **Dividir** hasta 3 veces (4 manos). Los ases divididos reciben una sola carta.
 - **Seguro** cuando la banca muestra un As (paga 2:1).
 - **Rendirse** (tardío): recuperas la mitad de la apuesta.
@@ -64,7 +64,7 @@ Separarlas es clave: gastar en la tienda **nunca** te baja en el ranking.
 - Hasta que acabas tus 10 manos no ves las de los demás, para que nadie te haga spoiler.
 
 ### Retos y logros
-- **Retos diarios**: 3 al día, iguales para todos los jugadores (p. ej. "gana 3 manos seguidas", "haz un split ganador", "gana con 5 cartas"). Cada uno da 🔧 **+200 fichas**.
+- **Retos diarios**: 3 al día, iguales para todos los jugadores (p. ej. "gana 3 manos seguidas", "haz un split ganador", "gana con 5 cartas"). Cada uno da 🪙 **monedas** (no fichas) para gastar en estilos: son un logro personal, así que no cuentan para la liga ni mueven el ranking. La cantidad se ajusta en la beta.
 - **Logros** permanentes con insignia en el perfil y algunos con cosmético o monedas de premio (p. ej. "Primer blackjack", "Gana una semana", "10 semanas en el podio", "Sobrevive con 1 ficha").
 
 ---
@@ -78,24 +78,17 @@ El navegador **nunca** decide las cartas ni calcula premios. Solo envía accione
 
 ```mermaid
 flowchart LR
-  subgraph Front["▲ Vercel · proyecto frontend/"]
+  subgraph Box["🐳 Contenedor único (Docker / ZimaOS)"]
     UI[PWA Next.js + React + TS<br/>interfaz y animaciones]
     SW[Service worker<br/>caché + autoupdate + push]
-    RW[Rewrites<br/>/api/* → backend]
-  end
-
-  subgraph Back["▲ Vercel · proyecto backend/"]
-    API[Vercel Functions /api<br/>lógica de juego]
+    RW[Next.js :3000<br/>rewrites /api/* → API]
+    API[API Node :3001 interna<br/>lógica de juego]
     OG[Vistas previas de enlaces<br/>+ imágenes OG]
+    DB[(SQLite en /data<br/>+ Drizzle)]
+    Cron[Tareas programadas<br/>dentro de la API]
   end
 
   Engine[[packages/engine<br/>motor compartido]]
-
-  subgraph Datos["☁️ Servicios (planes gratuitos)"]
-    DB[(Neon Postgres<br/>+ Drizzle)]
-    Mail[Resend<br/>código de login]
-    Cron[Vercel Cron<br/>cierre semanal, retos]
-  end
 
   Push[Servicios push<br/>Apple / Google]
   Bots[Bots de vista previa<br/>WhatsApp, Discord,<br/>Telegram, iMessage...]
@@ -108,7 +101,6 @@ flowchart LR
   RW --> OG
   OG -- datos públicos de la invitación --> DB
   API -- Better Auth: sesiones y datos --> DB
-  API -- email con el código --> Mail
   Cron --> API
   API -- Web Push --> Push --> SW
 ```
@@ -123,13 +115,12 @@ flowchart LR
 | Animaciones | Motion (antes Framer Motion) | Cartas volando, fichas, podio |
 | Sonido | Howler.js | Fiable en iOS y fácil de silenciar |
 | Idiomas | i18next (es + en) | Desde el día 1 |
-| Backend (API) | Vercel Functions en Node/TypeScript, en la carpeta `backend/` | La lógica de juego y las vistas previas, en un proyecto de Vercel aparte |
-| Base de datos | Neon Postgres (desde el Marketplace de Vercel) + Drizzle ORM | Postgres estándar: sin atarnos a un proveedor; migraciones en el repo |
-| Login | Better Auth con código de 6 cifras por email (sin contraseñas) | Librería, no servicio: usuarios y sesiones en nuestra BD, cookie en nuestro dominio |
-| Emails | Resend | Envío fiable y gratis hasta 3.000 al mes; necesita un dominio verificado para escribir a cualquiera |
-| Tareas programadas | Vercel Cron llamando a la API | Sin servicios extra |
-| Avatares | Generados (inicial y color); fotos más adelante con Vercel Blob | Nada que alojar al principio |
-| Hosting | Dos proyectos de Vercel: el frontend (`blackjackwithfriends.vercel.app`) y el backend (`blackjackwithfriends-backend.vercel.app`) | HTTPS gratis (necesario para la PWA). El frontend reenvía `/api` al backend, así que no hay CORS |
+| Backend (API) | Servidor Node/TypeScript en `backend/` (`server.ts`), solo accesible desde dentro del contenedor | La lógica de juego; Next le pasa `/api/*` |
+| Base de datos | SQLite (better-sqlite3) + Drizzle ORM, un fichero en el volumen `/data` | Sin servicios aparte; migraciones en el repo, aplicadas al arrancar la API. Un solo proceso escribe, así que las transacciones son simples |
+| Login | Better Auth con usuario y contraseña (sin correos) | Librería, no servicio: usuarios y sesiones en nuestra BD, cookie en nuestro dominio. El nombre de usuario es el nombre en la liga |
+| Tareas programadas | Temporizador dentro de la API (o perezosas, al primer uso) | Sin servicios extra |
+| Avatares | Generados (inicial y color); fotos más adelante, guardadas en `/data` | Nada que alojar al principio |
+| Hosting | Una imagen Docker todo en uno (`ghcr.io/ronambulo/blackjackwithfriends`): supervisord arranca la API y Next; se instala en ZimaOS con `docker-compose.yml` | Como FinanceMaster y Beergram. Solo se publica el puerto de Next, así que no hay CORS. Para la PWA hace falta HTTPS: proxy inverso o túnel delante |
 | Vistas previas de enlaces | `generateMetadata` + `opengraph-image` de Next.js (`next/og`) | El HTML de cada invitación ya sale del servidor con sus metadatos e imagen |
 | Códigos QR | Librería `qrcode`, generada en el navegador | Sin servidor y funciona sin conexión |
 | Push | Web Push con claves VAPID desde el backend | En iPhone solo funciona con la app instalada (iOS 16.4+) |
@@ -168,10 +159,10 @@ Cada mano se guarda en la base de datos en cada paso. Si se recarga la app (por 
 sequenceDiagram
   participant J as Jugador (PWA)
   participant F as Backend POST /api/play
-  participant DB as Postgres
+  participant DB as SQLite
 
   J->>F: { handId, acción: "pedir" } + token de sesión
-  F->>DB: bloquea la mano (SELECT ... FOR UPDATE)
+  F->>DB: abre una transacción (un solo proceso escribe: nada se cuela en medio)
   F->>F: valida que la acción es legal
   F->>F: motor aplica la acción, saca carta del mazo guardado
   alt la mano termina
@@ -186,7 +177,7 @@ sequenceDiagram
 
 El mazo de cada mano se guarda en el servidor y **nunca se envía al cliente**. La carta tapada de la banca solo se envía cuando se descubre.
 
-### Tareas programadas (Vercel Cron)
+### Tareas programadas
 
 | Cuándo | Qué |
 |---|---|
@@ -228,14 +219,16 @@ erDiagram
     text idioma
     int monedas
     bigint saldo "fichas de la liga, una sola para todos los grupos"
+    date semana "lunes de la semana a la que pertenece el saldo"
     date ultima_paga
+    bigint saldo_inicio_dia "para el +/- de hoy y las flechas del ranking"
+    date dia
     jsonb estilos_equipados
   }
   groups {
     uuid id PK
     text nombre
-    uuid admin_id
-    text codigo_invitacion
+    text codigo_invitacion "10 caracteres, renovable"
     jsonb ajustes "ocultar ranking en la vista previa..."
   }
   group_members {
@@ -282,8 +275,9 @@ erDiagram
 ```
 
 Notas:
-- **Manos**: `ronda` guarda el estado entero del motor (mazo incluido) y nunca sale tal cual del servidor; al cliente solo le llega la vista pública. `version` evita que dos acciones a la vez se apliquen sobre la misma mano, y un índice único impide tener más de una mano abierta por jugador y modo. Mientras no hay grupos, se juega con `profiles.fichas_prueba` (1000 al empezar, recargables al quedarte sin fichas).
-- **Saldo único**: el saldo y la paga viven en `profiles`, no en el grupo. La clasificación de un grupo es una consulta de los saldos de sus miembros; al cerrar la semana se congela en `season_standings`, y `season_results` guarda lo de cada jugador una sola vez (saldo final y monedas de su mejor puesto).
+- **Manos**: `ronda` guarda el estado entero del motor (mazo incluido) y nunca sale tal cual del servidor; al cliente solo le llega la vista pública. `version` evita que dos acciones a la vez se apliquen sobre la misma mano, y un índice único impide tener más de una mano abierta por jugador y modo. Se juega siempre con el saldo de la liga (`profiles.saldo`).
+- **Saldo único**: el saldo y la paga viven en `profiles`, no en el grupo. El cambio de semana y de día se aplica **al vuelo**: cada petición que lee o toca el saldo comprueba `semana` y `dia`, y si son viejos devuelve el saldo a 1.000 o guarda el saldo de inicio del día. La paga no se ingresa sola: se acumula día a día y se cobra con un botón (pagas pendientes = hoy − `ultima_paga`, o desde el día antes del lunes si aún no ha cobrado ninguna esta semana). Las temporadas (`seasons`, `season_standings`, `season_results`) llegan en la fase 5.
+- **Grupos**: el admin está en `group_members.rol`, no en `groups`, así que puede haber traspaso sin tocar el grupo: si el admin se va, pasa a serlo el miembro más antiguo, y un grupo que se queda vacío se borra. Como mucho 10 grupos por jugador y 50 miembros por grupo. La clasificación usa el ranking de competición (1, 2, 2, 4). La clasificación de un grupo es una consulta de los saldos de sus miembros; al cerrar la semana se congela en `season_standings`, y `season_results` guarda lo de cada jugador una sola vez (saldo final y monedas de su mejor puesto).
 - **Solo el backend toca la base de datos**: la app nunca se conecta a ella. Cada ruta de la API comprueba la sesión y que eres miembro del grupo, así que solo ves los datos de tus grupos. Los saldos, manos y monedas **solo** los cambia el backend.
 - El campo `cosmetics.origen` deja la puerta abierta a añadir más adelante un origen "compra" sin cambiar nada más. **No hay ninguna huella visible de esto en la app.**
 
@@ -297,14 +291,13 @@ Notas:
 flowchart TD
   A0[Admin: Invitar → enlace o QR] --> A1[Lo pega en WhatsApp / Discord<br/>→ se ve la tarjeta con vista previa]
   A0 --> A2[Lo enseña en persona<br/>→ el amigo escanea el QR con la cámara]
-  A1 --> A[Amigo abre<br/>…vercel.app/i/K7mQ2xP9aR]
+  A1 --> A[Amigo abre<br/>…/i/K7mQ2xP9aR]
   A2 --> A
   A --> B{¿Tiene sesión?}
   B -- No --> C[Pantalla de invitación<br/>'Luis te invita a Los del Curro'<br/>miembros, ranking actual]
-  C --> D[Entrar con email]
-  D --> E[Elegir nombre y avatar]
+  C --> D[Crear cuenta o entrar<br/>usuario y contraseña]
   B -- Sí --> F
-  E --> F[Unirse al grupo]
+  D --> F[Unirse al grupo]
   F --> G[Aparece en el ranking con su saldo de siempre]
   G --> H[Aviso de instalar la PWA]
   H --> I[Inicio del grupo]
@@ -332,8 +325,8 @@ flowchart LR
 
 ```mermaid
 sequenceDiagram
-  participant C as Vercel Cron
-  participant DB as Postgres
+  participant C as Temporizador de la API
+  participant DB as SQLite
   participant P as Push
   participant J as Jugador
 
@@ -469,7 +462,7 @@ Moderación mínima: el admin puede expulsar miembros y cualquiera puede borrar 
 │      └───────────────┘      │
 │   Escanéalo con la cámara   │
 │                             │
-│ …vercel.app/i/K7mQ2xP9aR    │
+│ …/i/K7mQ2xP9aR    │
 │ [ 📤 Compartir ] [ 📋 Copiar]│
 │ [ ⬇️ Guardar QR como imagen ]│
 │                             │
@@ -525,15 +518,15 @@ Cada fase termina con algo usable y desplegado.
 | # | Fase | Resultado |
 |---|---|---|
 | 0 | ✅ PWA base | Instalación con aviso y botón, y actualización automática |
-| 1 | ✅ Fundaciones | Base de datos Neon + Drizzle; login con código por email (Better Auth + Resend); i18n; estilo base oscuro; navegación con pestañas; despliegue en Vercel; tarjeta de vista previa estática para la página principal |
+| 1 | ✅ Fundaciones | Base de datos + Drizzle; login con usuario y contraseña (Better Auth); i18n; estilo base oscuro; navegación con pestañas; despliegue; tarjeta de vista previa estática para la página principal |
 | 2 | ✅ Motor de blackjack | Módulo puro con todas las reglas y una batería completa de tests |
 | 3 | ✅ Mesa jugable | endpoint `POST /api/play` del backend, manos guardadas en BD y mesa con animaciones básicas, todavía con un saldo de prueba |
-| 4 | Grupos y liga | Saldo único de liga y paga diaria; crear grupo, unirse, ranking en vivo de cada grupo y admin |
+| 4 | ✅ Grupos y liga | Saldo único de liga y paga diaria; crear grupo, unirse, ranking en vivo de cada grupo y admin |
 | 4b | Invitaciones | Pantalla "Invitar" con compartir, copiar y **QR**; **vista previa del enlace** con imagen generada (`next/og`); renovar el enlace |
 | 5 | Ciclo semanal | Cierre automático, ceremonia, estadísticas, trofeos y monedas |
 | 6 | Social | Feed, reacciones y chat |
 | 7 | Notificaciones push | Suscripción, preferencias y envíos |
-| 8 | Retos y logros | Retos diarios y logros con insignias |
+| 8 | Retos y logros | Retos diarios y logros con insignias; lo que se gana con ellos son monedas para estilos, nunca fichas |
 | 9 | Baraja del día | Semilla diaria, 10 manos, clasificación y compartir (con su vista previa `/r/…`) |
 | 10 | Estilos y tienda | Sistema de temas para la mesa, colección, tienda y selector |
 | 11 | Juice y pulido | Sonidos, más animaciones, vibración, accesibilidad y rendimiento |
@@ -554,8 +547,9 @@ Para empezar a probar con amigos de verdad bastan las fases 1–5 (incluida la 4
 | Baraja del día | 10 manos con apuesta fija; el 1º del día gana +500 fichas en la liga |
 | Saldo | Uno por jugador, común a todos sus grupos; los grupos son clasificaciones |
 | Premios en monedas | 100 / 60 / 30 para el podio, 10 por haber jugado; solo cuenta tu mejor puesto y el grupo necesita al menos 2 personas que hayan jugado |
+| Premio de los retos diarios | Monedas para estilos, no fichas: los retos son personales y no deben dar ventaja en la liga |
 | Nombre | Blackjack with Friends |
-| Dominio | Subdominio gratuito de Vercel (`*.vercel.app`), sin dominio propio |
+| Dominio | El del servidor casero (ZimaOS), con HTTPS por proxy inverso o túnel |
 | Invitaciones | Enlace con vista previa enriquecida + código QR |
-| Login | Solo email con enlace mágico (sin Google ni Apple) |
-| Estructura | Monorepo con npm workspaces: `frontend/`, `backend/` y `packages/engine/`; frontend y backend son dos proyectos de Vercel |
+| Login | Usuario y contraseña, sin correos (sin Google ni Apple) |
+| Estructura | Monorepo con npm workspaces: `frontend/`, `backend/` y `packages/engine/`; frontend y backend van juntos en una imagen Docker (`docker/`) |

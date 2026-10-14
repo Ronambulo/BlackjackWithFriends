@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Arcade — apuesta</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@600;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#ffc83d}a:hover{color:#ffd970}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; position: relative; overflow: hidden; font-family: Rubik, system-ui, sans-serif; color: #fff; background: #12152b">
+
+  <!-- Top bar -->
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 16px 12px">
+    <button type="button" style="display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border: 0; border-radius: 12px; background: #232848; color: #fff; font: 800 14px Rubik, sans-serif; box-shadow: 0 3px 0 #0b0d1c">
+      Sin grupo
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+    </button>
+    <div style="display: flex; gap: 8px">
+      <div style="display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 12px; border-radius: 12px; background: #232848; font-weight: 900; font-size: 16px; box-shadow: 0 3px 0 #0b0d1c">
+        <span style="width: 18px; height: 18px; box-sizing: border-box; border-radius: 50%; border: 4px dashed #fff; background: #1fae6b"></span>
+        450
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 12px; border-radius: 12px; background: #232848; font-weight: 900; font-size: 16px; box-shadow: 0 3px 0 #0b0d1c">
+        <span style="width: 18px; height: 18px; border-radius: 50%; background: #ffc83d; box-shadow: inset 0 -3px 0 #d99a12"></span>
+        0
+      </div>
+    </div>
+  </div>
+
+  <!-- Table, empty with bet spot -->
+  <div style="flex: 1; margin: 0 12px; border-radius: 32px; background: #138a6c; box-shadow: inset 0 0 0 5px #0d6b53, inset 0 6px 0 5px #18a37f, 0 6px 0 #0a1a28; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 22px 12px">
+    <div style="padding: 6px 16px; border-radius: 999px; background: rgba(0,0,0,0.18); font-weight: 800; font-size: 12px; letter-spacing: 0.1em; color: rgba(255,255,255,0.75)">BLACKJACK PAGA 3:2</div>
+    <div style="width: 150px; height: 150px; box-sizing: border-box; border-radius: 50%; border: 4px dashed rgba(255,255,255,0.45); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px">
+      <span style="font-weight: 800; font-size: 12px; letter-spacing: 0.1em; color: rgba(255,255,255,0.75)">APUESTA</span>
+      <span style="font-weight: 900; font-size: 46px; line-height: 1">60</span>
+    </div>
+    <div style="font-weight: 600; font-size: 13px; color: rgba(255,255,255,0.7)">Mínimo 10 · toca las fichas para apostar</div>
+  </div>
+
+  <!-- Chips -->
+  <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; padding: 18px 12px 12px">
+    <button type="button" aria-label="Ficha de 10" style="width: 60px; height: 60px; margin: 0 auto; box-sizing: border-box; border-radius: 50%; border: 6px dashed #fff; background: #4c7dff; color: #fff; font: 900 15px Rubik, sans-serif; box-shadow: 0 5px 0 #2e55c4">10</button>
+    <button type="button" aria-label="Ficha de 50" style="width: 60px; height: 60px; margin: 0 auto; box-sizing: border-box; border-radius: 50%; border: 6px dashed #fff; background: #ff6b57; color: #fff; font: 900 15px Rubik, sans-serif; box-shadow: 0 5px 0 #c7402f">50</button>
+    <button type="button" aria-label="Ficha de 100" style="width: 60px; height: 60px; margin: 0 auto; box-sizing: border-box; border-radius: 50%; border: 6px dashed #fff; background: #1fae6b; color: #fff; font: 900 15px Rubik, sans-serif; box-shadow: 0 5px 0 #127a49">100</button>
+    <button type="button" aria-label="Ficha de 500" style="width: 60px; height: 60px; margin: 0 auto; box-sizing: border-box; border-radius: 50%; border: 6px dashed #fff; background: #9b6bff; color: #fff; font: 900 15px Rubik, sans-serif; box-shadow: 0 5px 0 #6b42c9">500</button>
+    <button type="button" aria-label="Ficha de 1000" disabled style="width: 60px; height: 60px; margin: 0 auto; box-sizing: border-box; border-radius: 50%; border: 6px dashed #3a4070; background: #232848; color: #5d6390; font: 900 15px Rubik, sans-serif">1K</button>
+  </div>
+  <div style="display: flex; gap: 8px; padding: 0 12px 10px">
+    <button type="button" style="flex: 1; height: 56px; border: 0; border-radius: 18px; background: #232848; color: #fff; font: 800 14px Rubik, sans-serif; box-shadow: 0 4px 0 #0b0d1c">Borrar</button>
+    <button type="button" style="flex: 1; height: 56px; border: 0; border-radius: 18px; background: #232848; color: #fff; font: 800 14px Rubik, sans-serif; box-shadow: 0 4px 0 #0b0d1c">x2</button>
+    <button type="button" style="flex: 2; height: 56px; border: 0; border-radius: 18px; background: #ffc83d; color: #2a1d00; font: 900 18px Rubik, sans-serif; box-shadow: 0 5px 0 #c48d0b">¡Repartir!</button>
+  </div>
+
+  <!-- Floating dock -->
+  <nav aria-label="Principal" style="margin: 6px 16px 20px; height: 64px; box-sizing: border-box; padding: 0 8px; border-radius: 22px; background: #232848; box-shadow: 0 4px 0 #0b0d1c; display: flex; align-items: center; justify-content: space-between">
+    <a href="#" aria-label="Inicio" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: #8e94c2">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg>
+    </a>
+    <a href="#" aria-label="Ranking" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: #8e94c2">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"></path></svg>
+    </a>
+    <a href="#" aria-current="page" style="height: 48px; padding: 0 18px; border-radius: 16px; background: #ffc83d; color: #2a1d00; display: flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 900; font-size: 15px; box-shadow: 0 3px 0 #c48d0b">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="11" height="15" rx="2"></rect><path d="m9 3.5 9.5 1.5a2 2 0 0 1 1.7 2.3l-2 12"></path></svg>
+      Jugar
+    </a>
+    <a href="#" aria-label="Social" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: #8e94c2">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"></path></svg>
+    </a>
+    <a href="#" aria-label="Perfil" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: #8e94c2">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

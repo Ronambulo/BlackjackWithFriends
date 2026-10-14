@@ -1,15 +1,22 @@
-// Local stand-in for Vercel: serves the API function (api/index.ts) on
-// http://localhost:3001. Not deployed; Vercel ignores this file.
+// The API server: applies pending migrations, then serves api/index.ts on
+// http://127.0.0.1:3001. In the container only Next is public and reaches it
+// through its /api rewrite.
 import { existsSync } from 'node:fs'
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import { join } from 'node:path'
 
+const envFile = join(import.meta.dirname, '.env.local')
+if (existsSync(envFile)) process.loadEnvFile(envFile)
+
+const HOST = process.env.HOST ?? '127.0.0.1'
 const PORT = Number(process.env.PORT ?? 3001)
 
-if (existsSync(join(import.meta.dirname, '.env.local'))) process.loadEnvFile(join(import.meta.dirname, '.env.local'))
-
 // Imported after loading .env.local so the env is ready when modules initialise.
+const { databasePath, migrate } = await import('./lib/db.js')
 const { default: api } = await import('./api/index.js')
+
+migrate()
+console.log(`Base de datos en ${databasePath()}`)
 
 async function toRequest(req: IncomingMessage, url: URL): Promise<Request> {
   const headers = new Headers()
@@ -35,7 +42,7 @@ async function send(res: ServerResponse, response: Response): Promise<void> {
   res.end(Buffer.from(await response.arrayBuffer()))
 }
 
-createServer(async (req, res) => {
+const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`)
   const started = performance.now()
   let response: Response
@@ -48,7 +55,16 @@ createServer(async (req, res) => {
     response = Response.json({ error: 'Error interno' }, { status: 500 })
   }
   await send(res, response)
-  console.log(`${req.method} ${url.pathname} → ${response.status} (${Math.round(performance.now() - started)} ms)`)
-}).listen(PORT, () => {
-  console.log(`API local en http://localhost:${PORT}/api`)
+  if (url.pathname !== '/api/health') {
+    console.log(`${req.method} ${url.pathname} → ${response.status} (${Math.round(performance.now() - started)} ms)`)
+  }
 })
+
+server.listen(PORT, HOST, () => {
+  console.log(`API en http://${HOST}:${PORT}/api`)
+})
+
+// supervisord and docker stop send SIGTERM: finish what's in flight and close.
+for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+  process.once(signal, () => server.close(() => process.exit(0)))
+}
