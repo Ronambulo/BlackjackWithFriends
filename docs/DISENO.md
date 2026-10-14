@@ -74,9 +74,9 @@ El navegador **nunca** decide las cartas ni calcula premios. Solo envía accione
 ```mermaid
 flowchart LR
   subgraph Front["▲ Vercel · proyecto frontend/"]
-    UI[PWA React + TS + Vite<br/>interfaz y animaciones]
+    UI[PWA Next.js + React + TS<br/>interfaz y animaciones]
     SW[Service worker<br/>caché + autoupdate + push]
-    RW[Rewrites<br/>/api/* e /i/* → backend]
+    RW[Rewrites<br/>/api/* → backend]
   end
 
   subgraph Back["▲ Vercel · proyecto backend/"]
@@ -116,8 +116,8 @@ flowchart LR
 
 | Pieza | Elección | Por qué |
 |---|---|---|
-| Frontend | React + TypeScript + Vite (ya montado) | — |
-| Rutas | React Router | Estándar |
+| Frontend | Next.js 16 (App Router, Turbopack) + React 19 + TypeScript | Rutas por carpetas, metadatos y vistas previas de enlaces en el propio frontend |
+| Rutas | App Router de Next.js | La app es cliente tras el login; el servidor solo sirve HTML, metadatos e imágenes OG |
 | Datos del servidor | TanStack Query + cliente de Supabase | Caché y reintentos automáticos |
 | Animaciones | Motion (antes Framer Motion) | Cartas volando, fichas, podio |
 | Sonido | Howler.js | Fiable en iOS y fácil de silenciar |
@@ -125,7 +125,7 @@ flowchart LR
 | Backend (API) | Vercel Functions en Node/TypeScript, en la carpeta `backend/` | La lógica de juego y las vistas previas, en un proyecto de Vercel aparte |
 | Base de datos y servicios | Supabase: Postgres, Auth (solo email), Realtime, Storage y pg_cron | Todo en uno, gratis para cientos de usuarios |
 | Hosting | Dos proyectos de Vercel: el frontend (`blackjack-con-amigos.vercel.app`) y el backend (`blackjackwithfriends-backend.vercel.app`) | HTTPS gratis (necesario para la PWA). El frontend reenvía `/api` al backend, así que no hay CORS |
-| Vistas previas de enlaces | Vercel Functions + `@vercel/og` | Generan el HTML con metadatos y la imagen de cada invitación |
+| Vistas previas de enlaces | `generateMetadata` + `opengraph-image` de Next.js (`next/og`) | El HTML de cada invitación ya sale del servidor con sus metadatos e imagen |
 | Códigos QR | Librería `qrcode`, generada en el navegador | Sin servidor y funciona sin conexión |
 | Push | Web Push con claves VAPID desde el backend | En iPhone solo funciona con la app instalada (iOS 16.4+) |
 | Tests | Vitest | Sobre todo para el motor de blackjack |
@@ -487,11 +487,11 @@ Moderación mínima: el admin puede expulsar miembros y cualquiera puede borrar 
 ```
 
 Cómo funciona:
-- Los bots que generan la vista previa **no ejecutan JavaScript**, así que la app React no les sirve: solo leen las etiquetas `<meta>` del HTML que devuelve el servidor.
-- Por eso, las rutas que se comparten (`/i/:código`) las atiende una **Vercel Function**:
+- Los bots que generan la vista previa **no ejecutan JavaScript**: solo leen las etiquetas `<meta>` del HTML que devuelve el servidor.
+- Por eso, las rutas que se comparten (`/i/[código]`) son páginas de Next.js renderizadas en el servidor, fuera del grupo `(app)` que exige login:
   1. Pide a Supabase los datos públicos de la invitación (nombre del grupo, quién invita, número de miembros y top 3) mediante una función de solo lectura que no expone nada más.
-  2. Devuelve el `index.html` de la app con las etiquetas Open Graph y de Twitter ya rellenas. Para una persona, la app carga con normalidad. Para un bot, la tarjeta queda bonita.
-  3. `og:image` apunta a `/api/og/invite/:código`, otra función que dibuja la imagen 1200×630 con `@vercel/og`.
+  2. `generateMetadata` rellena las etiquetas Open Graph y de Twitter. Para una persona, la app carga con normalidad. Para un bot, la tarjeta queda bonita.
+  3. `og:image` sale de `opengraph-image.tsx` en esa misma ruta, que dibuja la imagen 1200×630 con `next/og`.
 - En Discord, el color de la barra lateral de la tarjeta sale de `theme-color`.
 - Las respuestas se guardan en caché unos minutos, para no consultar la BD cada vez que alguien pega el enlace.
 - **Página principal y enlaces genéricos**: tarjeta estática con el logo y "Tu liga semanal de blackjack con amigos".
@@ -513,11 +513,11 @@ Cada fase termina con algo usable y desplegado.
 | # | Fase | Resultado |
 |---|---|---|
 | 0 | ✅ PWA base | Instalación con aviso y botón, y actualización automática |
-| 1 | Fundaciones | Proyecto de Supabase; login con email (enlace mágico); i18n; estilo base oscuro; navegación con pestañas; despliegue en Vercel; tarjeta de vista previa estática para la página principal |
+| 1 | ✅ Fundaciones | Proyecto de Supabase; login con email (enlace mágico); i18n; estilo base oscuro; navegación con pestañas; despliegue en Vercel; tarjeta de vista previa estática para la página principal |
 | 2 | ✅ Motor de blackjack | Módulo puro con todas las reglas y una batería completa de tests |
 | 3 | Mesa jugable | endpoint `POST /api/play` del backend, manos guardadas en BD y mesa con animaciones básicas, todavía con un saldo de prueba |
 | 4 | Grupos y liga | Crear grupo, unirse, saldo por grupo, paga diaria, ranking en vivo y admin |
-| 4b | Invitaciones | Pantalla "Invitar" con compartir, copiar y **QR**; **vista previa del enlace** con imagen generada (Vercel Functions + `@vercel/og`); renovar el enlace |
+| 4b | Invitaciones | Pantalla "Invitar" con compartir, copiar y **QR**; **vista previa del enlace** con imagen generada (`next/og`); renovar el enlace |
 | 5 | Ciclo semanal | Cierre automático, ceremonia, estadísticas, trofeos y monedas |
 | 6 | Social | Feed, reacciones y chat |
 | 7 | Notificaciones push | Suscripción, preferencias y envíos |

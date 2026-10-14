@@ -39,3 +39,40 @@ for (const alias of ['apple-touch-icon.png', 'apple-touch-icon-precomposed.png']
   await copyFile(join(PUBLIC, 'apple-touch-icon-180x180.png'), join(PUBLIC, alias))
   console.log(`✔ ${alias}`)
 }
+
+// Link preview card (WhatsApp, iMessage, Telegram…): 1200x630, dark like the app.
+{
+  const width = 1200
+  const height = 630
+  const iconSize = 300
+  const art = await sharp(svg, { density: 384 }).resize(iconSize, iconSize).png().toBuffer()
+  const rounded = await sharp(art)
+    .composite([
+      {
+        input: Buffer.from(
+          `<svg width="${iconSize}" height="${iconSize}"><rect width="${iconSize}" height="${iconSize}" rx="66"/></svg>`,
+        ),
+        blend: 'dest-in',
+      },
+    ])
+    .png()
+    .toBuffer()
+  const text = Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="glow" cx="30%" cy="50%" r="70%">
+        <stop offset="0" stop-color="#0d3a24"/>
+        <stop offset="1" stop-color="#0a0c0f"/>
+      </radialGradient>
+    </defs>
+    <rect width="${width}" height="${height}" fill="url(#glow)"/>
+    <text x="480" y="270" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="74" font-weight="800" fill="#f2f3f5">Blackjack</text>
+    <text x="480" y="352" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="74" font-weight="800" fill="#f2c14e">with Friends</text>
+    <text x="482" y="420" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="32" fill="#9ba3ad">Tu liga semanal de blackjack con amigos</text>
+  </svg>`)
+  await sharp(text)
+    .composite([{ input: rounded, left: 120, top: Math.round((height - iconSize) / 2) }])
+    .removeAlpha()
+    .png({ compressionLevel: 9 })
+    .toFile(join(PUBLIC, 'og-image.png'))
+  console.log('✔ og-image.png')
+}

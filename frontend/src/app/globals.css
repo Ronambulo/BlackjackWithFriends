@@ -1,0 +1,246 @@
+/*
+  Modern dark base style (docs/DISENO.md §6): near-black background, glassy
+  surfaces, one accent colour. Neutral so any table felt the player picks fits.
+*/
+:root {
+  color-scheme: dark;
+
+  --bg: #0a0c0f;
+  --bg-glow: #0d2a1c;
+  --surface: rgb(255 255 255 / 0.05);
+  --surface-strong: rgb(255 255 255 / 0.09);
+  --border: rgb(255 255 255 / 0.09);
+  --text: #f2f3f5;
+  --text-dim: #9ba3ad;
+  --accent: #f2c14e;
+  --accent-text: #1a1406;
+  --felt: #0b6b3a;
+  --danger: #ff6b6b;
+  --success: #4ade80;
+
+  --radius: 18px;
+  --radius-sm: 12px;
+  --blur: blur(18px) saturate(140%);
+  --tabbar-height: 64px;
+  --page-x: 16px;
+
+  font-family: var(--font-sans), system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* No zoom: it's a game, not a document. touch-action kills double-tap zoom and
+   pinch in Chromium; iOS Safari also needs the gesture listener in NoZoom.tsx. */
+html,
+body {
+  touch-action: pan-x pan-y;
+}
+
+a,
+button,
+input,
+select,
+label {
+  touch-action: manipulation;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background:
+    radial-gradient(120% 60% at 50% -10%, var(--bg-glow), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+  overscroll-behavior-y: none;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------- Shared building blocks ---------- */
+
+.card {
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+}
+
+.card-title {
+  margin-bottom: 6px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.muted {
+  color: var(--text-dim);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 50px;
+  padding: 0 20px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    opacity 0.12s ease;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.btn-secondary {
+  border-color: var(--border);
+  background: var(--surface-strong);
+}
+
+.btn-ghost {
+  min-height: 40px;
+  padding: 0 12px;
+  background: none;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.btn-danger {
+  border-color: rgb(255 107 107 / 0.35);
+  background: rgb(255 107 107 / 0.1);
+  color: var(--danger);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field-label {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgb(0 0 0 / 0.35);
+  /* 16px or more so iOS doesn't zoom in on focus */
+  font-size: 1.05rem;
+  transition: border-color 0.15s ease;
+}
+
+.input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.input::placeholder {
+  color: rgb(255 255 255 / 0.3);
+}
+
+.error-text {
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+.success-text {
+  color: var(--success);
+  font-size: 0.9rem;
+}
+
+.segmented {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.3);
+}
+
+.segmented button {
+  flex: 1;
+  min-height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--text-dim);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.segmented button[aria-pressed='true'] {
+  background: var(--surface-strong);
+  color: var(--text);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

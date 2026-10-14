@@ -2,16 +2,5 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "cd .. && npm ci",
   "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "framework": "vite",
-  "rewrites": [
-    { "source": "/api/:path*", "destination": "https://blackjackwithfriends-backend.vercel.app/api/:path*" },
-    { "source": "/((?!api/)[^.]*)", "destination": "/index.html" }
-  ],
-  "headers": [
-    {
-      "source": "/(sw.js|registerSW.js|manifest.webmanifest)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
-    }
-  ]
+  "framework": "nextjs"
 }

@@ -1,64 +1,60 @@
+'use client'
+
+import { Trans, useTranslation } from 'react-i18next'
+import { ShareIcon } from '@/ui/icons'
+import styles from './InstallBanner.module.css'
 import { useInstallPrompt } from './useInstallPrompt'
-import './InstallBanner.css'
 
-function ShareIcon() {
-  return (
-    <svg className="install-inline-icon" viewBox="0 0 24 24" aria-label="Compartir" role="img">
-      <path
-        d="M12 3v12M7.5 7.5 12 3l4.5 4.5M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
+/** Floats above the tab bar until the app is installed or dismissed. Client-only (reads navigator). */
 export function InstallBanner() {
+  const { t } = useTranslation()
   const { platform, installed, dismissed, canPromptInstall, install, dismiss } = useInstallPrompt()
 
   if (installed || dismissed) return null
   // On desktop we only show the banner when the browser can install directly.
   if (platform === 'other' && !canPromptInstall) return null
 
+  const components = {
+    b: <strong />,
+    share: <ShareIcon className={styles.inlineIcon} role="img" aria-label={t('install.share')} />,
+  }
+
   return (
-    <aside className="install-banner" role="dialog" aria-labelledby="install-title">
-      <button className="install-close" onClick={dismiss} aria-label="Cerrar">
+    <aside className={styles.banner} role="dialog" aria-labelledby="install-title">
+      <button className={styles.close} onClick={dismiss} aria-label={t('install.close')}>
         ×
       </button>
-      <img className="install-icon" src="/pwa-192x192.png" alt="" width={48} height={48} />
-      <div className="install-body">
-        <h2 id="install-title">Instala Blackjack with Friends</h2>
+      {/* eslint-disable-next-line @next/next/no-img-element -- static PWA icon */}
+      <img className={styles.icon} src="/pwa-192x192.png" alt="" width={48} height={48} />
+      <div className={styles.body}>
+        <h2 id="install-title">{t('install.title')}</h2>
 
         {canPromptInstall ? (
           <>
-            <p>Juega a pantalla completa y ábrela desde tu pantalla de inicio.</p>
-            <button className="install-button" onClick={install}>
-              Instalar app
+            <p>{t('install.text')}</p>
+            <button className={`btn btn-primary ${styles.button}`} onClick={install}>
+              {t('install.button')}
             </button>
           </>
         ) : platform === 'ios' ? (
           <ol>
             <li>
-              Toca el botón <strong>Compartir</strong> <ShareIcon /> (si no lo ves, está en el menú{' '}
-              <strong>•••</strong>).
+              <Trans i18nKey="install.ios1" components={components} />
             </li>
             <li>
-              Elige <strong>Añadir a pantalla de inicio</strong>.
+              <Trans i18nKey="install.ios2" components={components} />
             </li>
             <li>
-              Pulsa <strong>Añadir</strong>.
+              <Trans i18nKey="install.ios3" components={components} />
             </li>
           </ol>
         ) : (
           <ol>
             <li>
-              Abre el menú <strong>⋮</strong> del navegador.
+              <Trans i18nKey="install.android1" components={components} />
             </li>
             <li>
-              Elige <strong>Instalar app</strong> o <strong>Añadir a pantalla de inicio</strong>.
+              <Trans i18nKey="install.android2" components={components} />
             </li>
           </ol>
         )}

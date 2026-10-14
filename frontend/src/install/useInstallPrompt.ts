@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useEffect, useState } from 'react'
 
 // Chrome/Edge/Samsung Internet fire this event when the app is installable.

@@ -1,0 +1,73 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import type { Metadata, Viewport } from 'next'
+import { Manrope } from 'next/font/google'
+import type { ReactNode } from 'react'
+import './globals.css'
+import { Providers } from './providers'
+
+const manrope = Manrope({ subsets: ['latin'], variable: '--font-sans', display: 'swap' })
+
+// iOS 27.2 ignores manifest icons and only fetches apple-touch-icon lazily, so
+// an installed PWA ends up with the letter fallback. Inlining the 180x180 PNG
+// as a data: URI makes the icon part of the HTML itself (read at build time).
+const appleTouchIcon = `data:image/png;base64,${readFileSync(
+  join(process.cwd(), 'public/apple-touch-icon-180x180.png'),
+).toString('base64')}`
+
+const siteUrl =
+  process.env.VERCEL_PROJECT_PRODUCTION_URL !== undefined
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : 'http://localhost:5173'
+
+const title = 'Blackjack with Friends'
+const description = 'Tu liga semanal de blackjack con amigos. Juega cada día, sube en el ranking y gana la semana.'
+
+export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+  title,
+  description,
+  applicationName: title,
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: [
+      { url: '/favicon.ico?v=4', sizes: '48x48' },
+      { url: '/icon.svg?v=4', type: 'image/svg+xml' },
+    ],
+    apple: [{ url: appleTouchIcon, sizes: '180x180', type: 'image/png' }],
+  },
+  appleWebApp: { capable: true, title: 'Blackjack', statusBarStyle: 'black-translucent' },
+  formatDetection: { telephone: false },
+  openGraph: {
+    type: 'website',
+    siteName: title,
+    title,
+    description,
+    locale: 'es_ES',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: title }],
+  },
+  twitter: { card: 'summary_large_image', title, description, images: ['/og-image.png'] },
+  // Next only emits mobile-web-app-capable; older iOS still wants the apple- one.
+  other: { 'apple-mobile-web-app-capable': 'yes' },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#0a0c0f',
+  colorScheme: 'dark',
+  width: 'device-width',
+  initialScale: 1,
+  // No zoom in the app (pinch and double tap); see also NoZoom and globals.css.
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+}
+
+export default function RootLayout({ children }: { children: ReactNode }) {
+  return (
+    <html lang="es" className={manrope.variable} suppressHydrationWarning>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
+    </html>
+  )
+}
