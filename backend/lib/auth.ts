@@ -18,8 +18,9 @@ function createAuth() {
     trustedOrigins: [appUrl, 'http://localhost:5173', 'http://localhost:4173'],
     database: drizzleAdapter(db(), { provider: 'pg', schema: authSchema }),
     session: {
-      // Players stay signed in; the session renews while they keep using the app.
-      expiresIn: 60 * 60 * 24 * 60,
+      // Players stay signed in until they sign out themselves: 400 days is the most
+      // browsers allow for a cookie, and every day of use pushes the expiry forward again.
+      expiresIn: 60 * 60 * 24 * 400,
       updateAge: 60 * 60 * 24,
       cookieCache: { enabled: true, maxAge: 5 * 60 },
     },
