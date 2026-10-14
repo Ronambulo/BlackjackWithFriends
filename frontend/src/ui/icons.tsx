@@ -115,15 +115,6 @@ export function ShareIcon(props: IconProps) {
   )
 }
 
-export function MailIcon(props: IconProps) {
-  return (
-    <Icon {...props}>
-      <rect x="3" y="5" width="18" height="14" rx="2" />
-      <path d="m3 7 9 6 9-6" />
-    </Icon>
-  )
-}
-
 export function PlusIcon(props: IconProps) {
   return (
     <Icon {...props}>
