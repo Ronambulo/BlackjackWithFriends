@@ -7,7 +7,7 @@
     "skipLibCheck": true,
     "strict": true,
 
-    /* Vercel compiles each function itself; tsc only type-checks. */
+    /* `npm run build` compiles to dist/ with tsconfig.build.json; this one only type-checks. */
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,
@@ -18,5 +18,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["api", "lib", "routes", "dev-server.ts", "drizzle.config.ts"]
+  "include": ["api", "lib", "routes", "server.ts", "drizzle.config.ts"]
 }
