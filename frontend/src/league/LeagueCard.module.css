@@ -1,79 +1,86 @@
 .card {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  background:
-    radial-gradient(ellipse 120% 90% at 100% 0%, rgb(20 131 76 / 0.35), transparent 60%),
-    var(--surface);
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 24px;
+  background: var(--felt-card);
 }
 
 .top {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
 
 .label {
-  color: var(--text-dim);
-  font-size: 0.85rem;
-  font-weight: 700;
+  color: #b9dcc7;
+}
+
+.balance {
+  margin-top: 6px;
+  font-family: var(--font-felt), Georgia, serif;
+  font-size: 2.9rem;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .up,
 .down {
-  font-size: 0.85rem;
-  font-weight: 800;
+  margin-top: 8px;
+  font-size: 0.875rem;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
 .up {
-  color: var(--success);
+  color: #8ff0b0;
 }
 
 .down {
-  color: var(--danger);
-}
-
-.balance {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 2.3rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-}
-
-/* A casino chip, like the active tab's */
-.chip {
-  flex: none;
-  width: 26px;
-  height: 26px;
-  box-sizing: border-box;
-  border: 3px dashed #fff3cf;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent);
-}
-
-.meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px 12px;
-  font-size: 0.9rem;
+  color: #ffb3b3;
 }
 
 .position {
-  display: inline-flex;
+  flex: none;
+  text-align: right;
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+
+.position .up,
+.position .down {
+  margin-top: 4px;
+  font-size: 0.8rem;
+}
+
+.of {
+  color: #b9dcc7;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.countdown {
+  display: flex;
   align-items: center;
   gap: 8px;
+  color: #d6ecdf;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.claim {
+  min-height: 52px;
+  font-size: 1rem;
   font-weight: 800;
 }
 
 .claimed {
+  color: #d6ecdf;
   font-size: 0.85rem;
   text-align: center;
 }

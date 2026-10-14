@@ -138,3 +138,79 @@ export function SplitIcon(props: IconProps) {
     </Icon>
   )
 }
+
+export function CheckIcon(props: IconProps) {
+  return (
+    <Icon strokeWidth="2.6" {...props}>
+      <path d="m5 12 5 5 9-10" />
+    </Icon>
+  )
+}
+
+export function ChevronRightIcon(props: IconProps) {
+  return (
+    <Icon strokeWidth="2.2" {...props}>
+      <path d="m9 6 6 6-6 6" />
+    </Icon>
+  )
+}
+
+export function SlidersIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
+      <circle cx="16" cy="7" r="2" />
+      <circle cx="10" cy="17" r="2" />
+    </Icon>
+  )
+}
+
+export function TimerIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="13" r="8" />
+      <path d="M12 9v4l2.5 2M9 2h6" />
+    </Icon>
+  )
+}
+
+export function CloseIcon(props: IconProps) {
+  return (
+    <Icon strokeWidth="2.4" {...props}>
+      <path d="M6 6l12 12M18 6 6 18" />
+    </Icon>
+  )
+}
+
+export function RenewIcon(props: IconProps) {
+  return (
+    <Icon strokeWidth="2.2" {...props}>
+      <path d="M20 11a8 8 0 0 0-14.5-4.5L4 8M4 4v4h4M4 13a8 8 0 0 0 14.5 4.5L20 16M20 20v-4h-4" />
+    </Icon>
+  )
+}
+
+export function LeaveIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M9 16l-4-4 4-4M5 12h11" />
+    </Icon>
+  )
+}
+
+export function CoinsIcon(props: IconProps) {
+  return (
+    <Icon strokeWidth="2.2" {...props}>
+      <ellipse cx="12" cy="7" rx="7" ry="3" />
+      <path d="M5 7v5c0 1.7 3.1 3 7 3s7-1.3 7-3V7M5 12v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5" />
+    </Icon>
+  )
+}
+
+export function CrownIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 28 22" width="28" height="22" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M2 6l6 6 6-10 6 10 6-6-2 16H4z" />
+    </svg>
+  )
+}

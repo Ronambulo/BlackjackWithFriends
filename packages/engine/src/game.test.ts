@@ -150,8 +150,26 @@ describe('double', () => {
     expect(s.settlement).toMatchObject({ totalWagered: 200, totalPayout: 400, net: 200 })
   })
 
-  it('can bust', () => {
-    const s = play(startRound(100, shoe('10', '9', '6', '7', 'K')), 'double')
+  it('can lose', () => {
+    // 5,4 = 9 doubles onto a 2 (11) against the dealer's 10,8.
+    const s = play(startRound(100, shoe('5', '10', '4', '8', '2')), 'double')
+    expect(outcomes(s)).toEqual(['lose'])
+    expect(s.settlement?.net).toBe(-200)
+  })
+
+  it('is only allowed on 9, 10 or 11', () => {
+    expect(legalActions(startRound(10, shoe('5', '9', '4', '7')))).toContain('double') // 9
+    expect(legalActions(startRound(10, shoe('6', '9', '4', '7')))).toContain('double') // 10
+    expect(legalActions(startRound(10, shoe('4', '9', '4', '7')))).not.toContain('double') // 8
+    expect(legalActions(startRound(10, shoe('10', '9', '2', '7')))).not.toContain('double') // 12
+    expect(legalActions(startRound(10, shoe('A', '9', '8', '7')))).not.toContain('double') // soft 19
+    const s = startRound(10, shoe('10', '9', '6', '7'))
+    expect(() => applyAction(s, 'double')).toThrow(IllegalActionError)
+  })
+
+  it('is allowed on any two cards when doubleOn is null', () => {
+    const anyDouble: Rules = { ...DEFAULT_RULES, doubleOn: null }
+    const s = play(startRound(100, shoe('10', '9', '6', '7', 'K'), anyDouble), 'double')
     expect(outcomes(s)).toEqual(['bust'])
     expect(s.settlement?.net).toBe(-200)
   })

@@ -9,7 +9,9 @@ export function RankChange({ change }: { change: number }) {
   const count = Math.abs(change)
   return (
     <span className={up ? styles.rankUp : styles.rankDown} aria-label={t(up ? 'ranking.up' : 'ranking.down', { count })}>
-      {up ? '▲' : '▼'}
+      <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor" aria-hidden="true">
+        <path d={up ? 'M12 5 21 19H3z' : 'M12 19 3 5h18z'} />
+      </svg>
       {count}
     </span>
   )

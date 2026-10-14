@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, type FormEvent } from 'react'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { useUser } from '@/auth/session-context'
 import {
   GROUP_NAME_MAX,
@@ -16,8 +16,11 @@ import {
   useRenewCode,
   useUpdateGroup,
   type Group,
+  type RankedMember,
 } from '@/groups/useGroups'
-import { ChevronLeftIcon, ShareIcon } from '@/ui/icons'
+import { Avatar } from '@/ui/Avatar'
+import { ConfirmSheet, SheetIcon } from '@/ui/ConfirmSheet'
+import { ChevronLeftIcon, LeaveIcon, RenewIcon, ShareIcon } from '@/ui/icons'
 import styles from '../pages.module.css'
 
 function inviteLink(code: string) {
@@ -27,14 +30,15 @@ function inviteLink(code: string) {
 function InviteCard({ group }: { group: Group }) {
   const { t } = useTranslation()
   const renew = useRenewCode()
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState<'code' | 'link' | null>(null)
+  const [confirmRenew, setConfirmRenew] = useState(false)
   const admin = group.rol === 'admin'
 
-  async function onCopy() {
+  async function copy(text: string, what: 'code' | 'link') {
     try {
-      await navigator.clipboard.writeText(group.codigo)
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 2000)
+      await navigator.clipboard.writeText(text)
+      setCopied(what)
+      window.setTimeout(() => setCopied(null), 2000)
     } catch {
       // No clipboard access: the code can still be selected by hand.
     }
@@ -42,47 +46,60 @@ function InviteCard({ group }: { group: Group }) {
 
   async function onShare() {
     const text = t('groupSettings.shareText', { name: group.nombre, code: group.codigo })
+    const url = inviteLink(group.codigo)
+    // The share sheet on phones; on computers without one, the link goes to the clipboard.
+    if (!('share' in navigator)) return copy(`${text}\n${url}`, 'link')
     try {
-      await navigator.share({ text, url: inviteLink(group.codigo) })
+      await navigator.share({ text, url })
     } catch {
       // Cancelled by the player.
     }
   }
 
-  const canShare = typeof navigator !== 'undefined' && 'share' in navigator
   return (
-    <section className={`card ${styles.section}`}>
-      <h2 className="card-title">{t('groupSettings.invite')}</h2>
-      <p className="muted">{t('groupSettings.inviteText')}</p>
+    <section className={styles.invite}>
+      <h2 className={`label ${styles.inviteLabel}`}>{t('groupSettings.invite')}</h2>
+      <p className={styles.inviteText}>{t('groupSettings.inviteText')}</p>
       <p className={styles.code}>{group.codigo}</p>
-      <div className={styles.actions}>
-        <button className="btn btn-secondary" type="button" onClick={() => void onCopy()}>
-          {copied ? t('groupSettings.copied') : t('groupSettings.copy')}
+      <button className="btn btn-primary" type="button" onClick={() => void onShare()}>
+        <ShareIcon width={18} height={18} />
+        {copied === 'link' ? t('groupSettings.linkCopied') : t('groupSettings.share')}
+      </button>
+      <div className={styles.inviteRow}>
+        <button className={`btn ${styles.inviteSecondary}`} type="button" onClick={() => void copy(group.codigo, 'code')}>
+          {copied === 'code' ? t('groupSettings.copied') : t('groupSettings.copy')}
         </button>
-        {canShare && (
-          <button className="btn btn-primary" type="button" onClick={() => void onShare()}>
-            <ShareIcon width={18} height={18} />
-            {t('groupSettings.share')}
+        {admin && (
+          <button
+            className={`btn ${styles.inviteOutline}`}
+            type="button"
+            disabled={renew.isPending}
+            onClick={() => setConfirmRenew(true)}
+          >
+            {t('groupSettings.renew')}
           </button>
         )}
       </div>
-      {admin && (
-        <button
-          className="btn btn-ghost"
-          type="button"
-          disabled={renew.isPending}
-          onClick={() => {
-            if (window.confirm(t('groupSettings.renewConfirm'))) renew.mutate(group.id)
-          }}
-        >
-          {t('groupSettings.renew')}
-        </button>
-      )}
       {renew.isError && (
         <p className="error-text" role="alert">
           {t('common.error')}
         </p>
       )}
+      <ConfirmSheet
+        open={confirmRenew}
+        tone="accent"
+        icon={
+          <SheetIcon tone="accent">
+            <RenewIcon />
+          </SheetIcon>
+        }
+        title={t('groupSettings.renewTitle')}
+        text={<Trans i18nKey="groupSettings.renewText" values={{ code: group.codigo }} components={{ b: <b className={styles.inlineCode} /> }} />}
+        confirm={t('groupSettings.renewConfirm')}
+        busy={renew.isPending}
+        onCancel={() => setConfirmRenew(false)}
+        onConfirm={() => renew.mutate(group.id, { onSettled: () => setConfirmRenew(false) })}
+      />
     </section>
   )
 }
@@ -102,9 +119,10 @@ function AdminCard({ group }: { group: Group }) {
     if (valid && changed) rename.mutate({ id: group.id, nombre: trimmed })
   }
 
+  const hidden = group.ajustes.ocultarRanking
   return (
     <section className={`card ${styles.section}`}>
-      <h2 className="card-title">{t('settings.group')}</h2>
+      <h2 className="label">{t('groupSettings.section')}</h2>
       <form className={styles.form} onSubmit={onRename}>
         <label className="field">
           <span className="field-label">{t('groupSettings.name')}</span>
@@ -125,15 +143,21 @@ function AdminCard({ group }: { group: Group }) {
         </label>
         {rename.isSuccess && <p className="success-text">{t('common.saved')}</p>}
       </form>
-      <label className={styles.check}>
-        <input
-          type="checkbox"
-          checked={group.ajustes.ocultarRanking}
+      <div className={styles.switchRow}>
+        <span className={styles.listText} id="hide-ranking">
+          {t('groupSettings.hideRanking')}
+          <small>{t('groupSettings.hideRankingHint')}</small>
+        </span>
+        <button
+          className="switch"
+          type="button"
+          role="switch"
+          aria-checked={hidden}
+          aria-labelledby="hide-ranking"
           disabled={toggle.isPending}
-          onChange={(e) => toggle.mutate({ id: group.id, ocultarRanking: e.target.checked })}
+          onClick={() => toggle.mutate({ id: group.id, ocultarRanking: !hidden })}
         />
-        <span>{t('groupSettings.hideRanking')}</span>
-      </label>
+      </div>
       {(rename.isError || toggle.isError) && (
         <p className="error-text" role="alert">
           {t('common.error')}
@@ -147,41 +171,50 @@ function MembersCard({ group }: { group: Group }) {
   const { t } = useTranslation()
   const me = useUser()
   const kick = useKickMember()
+  const [kicking, setKicking] = useState<RankedMember | null>(null)
   const admin = group.rol === 'admin'
   return (
-    <section className={`card ${styles.section}`}>
-      <h2 className="card-title">
+    <section className={styles.group}>
+      <h2 className="label">
         {t('groupSettings.members')} · {group.ranking.length}
       </h2>
-      <ul className={styles.members}>
+      <ul className={styles.list}>
         {group.ranking.map((member) => (
-          <li key={member.userId} className={styles.member}>
-            <span className={styles.memberName}>
-              {member.userId === me.id ? `${member.nombre} · ${t('ranking.you')}` : member.nombre}
-              {member.rol === 'admin' && <span className={styles.badge}>{t('groupSettings.admin')}</span>}
+          <li key={member.userId} className={styles.listRow}>
+            <Avatar seed={member.userId} name={member.nombre} size={40} />
+            <span className={styles.listText}>
+              <span>
+                {member.nombre}
+                {member.userId === me.id && <span className="muted"> · {t('ranking.you').toLowerCase()}</span>}
+              </span>
             </span>
+            {member.rol === 'admin' && <span className={styles.badge}>{t('groupSettings.admin')}</span>}
             {admin && member.userId !== me.id && (
-              <button
-                className="btn btn-ghost"
-                type="button"
-                disabled={kick.isPending}
-                onClick={() => {
-                  if (window.confirm(t('groupSettings.kickConfirm', { name: member.nombre })))
-                    kick.mutate({ id: group.id, userId: member.userId })
-                }}
-              >
+              <button className={styles.smallButton} type="button" disabled={kick.isPending} onClick={() => setKicking(member)}>
                 {t('groupSettings.kick')}
               </button>
             )}
           </li>
         ))}
       </ul>
-      {!admin && <p className="muted">{t('groupSettings.onlyAdmin')}</p>}
+      {!admin && <p className={`muted ${styles.hint}`}>{t('groupSettings.onlyAdmin')}</p>}
       {kick.isError && (
         <p className="error-text" role="alert">
           {t('common.error')}
         </p>
       )}
+      <ConfirmSheet
+        open={kicking !== null}
+        icon={kicking && <Avatar seed={kicking.userId} name={kicking.nombre} size={64} />}
+        title={t('groupSettings.kickTitle', { name: kicking?.nombre ?? '' })}
+        text={t('groupSettings.kickText')}
+        confirm={t('groupSettings.kick')}
+        busy={kick.isPending}
+        onCancel={() => setKicking(null)}
+        onConfirm={() => {
+          if (kicking) kick.mutate({ id: group.id, userId: kicking.userId }, { onSettled: () => setKicking(null) })
+        }}
+      />
     </section>
   )
 }
@@ -193,6 +226,7 @@ export default function GroupSettingsPage() {
   const current = useCurrentGroup()
   const { data: group, isError, refetch } = useGroup(current?.id)
   const leave = useLeaveGroup()
+  const [confirmLeave, setConfirmLeave] = useState(false)
 
   // Without groups there's nothing to set up.
   useEffect(() => {
@@ -201,11 +235,20 @@ export default function GroupSettingsPage() {
 
   return (
     <div className={styles.page}>
-      <Link href="/ranking" className={styles.back}>
-        <ChevronLeftIcon width={20} height={20} />
-        {t('common.back')}
-      </Link>
-      <h1 className={styles.heading}>{group?.nombre ?? t('groupSettings.title')}</h1>
+      <div className={styles.titleRow}>
+        <Link href="/ranking" className={styles.backButton} aria-label={t('common.back')}>
+          <ChevronLeftIcon width={22} height={22} />
+        </Link>
+        <div className={styles.who}>
+          <h1 className={styles.title}>{group?.nombre ?? t('groupSettings.title')}</h1>
+          {group && (
+            <p className="muted">
+              {t('groupSettings.memberCount', { count: group.ranking.length })}
+              {group.rol === 'admin' && ` · ${t('groupSettings.youAdmin')}`}
+            </p>
+          )}
+        </div>
+      </div>
 
       {isError && (
         <section className="card">
@@ -222,14 +265,7 @@ export default function GroupSettingsPage() {
           {/* Keyed so a rename elsewhere, or another group, starts the form afresh. */}
           {group.rol === 'admin' && <AdminCard key={`${group.id}:${group.nombre}`} group={group} />}
           <MembersCard group={group} />
-          <button
-            className="btn btn-danger btn-block"
-            disabled={leave.isPending}
-            onClick={() => {
-              if (!window.confirm(t('groupSettings.leaveConfirm', { name: group.nombre }))) return
-              leave.mutate(group.id, { onSuccess: () => router.push('/') })
-            }}
-          >
+          <button className="btn btn-danger btn-block" disabled={leave.isPending} onClick={() => setConfirmLeave(true)}>
             {t('groupSettings.leave')}
           </button>
           {leave.isError && (
@@ -237,6 +273,26 @@ export default function GroupSettingsPage() {
               {t('common.error')}
             </p>
           )}
+          <ConfirmSheet
+            open={confirmLeave}
+            stacked
+            icon={
+              <SheetIcon tone="danger">
+                <LeaveIcon />
+              </SheetIcon>
+            }
+            title={t('groupSettings.leaveTitle', { name: group.nombre })}
+            text={t('groupSettings.leaveText')}
+            confirm={t('groupSettings.leave')}
+            busy={leave.isPending}
+            onCancel={() => setConfirmLeave(false)}
+            onConfirm={() =>
+              leave.mutate(group.id, {
+                onSuccess: () => router.push('/'),
+                onSettled: () => setConfirmLeave(false),
+              })
+            }
+          />
         </>
       )}
     </div>
