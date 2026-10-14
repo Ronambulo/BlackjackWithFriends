@@ -31,8 +31,16 @@ export default defineConfig(({ mode }) => {
           // instead of being answered with the cached app shell.
           navigateFallbackDenylist: [/^\/api\//, /^\/i\//],
         },
-        includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png', 'icon.svg'],
+        includeAssets: [
+          'favicon.ico',
+          'icon.svg',
+          'apple-touch-icon-180x180.png',
+          // iOS also requests these default paths, whatever the <link> says.
+          'apple-touch-icon.png',
+          'apple-touch-icon-precomposed.png',
+        ],
         manifest: {
+          id: '/',
           name: 'Blackjack with Friends',
           short_name: 'Blackjack',
           description: 'Juega al blackjack con tus amigos',
@@ -44,9 +52,9 @@ export default defineConfig(({ mode }) => {
           background_color: '#0b6b3a',
           theme_color: '#0b6b3a',
           icons: [
-            { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
-            { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-            { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+            { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png', purpose: 'any' },
+            { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+            { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
             {
               src: 'maskable-icon-512x512.png',
               sizes: '512x512',
