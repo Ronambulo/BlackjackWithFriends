@@ -52,11 +52,13 @@ export default defineConfig(({ mode }) => {
           background_color: '#0b6b3a',
           theme_color: '#0b6b3a',
           icons: [
-            { src: 'pwa-64x64.png?v=3', sizes: '64x64', type: 'image/png', purpose: 'any' },
-            { src: 'pwa-192x192.png?v=3', sizes: '192x192', type: 'image/png', purpose: 'any' },
-            { src: 'pwa-512x512.png?v=3', sizes: '512x512', type: 'image/png', purpose: 'any' },
+            // iOS 17.4+ takes the home screen icon from the manifest and shows a
+            // letter if none fits, so list only opaque PNGs, Apple's 180px included.
+            { src: 'apple-touch-icon-180x180.png?v=4', sizes: '180x180', type: 'image/png', purpose: 'any' },
+            { src: 'pwa-192x192.png?v=4', sizes: '192x192', type: 'image/png', purpose: 'any' },
+            { src: 'pwa-512x512.png?v=4', sizes: '512x512', type: 'image/png', purpose: 'any' },
             {
-              src: 'maskable-icon-512x512.png?v=3',
+              src: 'maskable-icon-512x512.png?v=4',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',
