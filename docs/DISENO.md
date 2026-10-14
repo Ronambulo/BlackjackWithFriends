@@ -124,7 +124,7 @@ flowchart LR
 | Idiomas | i18next (es + en) | Desde el día 1 |
 | Backend (API) | Vercel Functions en Node/TypeScript, en la carpeta `backend/` | La lógica de juego y las vistas previas, en un proyecto de Vercel aparte |
 | Base de datos y servicios | Supabase: Postgres, Auth (solo email), Realtime, Storage y pg_cron | Todo en uno, gratis para cientos de usuarios |
-| Hosting | Dos proyectos de Vercel: el frontend (p. ej. `blackjackwithfriends.vercel.app`) y el backend (`blackjackwithfriends-api.vercel.app`) | HTTPS gratis (necesario para la PWA). El frontend reenvía `/api` al backend, así que no hay CORS |
+| Hosting | Dos proyectos de Vercel: el frontend (`blackjack-con-amigos.vercel.app`) y el backend (`blackjackwithfriends-backend.vercel.app`) | HTTPS gratis (necesario para la PWA). El frontend reenvía `/api` al backend, así que no hay CORS |
 | Vistas previas de enlaces | Vercel Functions + `@vercel/og` | Generan el HTML con metadatos y la imagen de cada invitación |
 | Códigos QR | Librería `qrcode`, generada en el navegador | Sin servidor y funciona sin conexión |
 | Push | Web Push con claves VAPID desde el backend | En iPhone solo funciona con la app instalada (iOS 16.4+) |

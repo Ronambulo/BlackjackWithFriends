@@ -27,10 +27,10 @@ npm run dev
 
 ## Despliegue en Vercel (dos proyectos del mismo repo)
 
-1. **Backend:** Add New → Project → este repo → *Root Directory* `backend`, nombre `blackjackwithfriends-api`.
+1. **Backend:** Add New → Project → este repo → *Root Directory* `backend`, nombre `blackjackwithfriends-backend`.
    Environment Variables: `SUPABASE_URL` y `SUPABASE_SECRET_KEY` (la clave secreta de Supabase, pégala solo ahí).
 2. **Frontend:** otro proyecto con el mismo repo → *Root Directory* `frontend` (preset Vite).
    Environment Variables: `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`.
-3. Si el backend no quedó en `blackjackwithfriends-api.vercel.app`, cambia esa URL en `frontend/vercel.json`.
+3. Si el backend no quedó en `blackjackwithfriends-backend.vercel.app`, cambia esa URL en `frontend/vercel.json`.
 
 Cada push a `main` despliega los dos proyectos.
