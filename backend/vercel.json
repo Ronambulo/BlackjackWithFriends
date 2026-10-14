@@ -1,13 +1,22 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "cd .. && npm ci",
+  "buildCommand": "npm run build",
+  "outputDirectory": "public",
   "functions": {
-    "api/**/*.ts": { "maxDuration": 10 }
+    "api/**/*.ts": {
+      "maxDuration": 10
+    }
   },
   "headers": [
     {
       "source": "/api/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
     }
   ]
 }
