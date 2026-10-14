@@ -138,14 +138,21 @@
 
 /* ---------- Felt mode (/jugar) ---------- */
 
+/*
+  iOS 27 blurs the top of an installed PWA unless something is painted at the very
+  top. 11px is the height reported to work; clipping the background to (no) text
+  keeps the strip invisible, so it never shows over the top bar.
+*/
 .statusTint {
   position: fixed;
   top: 0;
   left: 0;
   z-index: 100;
   width: 100%;
-  height: 1px;
+  height: 11px;
   background-color: var(--bg);
+  -webkit-background-clip: text;
+  background-clip: text;
   pointer-events: none;
 }
 
