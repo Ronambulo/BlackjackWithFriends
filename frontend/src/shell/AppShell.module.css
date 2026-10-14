@@ -9,21 +9,30 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  padding-top: calc(var(--topbar-height) + env(safe-area-inset-top));
 }
 
+/*
+  Fixed and opaque from the very top of the screen: iOS 27 blurs the top edge of a
+  standalone app unless a fixed element with a solid colour sits there, and the
+  blur would cover (and swallow taps on) the group and coin buttons.
+*/
 .topbar {
-  flex: none;
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
   z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: calc(10px + env(safe-area-inset-top)) calc(var(--page-x) + env(safe-area-inset-right)) 10px
+  box-sizing: border-box;
+  height: calc(var(--topbar-height) + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) calc(var(--page-x) + env(safe-area-inset-right)) 0
     calc(var(--page-x) + env(safe-area-inset-left));
   border-bottom: 1px solid var(--border);
-  background: rgb(10 12 15 / 0.7);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
+  background: var(--bg);
 }
 
 .group {
@@ -78,10 +87,13 @@
   z-index: 30;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  height: calc(var(--tabbar-height) + env(safe-area-inset-bottom));
-  padding: 0 calc(6px + env(safe-area-inset-right)) env(safe-area-inset-bottom) calc(6px + env(safe-area-inset-left));
+  height: calc(var(--tabbar-height) + max(4px, env(safe-area-inset-bottom) - 18px));
+  /* The home indicator only needs part of the bottom inset; the full inset left a tall empty strip */
+  padding: 0 calc(6px + env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom) - 18px)
+    calc(6px + env(safe-area-inset-left));
   border-top: 1px solid rgb(184 137 47 / 0.25);
   background: #140d09;
+  --icon-cutout: #140d09;
 }
 
 .tab {
@@ -138,7 +150,7 @@
 }
 
 .felted .statusTint {
-  background-color: #0c5a34;
+  background-color: #0b5231;
 }
 
 .felted {
@@ -151,9 +163,8 @@
 
 .felted .topbar {
   border-bottom: 0;
-  background: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  background: #0b5231;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
 }
 
 .felted .group,

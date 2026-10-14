@@ -22,6 +22,7 @@
   --radius-sm: 12px;
   --blur: blur(18px) saturate(140%);
   --tabbar-height: 64px;
+  --topbar-height: 60px;
   --page-x: 16px;
 
   font-family: var(--font-sans), system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
