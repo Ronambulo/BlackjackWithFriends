@@ -8,6 +8,12 @@
       "port": 5173
     },
     {
+      "name": "web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "-w", "@bwf/frontend"],
+      "port": 5173
+    },
+    {
       "name": "api",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "-w", "@bwf/backend"],

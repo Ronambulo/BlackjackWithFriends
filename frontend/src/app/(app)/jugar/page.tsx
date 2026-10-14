@@ -1,10 +1,7 @@
 'use client'
 
-import { useTranslation } from 'react-i18next'
-import { EmptyState } from '@/ui/EmptyState'
-import { CardsIcon } from '@/ui/icons'
+import { Table } from '@/table/Table'
 
 export default function Page() {
-  const { t } = useTranslation()
-  return <EmptyState icon={<CardsIcon />} title={t('play.title')} text={t('play.empty')} />
+  return <Table />
 }
