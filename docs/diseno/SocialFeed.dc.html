@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Social · Feed</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Fraunces:ital,opsz,wght@1,9..144,600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0a0c0f}
+a{color:#f2c14e}a:hover{color:#ffd877}
+.tab{display:flex;flex-direction:column;align-items:center;gap:4px;width:64px;min-height:44px;font-size:11px;font-weight:600;color:#8a929c;text-decoration:none}
+.av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:15px;color:#0a0c0f;flex:none;position:relative}
+.ev{display:flex;gap:12px;padding:16px;border-radius:20px;background:#14171b;border:1px solid rgba(255,255,255,.07)}
+.badge{position:absolute;right:-4px;bottom:-4px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;box-shadow:0 0 0 3px #14171b}
+.rx{display:inline-flex;align-items:center;gap:5px;min-height:32px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:transparent;color:#d1d5db;font:inherit;font-size:13px;font-weight:700}
+.seg{flex:1;min-height:40px;border:0;border-radius:10px;background:transparent;color:#9ba3ad;font:inherit;font-weight:700;font-size:15px}
+</style>
+</helmet>
+<div style="width: 390px; height: 1040px; display: flex; flex-direction: column; background: #0a0c0f; color: #f2f3f5; font-family: Manrope, system-ui, sans-serif">
+
+  <header style="display: flex; align-items: center; justify-content: space-between; padding: 54px 16px 12px">
+    <button type="button" style="display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,.1); background: #14171b; color: #f2f3f5; font: inherit; font-weight: 700; font-size: 15px">
+      Los del Curro
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+    </button>
+    <div style="display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border-radius: 999px; background: #14171b; border: 1px solid rgba(255,255,255,.1); font-weight: 800; font-size: 15px" aria-label="240 monedas">
+      <span style="width: 16px; height: 16px; border-radius: 50%; background: #f2c14e; box-shadow: inset 0 0 0 3px #c99a2e" aria-hidden="true"></span>
+      240
+    </div>
+  </header>
+
+  <main style="flex: 1; display: flex; flex-direction: column; gap: 12px; padding: 6px 16px 20px">
+    <div role="tablist" aria-label="Social" style="display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: #14171b; margin-bottom: 4px">
+      <a href="SocialFeed.dc.html" role="tab" aria-selected="true" class="seg" style="background: #262b31; color: #f2f3f5; display: grid; place-items: center; text-decoration: none">Feed</a>
+      <a href="SocialChat.dc.html" role="tab" aria-selected="false" class="seg" style="display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none">Chat <span style="min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: #f2c14e; color: #1a1406; font-size: 12px; font-weight: 800; display: grid; place-items: center">3</span></a>
+    </div>
+
+    <p class="label" style="margin: 6px 0 0; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #9ba3ad">Hoy</p>
+
+    <article class="ev">
+      <span class="av" style="background: #c4b5fd">L<span class="badge" style="background: #f2c14e"><svg width="11" height="11" viewBox="0 0 24 24" fill="#1a1406" aria-hidden="true"><path d="M12 2 15 9l7 .8-5.3 4.8L18.2 22 12 18.3 5.8 22l1.5-7.4L2 9.8 9 9z"></path></svg></span></span>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+        <p style="margin: 0; font-size: 15px; line-height: 1.45"><b>Luis</b> ganó <b style="color: #f2c14e">4.000</b> con un blackjack</p>
+        <span style="font-size: 12px; color: #9ba3ad; margin-top: -6px">Hace 12 min</span>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap">
+          <button type="button" class="rx" aria-pressed="true" style="border-color: rgba(242,193,78,.6); background: rgba(242,193,78,.12); color: #f2c14e">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 1.5-4.5 3-6 0 2 1 3 2 3 0-3 1-6 1-9z"></path></svg>4
+          </button>
+          <button type="button" class="rx">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 11V7a1.5 1.5 0 0 1 3 0v3M10 10V5a1.5 1.5 0 0 1 3 0v5M13 10V6a1.5 1.5 0 0 1 3 0v6M16 9a1.5 1.5 0 0 1 3 0v4a8 8 0 0 1-8 8 6 6 0 0 1-5-3l-2.5-4a1.5 1.5 0 0 1 2.5-1.6L7 14"></path></svg>2
+          </button>
+          <button type="button" class="rx" aria-label="Añadir reacción" style="padding: 0 9px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="12" r="8"></circle><path d="M8 14s1 2 3 2 3-2 3-2M8.5 9.5h.01M13.5 9.5h.01M19 3v4M17 5h4"></path></svg>
+          </button>
+        </div>
+      </div>
+    </article>
+
+    <article class="ev">
+      <span class="av" style="background: #f2c14e">A<span class="badge" style="background: #4ade80"><svg width="11" height="11" viewBox="0 0 24 24" fill="#0a0c0f" aria-hidden="true"><path d="M12 4 21 18H3z"></path></svg></span></span>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+        <p style="margin: 0; font-size: 15px; line-height: 1.45"><b>Ana</b> te ha adelantado y es <b>1ª</b> del grupo</p>
+        <span style="font-size: 12px; color: #9ba3ad; margin-top: -6px">Hace 35 min</span>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap">
+          <button type="button" class="rx">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8 14s1.5 3 4 3 4-3 4-3M9 9.5h.01M15 9.5h.01"></path></svg>3
+          </button>
+          <button type="button" class="rx" aria-label="Añadir reacción" style="padding: 0 9px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="12" r="8"></circle><path d="M8 14s1 2 3 2 3-2 3-2M8.5 9.5h.01M13.5 9.5h.01M19 3v4M17 5h4"></path></svg>
+          </button>
+        </div>
+      </div>
+    </article>
+
+    <article class="ev">
+      <span class="av" style="background: #fda4af">P<span class="badge" style="background: #ff6b6b"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#0a0c0f" stroke-width="3.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></span></span>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+        <p style="margin: 0; font-size: 15px; line-height: 1.45"><b>Pablo</b> lo ha apostado todo y se ha quedado a cero</p>
+        <span style="font-size: 12px; color: #9ba3ad; margin-top: -6px">Hace 40 min</span>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap">
+          <button type="button" class="rx">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a8 8 0 0 0-5 14v3h10v-3a8 8 0 0 0-5-14z"></path><path d="M9 12h.01M15 12h.01M10 20v-2M14 20v-2"></path></svg>5
+          </button>
+          <button type="button" class="rx">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8 14s1.5 3 4 3 4-3 4-3M9 9.5h.01M15 9.5h.01"></path></svg>2
+          </button>
+          <button type="button" class="rx" aria-label="Añadir reacción" style="padding: 0 9px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="12" r="8"></circle><path d="M8 14s1 2 3 2 3-2 3-2M8.5 9.5h.01M13.5 9.5h.01M19 3v4M17 5h4"></path></svg>
+          </button>
+        </div>
+      </div>
+    </article>
+
+    <article class="ev">
+      <span class="av" style="background: #fdba74">C<span class="badge" style="background: #7dd3fc"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#0a0c0f" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"></path></svg></span></span>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 4px">
+        <p style="margin: 0; font-size: 15px; line-height: 1.45"><b>Carlos</b> completó el reto «Gana 3 manos seguidas»</p>
+        <span style="font-size: 12px; color: #9ba3ad">Hace 1 h</span>
+      </div>
+    </article>
+
+    <p style="margin: 6px 0 0; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #9ba3ad">Ayer</p>
+
+    <article class="ev" style="background: #0f5c35; border-color: rgba(255,255,255,.08)">
+      <span style="width: 40px; height: 50px; border-radius: 7px; background: #7a1f2b; border: 2px solid #f2f3f5; display: grid; place-items: center; flex: none; font-family: Fraunces, Georgia, serif; font-style: italic; font-weight: 600; font-size: 16px" aria-hidden="true">41</span>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 4px">
+        <p style="margin: 0; font-size: 15px; line-height: 1.45"><b>Baraja del día #41</b>: ganó Ana con +2.300. Tú quedaste 3º.</p>
+        <a href="#" style="font-size: 13px; font-weight: 700; text-decoration: none">Ver clasificación</a>
+      </div>
+    </article>
+  </main>
+
+  <nav aria-label="Pestañas" style="display: flex; justify-content: space-around; align-items: flex-end; padding: 8px 8px 28px; background: #0d1013; border-top: 1px solid rgba(255,255,255,.07)">
+    <a href="Main.dc.html" class="tab">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg>
+      Inicio
+    </a>
+    <a href="Ranking.dc.html" class="tab">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21V9h6v12M3 21v-7h6M15 21v-5h6v5M2 21h20"></path></svg>
+      Ranking
+    </a>
+    <a href="#" class="tab" style="color: #f2f3f5">
+      <span aria-hidden="true" style="width: 52px; height: 52px; margin-top: -22px; border-radius: 50%; background: repeating-conic-gradient(from 7.5deg, #16181c 0 30deg, {{accent}} 30deg 45deg); display: grid; place-items: center; box-shadow: 0 0 0 6px #0a0c0f, 0 8px 18px rgba(0,0,0,.55)">
+        <span style="width: 38px; height: 38px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #2a2e35, #16181c 70%); border: 2px dashed {{accent}}; box-sizing: border-box; display: grid; place-items: center; color: #f2f3f5; font-weight: 800; font-size: 16px; letter-spacing: -.02em"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="3" width="12" height="16" rx="2"></rect><path d="M5.5 6.6 4 7.2a1 1 0 0 0-.6 1.3l3.7 10.6a1 1 0 0 0 1.3.6l3.4-1.2"></path></svg></span>
+      </span>
+      Jugar
+    </a>
+    <a href="SocialFeed.dc.html" class="tab" style="color: {{accent}}" aria-current="page">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"></path></svg>
+      Social
+    </a>
+    <a href="Perfil.dc.html" class="tab">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg>
+      Perfil
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#f2c14e","options":["#f2c14e","#4ade80","#7dd3fc","#fb923c"]},"$preview":{"width":390,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#f2c14e' };
+  }
+}
+</script>
+</body>
+</html>

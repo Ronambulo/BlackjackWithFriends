@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Tapete — apuesta</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,600&amp;family=Manrope:wght@500;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#f2c14e}a:hover{color:#ffd978}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; position: relative; overflow: hidden; font-family: Manrope, system-ui, sans-serif; color: #f4f1e8; background-color: #0c5a34; background-image: radial-gradient(ellipse 90% 60% at 50% 38%, #14834c 0%, #0c5a34 60%, #073a22 100%)">
+
+  <!-- Top bar -->
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 16px 0">
+    <button type="button" style="display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border: 0; border-radius: 999px; background: rgba(0,0,0,0.28); color: #f4f1e8; font: 700 14px Manrope, sans-serif">
+      Sin grupo
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+    </button>
+    <div style="display: flex; align-items: center; gap: 8px">
+      <div style="display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 999px; background: rgba(0,0,0,0.28); font-weight: 800; font-size: 15px; font-variant-numeric: tabular-nums">
+        <span style="width: 14px; height: 14px; border-radius: 50%; border: 3px dashed #fff; background: #1b9a59; box-sizing: border-box"></span>
+        450
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 999px; background: rgba(0,0,0,0.28); font-weight: 800; font-size: 15px">
+        <span style="width: 14px; height: 14px; border-radius: 50%; background: #f2c14e; box-shadow: inset 0 0 0 2px #c99a2e"></span>
+        0
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty felt: printed rules + bet spot -->
+  <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px">
+    <svg width="390" height="150" viewBox="0 0 390 150" aria-hidden="true" style="display: block">
+      <path id="arcB" d="M30 30 Q195 130 360 30" fill="none"></path>
+      <path d="M18 50 Q195 154 372 50" fill="none" stroke="rgba(242,193,78,0.35)" stroke-width="1.5"></path>
+      <text font-family="Fraunces, serif" font-style="italic" font-weight="600" font-size="22" fill="rgba(242,193,78,0.8)" letter-spacing="1">
+        <textPath href="#arcB" startOffset="50%" text-anchor="middle">Blackjack paga 3 a 2</textPath>
+      </text>
+      <text x="195" y="128" text-anchor="middle" font-family="Manrope, sans-serif" font-weight="700" font-size="10" fill="rgba(244,241,232,0.38)" letter-spacing="2.5">LA BANCA SE PLANTA EN 17 · SEGURO PAGA 2 A 1</text>
+    </svg>
+    <div style="margin-top: 40px; width: 112px; height: 112px; border-radius: 50%; border: 2px dashed rgba(242,193,78,0.6); display: flex; align-items: center; justify-content: center">
+      <div style="width: 66px; height: 66px; box-sizing: border-box; border-radius: 50%; border: 6px dashed #fff; background: #d23f4c; box-shadow: 0 -4px 0 #a52f3a, 0 -8px 0 #3a73d8, 0 -12px 0 #2a59ad, 0 -16px 0 #3a73d8; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; color: #fff; transform: translateY(8px)">60</div>
+    </div>
+    <div style="margin-top: 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; color: rgba(244,241,232,0.55)">TU APUESTA · MÍNIMO 10</div>
+  </div>
+
+  <!-- Rail: chips + deal + tabs -->
+  <div style="background: #1c130d; border-top: 3px solid #b8892f; box-shadow: 0 -10px 30px rgba(0,0,0,0.45)">
+    <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; padding: 16px 14px 10px">
+      <button type="button" aria-label="Ficha de 10" style="width: 56px; height: 56px; margin: 0 auto; box-sizing: border-box; border-radius: 50%; border: 5px dashed #fff; background: #3a73d8; color: #fff; font: 800 14px Manrope, sans-serif; box-shadow: 0 4px 0 #1e4a92">10</button>
+      <button type="button" aria-label="Ficha de 50" style="width: 56px; height: 56px; margin: 0 auto; box-sizing: border-box; border-radius: 50%; border: 5px dashed #fff; background: #d23f4c; color: #fff; font: 800 14px Manrope, sans-serif; box-shadow: 0 4px 0 #8f2731">50</button>
+      <button type="button" aria-label="Ficha de 100" style="width: 56px; height: 56px; margin: 0 auto; box-sizing: border-box; border-radius: 50%; border: 5px dashed #fff; background: #1b9a59; color: #fff; font: 800 14px Manrope, sans-serif; box-shadow: 0 4px 0 #11693c">100</button>
+      <button type="button" aria-label="Ficha de 500" style="width: 56px; height: 56px; margin: 0 auto; box-sizing: border-box; border-radius: 50%; border: 5px dashed #fff; background: #7b47c9; color: #fff; font: 800 14px Manrope, sans-serif; box-shadow: 0 4px 0 #522d8c">500</button>
+      <button type="button" aria-label="Ficha de 1000" disabled style="width: 56px; height: 56px; margin: 0 auto; box-sizing: border-box; border-radius: 50%; border: 5px dashed rgba(255,255,255,0.3); background: #2a1e16; color: rgba(242,193,78,0.4); font: 800 14px Manrope, sans-serif">1K</button>
+    </div>
+    <div style="display: flex; gap: 10px; padding: 6px 14px 14px">
+      <button type="button" style="flex: 1; height: 50px; border: 0; border-radius: 14px; background: #3a2a1f; color: #f4f1e8; font: 700 14px Manrope, sans-serif; box-shadow: inset 0 0 0 2px #6b5240">Borrar</button>
+      <button type="button" style="flex: 1; height: 50px; border: 0; border-radius: 14px; background: #3a2a1f; color: #f4f1e8; font: 700 14px Manrope, sans-serif; box-shadow: inset 0 0 0 2px #6b5240">x2</button>
+      <button type="button" style="flex: 2; height: 50px; border: 0; border-radius: 14px; background: #f2c14e; color: #1a1406; font: 800 16px Manrope, sans-serif; box-shadow: 0 4px 0 #a9822b">Repartir</button>
+    </div>
+
+    <!-- Tabs -->
+    <nav aria-label="Principal" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 8px 6px 22px; border-top: 1px solid rgba(184,137,47,0.25); background: #140d09">
+      <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 44px; justify-content: center; text-decoration: none; color: rgba(244,241,232,0.5); font-size: 11px; font-weight: 700">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg>
+        Inicio
+      </a>
+      <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 44px; justify-content: center; text-decoration: none; color: rgba(244,241,232,0.5); font-size: 11px; font-weight: 700">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"></path></svg>
+        Ranking
+      </a>
+      <a href="#" aria-current="page" style="display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 44px; justify-content: center; text-decoration: none; color: #f2c14e; font-size: 11px; font-weight: 800">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="11" height="15" rx="2"></rect><path d="m9 3.5 9.5 1.5a2 2 0 0 1 1.7 2.3l-2 12"></path></svg>
+        Jugar
+        <span style="width: 18px; height: 3px; border-radius: 2px; background: #f2c14e"></span>
+      </a>
+      <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 44px; justify-content: center; text-decoration: none; color: rgba(244,241,232,0.5); font-size: 11px; font-weight: 700">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"></path></svg>
+        Social
+      </a>
+      <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 44px; justify-content: center; text-decoration: none; color: rgba(244,241,232,0.5); font-size: 11px; font-weight: 700">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
+        Perfil
+      </a>
+    </nav>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

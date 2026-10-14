@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ajustes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Fraunces:ital,opsz,wght@1,9..144,600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0a0c0f}
+.tab{display:flex;flex-direction:column;align-items:center;gap:4px;width:64px;min-height:44px;font-size:11px;font-weight:600;color:#8a929c;text-decoration:none}
+.card{border-radius:20px;background:#14171b;border:1px solid rgba(255,255,255,.07);overflow:hidden}
+.label{margin:0 0 8px 4px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9ba3ad}
+.row{display:flex;align-items:center;gap:12px;min-height:56px;padding:0 16px;color:#f2f3f5;text-decoration:none;font-size:15px;font-weight:600;border-bottom:1px solid rgba(255,255,255,.07)}
+.row:last-child{border-bottom:0}
+.row small{display:block;font-size:13px;font-weight:500;color:#9ba3ad;margin-top:2px}
+.val{font-size:14px;color:#9ba3ad;font-weight:600}
+.sw{width:48px;height:28px;border-radius:999px;background:#2a2f36;position:relative;flex:none;border:0;padding:0}
+.sw::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#f2f3f5}
+.sw[aria-checked="true"]::after{left:23px;background:#1a1406}
+.chev{flex:none}
+.seg{flex:1;min-height:36px;border:0;border-radius:9px;background:transparent;color:#9ba3ad;font:inherit;font-weight:700;font-size:14px}
+</style>
+</helmet>
+<div style="width: 390px; height: 1240px; display: flex; flex-direction: column; background: #0a0c0f; color: #f2f3f5; font-family: Manrope, system-ui, sans-serif">
+
+  <header style="display: flex; align-items: center; gap: 8px; padding: 54px 16px 8px">
+    <a href="Perfil.dc.html" aria-label="Volver al perfil" style="width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: #f2f3f5; margin-left: -10px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"></path></svg>
+    </a>
+    <h1 style="margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -.02em">Ajustes</h1>
+  </header>
+
+  <main style="flex: 1; display: flex; flex-direction: column; gap: 22px; padding: 12px 16px 20px">
+    <section>
+      <h2 class="label">Cuenta</h2>
+      <div class="card">
+        <a href="#" class="row">
+          <span style="width: 40px; height: 40px; border-radius: 50%; background: #7dd3fc; color: #0a0c0f; display: grid; place-items: center; font-weight: 800; flex: none">M</span>
+          <span style="flex: 1">Marta<small>@marta</small></span>
+          <span class="val">Editar</span>
+        </a>
+        <a href="#" class="row">
+          <span style="flex: 1">Cambiar contraseña</span>
+          <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
+        </a>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="label">Partida</h2>
+      <div class="card">
+        <div class="row">
+          <span style="flex: 1">Sonido</span>
+          <button type="button" role="switch" aria-checked="true" aria-label="Sonido" class="sw" style="background: {{accent}}"></button>
+        </div>
+        <div class="row">
+          <span style="flex: 1">Vibración</span>
+          <button type="button" role="switch" aria-checked="true" aria-label="Vibración" class="sw" style="background: {{accent}}"></button>
+        </div>
+        <div class="row">
+          <span style="flex: 1">Pedir confirmación al doblar<small>Evita doblar sin querer</small></span>
+          <button type="button" role="switch" aria-checked="false" aria-label="Pedir confirmación al doblar" class="sw"></button>
+        </div>
+        <div class="row" style="flex-direction: column; align-items: stretch; gap: 10px; padding: 14px 16px">
+          <span>Velocidad del crupier</span>
+          <div role="radiogroup" aria-label="Velocidad del crupier" style="display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: #0d1013">
+            <button type="button" role="radio" aria-checked="false" class="seg">Tranquila</button>
+            <button type="button" role="radio" aria-checked="true" class="seg" style="background: #262b31; color: #f2f3f5">Normal</button>
+            <button type="button" role="radio" aria-checked="false" class="seg">Rápida</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="label">Avisos</h2>
+      <div class="card">
+        <div class="row">
+          <span style="flex: 1">Paga diaria lista</span>
+          <button type="button" role="switch" aria-checked="true" aria-label="Paga diaria lista" class="sw" style="background: {{accent}}"></button>
+        </div>
+        <div class="row">
+          <span style="flex: 1">Me adelantan en el ranking</span>
+          <button type="button" role="switch" aria-checked="true" aria-label="Me adelantan en el ranking" class="sw" style="background: {{accent}}"></button>
+        </div>
+        <div class="row">
+          <span style="flex: 1">Mensajes del chat</span>
+          <button type="button" role="switch" aria-checked="false" aria-label="Mensajes del chat" class="sw"></button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="label">General</h2>
+      <div class="card">
+        <a href="#" class="row">
+          <span style="flex: 1">Idioma</span>
+          <span class="val">Español</span>
+          <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
+        </a>
+        <a href="#" class="row">
+          <span style="flex: 1">Ajustes del grupo<small>Los del Curro · invitar, miembros</small></span>
+          <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
+        </a>
+        <a href="#" class="row">
+          <span style="flex: 1">Cómo se juega</span>
+          <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
+        </a>
+      </div>
+    </section>
+
+    <button type="button" style="min-height: 52px; border-radius: 16px; border: 1px solid rgba(255,107,107,.35); background: transparent; color: #ff8a8a; font: inherit; font-weight: 700; font-size: 15px">Cerrar sesión</button>
+    <p style="margin: -8px 0 0; text-align: center; font-size: 12px; color: #6b7280">Blackjack with Friends · versión a20464d</p>
+  </main>
+
+  <nav aria-label="Pestañas" style="display: flex; justify-content: space-around; align-items: flex-end; padding: 8px 8px 28px; background: #0d1013; border-top: 1px solid rgba(255,255,255,.07)">
+    <a href="Main.dc.html" class="tab">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg>
+      Inicio
+    </a>
+    <a href="Ranking.dc.html" class="tab">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21V9h6v12M3 21v-7h6M15 21v-5h6v5M2 21h20"></path></svg>
+      Ranking
+    </a>
+    <a href="#" class="tab" style="color: #f2f3f5">
+      <span aria-hidden="true" style="width: 52px; height: 52px; margin-top: -22px; border-radius: 50%; background: repeating-conic-gradient(from 7.5deg, #16181c 0 30deg, {{accent}} 30deg 45deg); display: grid; place-items: center; box-shadow: 0 0 0 6px #0a0c0f, 0 8px 18px rgba(0,0,0,.55)">
+        <span style="width: 38px; height: 38px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #2a2e35, #16181c 70%); border: 2px dashed {{accent}}; box-sizing: border-box; display: grid; place-items: center; color: #f2f3f5; font-weight: 800; font-size: 16px; letter-spacing: -.02em"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="3" width="12" height="16" rx="2"></rect><path d="M5.5 6.6 4 7.2a1 1 0 0 0-.6 1.3l3.7 10.6a1 1 0 0 0 1.3.6l3.4-1.2"></path></svg></span>
+      </span>
+      Jugar
+    </a>
+    <a href="SocialFeed.dc.html" class="tab">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"></path></svg>
+      Social
+    </a>
+    <a href="Perfil.dc.html" class="tab" style="color: {{accent}}" aria-current="page">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg>
+      Perfil
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#f2c14e","options":["#f2c14e","#4ade80","#7dd3fc","#fb923c"]},"$preview":{"width":390,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#f2c14e' };
+  }
+}
+</script>
+</body>
+</html>

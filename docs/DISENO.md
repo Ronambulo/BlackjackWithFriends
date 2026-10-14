@@ -22,7 +22,7 @@ Una **liga semanal de blackjack entre amigos**. Cada jugador juega **solo contra
 | Para qué | Apostar y competir en la liga | Comprar cosméticos en la tienda |
 | Ámbito | Por usuario (uno solo, común a todos sus grupos) | Por usuario (global) |
 | Duración | Se reinician cada semana | Permanentes |
-| Cómo se ganan | Paga diaria, ganar manos, retos diarios | Quedar en el podio semanal, logros |
+| Cómo se ganan | Paga diaria, ganar manos | Quedar en el podio semanal, retos diarios, logros |
 
 Separarlas es clave: gastar en la tienda **nunca** te baja en el ranking.
 
@@ -64,7 +64,7 @@ Separarlas es clave: gastar en la tienda **nunca** te baja en el ranking.
 - Hasta que acabas tus 10 manos no ves las de los demás, para que nadie te haga spoiler.
 
 ### Retos y logros
-- **Retos diarios**: 3 al día, iguales para todos los jugadores (p. ej. "gana 3 manos seguidas", "haz un split ganador", "gana con 5 cartas"). Cada uno da 🔧 **+200 fichas**.
+- **Retos diarios**: 3 al día, iguales para todos los jugadores (p. ej. "gana 3 manos seguidas", "haz un split ganador", "gana con 5 cartas"). Cada uno da 🪙 **monedas** (no fichas) para gastar en estilos: son un logro personal, así que no cuentan para la liga ni mueven el ranking. La cantidad se ajusta en la beta.
 - **Logros** permanentes con insignia en el perfil y algunos con cosmético o monedas de premio (p. ej. "Primer blackjack", "Gana una semana", "10 semanas en el podio", "Sobrevive con 1 ficha").
 
 ---
@@ -526,7 +526,7 @@ Cada fase termina con algo usable y desplegado.
 | 5 | Ciclo semanal | Cierre automático, ceremonia, estadísticas, trofeos y monedas |
 | 6 | Social | Feed, reacciones y chat |
 | 7 | Notificaciones push | Suscripción, preferencias y envíos |
-| 8 | Retos y logros | Retos diarios y logros con insignias |
+| 8 | Retos y logros | Retos diarios y logros con insignias; lo que se gana con ellos son monedas para estilos, nunca fichas |
 | 9 | Baraja del día | Semilla diaria, 10 manos, clasificación y compartir (con su vista previa `/r/…`) |
 | 10 | Estilos y tienda | Sistema de temas para la mesa, colección, tienda y selector |
 | 11 | Juice y pulido | Sonidos, más animaciones, vibración, accesibilidad y rendimiento |
@@ -547,6 +547,7 @@ Para empezar a probar con amigos de verdad bastan las fases 1–5 (incluida la 4
 | Baraja del día | 10 manos con apuesta fija; el 1º del día gana +500 fichas en la liga |
 | Saldo | Uno por jugador, común a todos sus grupos; los grupos son clasificaciones |
 | Premios en monedas | 100 / 60 / 30 para el podio, 10 por haber jugado; solo cuenta tu mejor puesto y el grupo necesita al menos 2 personas que hayan jugado |
+| Premio de los retos diarios | Monedas para estilos, no fichas: los retos son personales y no deben dar ventaja en la liga |
 | Nombre | Blackjack with Friends |
 | Dominio | El del servidor casero (ZimaOS), con HTTPS por proxy inverso o túnel |
 | Invitaciones | Enlace con vista previa enriquecida + código QR |
