@@ -3,10 +3,11 @@
 import Link from 'next/link'
 import { useTranslation } from 'react-i18next'
 import { useUser } from '@/auth/session-context'
-import { Ranking } from '@/groups/Ranking'
+import { TopList } from '@/groups/Ranking'
 import { useCurrentGroup, useGroups } from '@/groups/useGroups'
 import { LeagueCard } from '@/league/LeagueCard'
 import { useProfile } from '@/profile/useProfile'
+import { ShareIcon } from '@/ui/icons'
 import styles from './pages.module.css'
 
 export default function HomePage() {
@@ -18,7 +19,7 @@ export default function HomePage() {
   const mine = group?.top.find((member) => member.userId === me.id)
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${styles.tight}`}>
       <h1 className={styles.heading}>{t('home.greeting', { name: profile?.nombre ?? '' })}</h1>
 
       <LeagueCard group={group} dayChange={mine?.dayChange} />
@@ -46,15 +47,16 @@ export default function HomePage() {
       ) : group ? (
         <section className={`card ${styles.section}`}>
           <div className={styles.headerRow}>
-            <h2 className="card-title">{group.nombre}</h2>
+            <h2 className="card-title">{t('home.top')}</h2>
             <span className={styles.live}>{t('ranking.live')}</span>
           </div>
-          <Ranking members={group.top} />
-          <div className={styles.actions}>
+          <TopList members={group.top} />
+          <div className={`${styles.actions} ${styles.cardActions}`}>
             <Link className="btn btn-secondary" href="/ranking">
               {t('home.seeRanking')}
             </Link>
-            <Link className="btn btn-ghost" href="/grupo">
+            <Link className="btn btn-outline" href="/grupo">
+              <ShareIcon width={16} height={16} />
               {t('home.invite')}
             </Link>
           </div>

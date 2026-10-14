@@ -34,8 +34,12 @@
   height: calc(var(--topbar-height) + env(safe-area-inset-top));
   padding: env(safe-area-inset-top) calc(var(--page-x) + env(safe-area-inset-right)) 0
     calc(var(--page-x) + env(safe-area-inset-left));
-  border-bottom: 1px solid var(--border);
   background: var(--bg);
+}
+
+/* With the group menu open the top bar goes over the tabs, so its backdrop dims them too */
+.topbar:has([aria-expanded='true']) {
+  z-index: 40;
 }
 
 .group {
@@ -43,35 +47,46 @@
   align-items: center;
   gap: 6px;
   max-width: 100%;
-  min-height: 36px;
+  min-height: 40px;
   padding: 0 14px;
-  border: 1px solid var(--border);
+  border: 1px solid rgb(255 255 255 / 0.1);
   border-radius: 999px;
-  background: var(--surface);
-  color: var(--text-dim);
+  background: var(--layer-1);
+  color: var(--text);
+  font-size: 0.95rem;
   font-weight: 700;
+  cursor: pointer;
+}
+
+.group[aria-expanded='true'] {
+  border-color: var(--accent);
+  background: var(--layer-2);
+}
+
+.group[aria-expanded='true'] svg {
+  transform: rotate(180deg);
 }
 
 .coins {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 36px;
-  padding: 0 14px 0 10px;
-  border: 1px solid rgb(242 193 78 / 0.3);
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgb(255 255 255 / 0.1);
   border-radius: 999px;
-  background: rgb(242 193 78 / 0.1);
-  color: var(--accent);
+  background: var(--layer-1);
+  font-size: 0.95rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 
 .coin {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #ffe08a, var(--accent) 55%, #b8872a);
-  box-shadow: inset 0 0 0 2px rgb(0 0 0 / 0.15);
+  background: var(--accent);
+  box-shadow: inset 0 0 0 3px #c99a2e;
 }
 
 /* The only part that scrolls; the padding keeps the column 560px wide at most */
@@ -95,9 +110,9 @@
   /* The home indicator only needs part of the bottom inset; the full inset left a tall empty strip */
   padding: 0 calc(6px + env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom) - 18px)
     calc(6px + env(safe-area-inset-left));
-  border-top: 1px solid rgb(184 137 47 / 0.25);
-  background: #140d09;
-  --icon-cutout: #140d09;
+  border-top: 1px solid rgb(255 255 255 / 0.07);
+  background: var(--nav-bg);
+  --icon-cutout: var(--nav-bg);
 }
 
 .tab {
@@ -107,15 +122,15 @@
   justify-content: center;
   gap: 4px;
   height: var(--tabbar-height);
-  color: rgb(244 241 232 / 0.5);
+  color: #8a929c;
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: 600;
   transition: color 0.15s ease;
 }
 
 .tab[aria-current='page'] {
   color: var(--accent);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .tabIcon {
@@ -128,16 +143,45 @@
   height: 22px;
 }
 
-/* Gold underline under the current tab */
-.tab::after {
-  content: '';
-  width: 18px;
-  height: 3px;
-  border-radius: 2px;
+/* A casino chip sticking out of the bar, ringed in the page colour */
+.chipTab {
+  justify-content: flex-end;
+  padding-bottom: 8px;
+  color: var(--text);
 }
 
-.tab[aria-current='page']::after {
-  background: var(--accent);
+.chip {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-top: -22px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 7.5deg, #16181c 0 30deg, var(--accent) 30deg 45deg);
+  box-shadow:
+    0 0 0 6px var(--bg),
+    0 8px 18px rgb(0 0 0 / 0.55);
+  transition: transform 0.15s ease;
+}
+
+.chipFace {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 2px dashed var(--accent);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #2a2e35, #16181c 70%);
+  --icon-cutout: #1d2025;
+}
+
+.chipFace svg {
+  width: 20px;
+  height: 20px;
+}
+
+.chipTab:active .chip {
+  transform: scale(0.94);
 }
 
 /* ---------- Felt mode (/jugar) ---------- */

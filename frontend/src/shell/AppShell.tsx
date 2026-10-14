@@ -61,11 +61,26 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
       <nav className={styles.tabbar} aria-label="Menú">
         {TABS.map(({ href, key, Icon }) => {
           const active = isActive(href, pathname)
+          // Play is the raised casino chip in the middle.
+          const chip = href === '/jugar'
           return (
-            <Link key={href} href={href} className={styles.tab} aria-current={active ? 'page' : undefined}>
-              <span className={styles.tabIcon}>
-                <Icon />
-              </span>
+            <Link
+              key={href}
+              href={href}
+              className={`${styles.tab} ${chip ? styles.chipTab : ''}`}
+              aria-current={active ? 'page' : undefined}
+            >
+              {chip ? (
+                <span className={styles.chip}>
+                  <span className={styles.chipFace}>
+                    <Icon />
+                  </span>
+                </span>
+              ) : (
+                <span className={styles.tabIcon}>
+                  <Icon />
+                </span>
+              )}
               <span className={styles.tabLabel}>{t(`tabs.${key}`)}</span>
             </Link>
           )

@@ -6,17 +6,15 @@
   bottom: calc(var(--tabbar-height) + 12px + max(4px, env(safe-area-inset-bottom) - 18px));
   z-index: 50;
   display: flex;
-  gap: 12px;
+  gap: 14px;
   align-items: flex-start;
   max-width: 480px;
   margin: 0 auto;
-  padding: 16px 40px 16px 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: rgb(22 25 30 / 0.85);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
-  box-shadow: 0 16px 40px rgb(0 0 0 / 0.5);
+  padding: 18px 44px 18px 18px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 22px;
+  background: var(--layer-2);
+  box-shadow: 0 18px 44px rgb(0 0 0 / 0.55);
   animation: slide-up 0.3s ease-out;
 }
 
@@ -29,24 +27,59 @@
 
 .icon {
   flex-shrink: 0;
-  border-radius: 12px;
+  border-radius: 14px;
+  background: #0f5c35;
+}
+
+.body {
+  min-width: 0;
 }
 
 .body h2 {
   margin-bottom: 6px;
   font-size: 1rem;
+  font-weight: 800;
 }
 
 .body p,
 .body ol {
   margin: 0;
-  color: var(--text-dim);
+  color: #b6bdc6;
   font-size: 0.9rem;
   line-height: 1.45;
 }
 
+/* Numbered circles instead of list markers */
 .body ol {
-  padding-left: 1.2em;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.body li {
+  position: relative;
+  padding-left: 30px;
+  counter-increment: step;
+}
+
+.body li::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--layer-3);
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 800;
+  content: counter(step);
 }
 
 .body strong {
@@ -62,19 +95,20 @@
 
 .button {
   min-height: 40px;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .close {
   position: absolute;
-  top: 6px;
-  right: 8px;
-  width: 32px;
-  height: 32px;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
   border: 0;
-  background: none;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.07);
   color: var(--text-dim);
-  font-size: 1.5rem;
-  line-height: 1;
   cursor: pointer;
 }

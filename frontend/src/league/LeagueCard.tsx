@@ -1,10 +1,10 @@
 'use client'
 
 import { useTranslation } from 'react-i18next'
-import { RankChange } from '@/groups/RankChange'
 import type { GroupSummary } from '@/groups/useGroups'
 import { currentLanguage } from '@/i18n'
 import { formatNumber } from '@/lib/format'
+import { CoinsIcon, TimerIcon } from '@/ui/icons'
 import { useCountdown } from './useCountdown'
 import { useClaimPay, useLeague } from './useLeague'
 import styles from './LeagueCard.module.css'
@@ -30,35 +30,47 @@ export function LeagueCard({ group, dayChange }: { group?: GroupSummary; dayChan
   }
 
   return (
-    <section className={`card ${styles.card}`} aria-busy={!league}>
+    <section className={styles.card} aria-busy={!league}>
       <div className={styles.top}>
-        <span className={styles.label}>{t('league.balance')}</span>
-        {dayChange !== undefined && dayChange !== 0 && (
-          <span className={dayChange > 0 ? styles.up : styles.down}>
-            {t('league.today', { change: `${dayChange > 0 ? '+' : '−'}${fmt(Math.abs(dayChange))}` })}
-          </span>
-        )}
-      </div>
-      <p className={styles.balance}>
-        <span className={styles.chip} aria-hidden="true" />
-        {league ? fmt(league.balance) : '—'}
-      </p>
-      <div className={styles.meta}>
+        <div>
+          <p className={`label ${styles.label}`}>{t('league.balance')}</p>
+          <p className={styles.balance}>{league ? fmt(league.balance) : '—'}</p>
+          {dayChange !== undefined && dayChange !== 0 && (
+            <p className={dayChange > 0 ? styles.up : styles.down}>
+              {t('league.today', { change: `${dayChange > 0 ? '+' : '−'}${fmt(Math.abs(dayChange))}` })}
+            </p>
+          )}
+        </div>
         {group && (
-          <span className={styles.position}>
-            {t('league.position', { rank: group.rank, total: group.members })}
-            <RankChange change={group.rankChange} />
-          </span>
+          <div className={styles.position}>
+            <p aria-label={t('league.position', { rank: group.rank, total: group.members })}>
+              <span aria-hidden="true">
+                {group.rank}º<span className={styles.of}> {t('league.of', { total: group.members })}</span>
+              </span>
+            </p>
+            {group.rankChange !== 0 && (
+              <p className={group.rankChange > 0 ? styles.up : styles.down}>
+                <span aria-hidden="true">{group.rankChange > 0 ? '▲' : '▼'}</span>{' '}
+                {t(group.rankChange > 0 ? 'ranking.up' : 'ranking.down', { count: Math.abs(group.rankChange) })}
+              </p>
+            )}
+          </div>
         )}
-        {countdown && <span className="muted">⏱ {t('league.closesIn', { time: countdown })}</span>}
       </div>
+      {countdown && (
+        <p className={styles.countdown}>
+          <TimerIcon width={16} height={16} />
+          {t('league.weekClosesIn', { time: countdown })}
+        </p>
+      )}
       {league &&
         (league.pendingPay > 0 ? (
-          <button className="btn btn-primary btn-block" disabled={claimPay.isPending} onClick={() => claimPay.mutate()}>
+          <button className={`btn btn-primary btn-block ${styles.claim}`} disabled={claimPay.isPending} onClick={() => claimPay.mutate()}>
+            <CoinsIcon width={20} height={20} />
             {t('league.claim', { amount: fmt(league.pendingPay) })}
           </button>
         ) : (
-          <p className={`muted ${styles.claimed}`}>{t('league.claimed', { amount: fmt(league.dailyPay) })}</p>
+          <p className={styles.claimed}>{t('league.claimed', { amount: fmt(league.dailyPay) })}</p>
         ))}
       {claimPay.isError && (
         <p className="error-text" role="alert">

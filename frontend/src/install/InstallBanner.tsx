@@ -1,7 +1,7 @@
 'use client'
 
 import { Trans, useTranslation } from 'react-i18next'
-import { ShareIcon } from '@/ui/icons'
+import { CloseIcon, ShareIcon } from '@/ui/icons'
 import styles from './InstallBanner.module.css'
 import { useInstallPrompt } from './useInstallPrompt'
 
@@ -22,10 +22,10 @@ export function InstallBanner() {
   return (
     <aside className={styles.banner} role="dialog" aria-labelledby="install-title">
       <button className={styles.close} onClick={dismiss} aria-label={t('install.close')}>
-        ×
+        <CloseIcon width={16} height={16} />
       </button>
       {/* eslint-disable-next-line @next/next/no-img-element -- static PWA icon */}
-      <img className={styles.icon} src="/pwa-192x192.png" alt="" width={48} height={48} />
+      <img className={styles.icon} src="/pwa-192x192.png" alt="" width={52} height={52} />
       <div className={styles.body}>
         <h2 id="install-title">{t('install.title')}</h2>
 
