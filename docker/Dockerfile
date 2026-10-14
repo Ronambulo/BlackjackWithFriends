@@ -6,9 +6,14 @@
 #
 # El repo es un monorepo de workspaces npm con un único lockfile, así que se
 # construye todo junto y luego se copian a la imagen final solo los resultados.
+#
+# Las dos primeras etapas corren siempre en la arquitectura de la máquina que
+# construye (BUILDPLATFORM): su resultado es JavaScript y vale para amd64 y arm64.
+# Así la imagen arm64 no compila Next emulada con QEMU, que es lo que tardaba.
+# better-sqlite3 trae dentro los binarios de todas las plataformas: no compila nada.
 
 # ---- Stage 1: build (motor, frontend standalone y backend compilado) ----
-FROM node:24-bookworm-slim AS build
+FROM --platform=$BUILDPLATFORM node:24-bookworm-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/engine/package.json packages/engine/
@@ -25,18 +30,13 @@ RUN npm run build -w @bwf/engine \
     && npm run build -w @bwf/backend
 
 # ---- Stage 2: dependencias de producción de la API ----
-FROM node:24-bookworm-slim AS backend-deps
-# Por si better-sqlite3 no tiene binario precompilado para la arquitectura.
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 make g++ \
-    && rm -rf /var/lib/apt/lists/*
+FROM --platform=$BUILDPLATFORM node:24-bookworm-slim AS backend-deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/engine/package.json packages/engine/
 COPY frontend/package.json frontend/
 COPY backend/package.json backend/
-RUN npm ci --omit=dev --workspace=@bwf/backend --ignore-scripts \
-    && npm rebuild better-sqlite3
+RUN npm ci --omit=dev --workspace=@bwf/backend --ignore-scripts
 
 # ---- Stage 3: runtime ----
 FROM node:24-bookworm-slim AS runtime
