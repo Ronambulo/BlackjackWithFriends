@@ -6,10 +6,11 @@
 
 Una **liga semanal de blackjack entre amigos**. Cada jugador juega **solo contra la banca**, a su ritmo, cuando quiera. Lo que se comparte es la competición:
 
-- Cada grupo de amigos tiene su **liga**, con su propio saldo de fichas por jugador.
+- Cada jugador tiene **un único saldo de fichas**, el mismo en todos sus grupos. Juegas una sola vez y cuenta para todos.
+- Los **grupos son clasificaciones**: cada grupo de amigos ordena a sus miembros por ese saldo. Puedes estar en varios grupos y en cada uno ocupas el puesto que te toque.
 - Cada día recibes una **paga diaria** de fichas que se suma a tu saldo.
-- El **domingo a medianoche** se cierra la semana: gana quien tenga **más fichas**. Hay ceremonia con podio, premios de broma y trofeo para el ganador.
-- El lunes empieza un **ciclo nuevo**: todos vuelven al saldo inicial y las estadísticas quedan guardadas.
+- El **domingo a medianoche** se cierra la semana: en cada grupo gana quien tenga **más fichas**. Hay ceremonia con podio, premios de broma y trofeo para el ganador.
+- El lunes empieza un **ciclo nuevo** para todos a la vez: todos vuelven al saldo inicial y las estadísticas quedan guardadas.
 - Extras: **Baraja del día** (todo el grupo juega las mismas cartas, estilo Wordle) y **retos y logros**.
 - Lo social: feed de actividad, reacciones, chat de grupo y notificaciones push.
 - Progresión permanente: **monedas** (distintas de las fichas) para desbloquear **estilos** de tapete, cartas, etc.
@@ -19,7 +20,7 @@ Una **liga semanal de blackjack entre amigos**. Cada jugador juega **solo contra
 | | **Fichas** 🟢 | **Monedas** 🪙 |
 |---|---|---|
 | Para qué | Apostar y competir en la liga | Comprar cosméticos en la tienda |
-| Ámbito | Por grupo | Por usuario (global) |
+| Ámbito | Por usuario (uno solo, común a todos sus grupos) | Por usuario (global) |
 | Duración | Se reinician cada semana | Permanentes |
 | Cómo se ganan | Paga diaria, ganar manos, retos diarios | Quedar en el podio semanal, logros |
 
@@ -40,26 +41,30 @@ Separarlas es clave: gastar en la tienda **nunca** te baja en el ranking.
 - Sin límite de tiempo: si cierras la app a mitad de mano, la retomas donde la dejaste.
 
 ### Economía de la liga
+- Todo esto lo fija **el servidor** y es igual para todos: ningún admin de grupo puede cambiar el saldo inicial, la paga ni el reinicio semanal.
 - Saldo inicial cada lunes: **1.000 fichas**.
 - Paga diaria: **+1.000 fichas**, se cobra con un botón (no caduca dentro de la semana: si no entras el martes, el miércoles cobras 2).
 - 🔧 Apuesta mínima **10**. Máxima: **todo tu saldo** (el all-in está permitido).
 - Si te quedas a 0, esperas a la paga del día siguiente.
 - Cierre de semana: **domingo 23:59, hora de Madrid**.
-- **Quien entra a mitad de semana** recibe el saldo inicial más **todas las pagas de los días ya transcurridos** (incluido el de hoy). Empieza con lo mismo que habría tenido alguien que entró el lunes y no jugó.
+- **Quien empieza a jugar a mitad de semana** recibe el saldo inicial más **todas las pagas de los días ya transcurridos** (incluido el de hoy). Empieza con lo mismo que habría tenido alguien que empezó el lunes y no jugó.
+- Unirte a un grupo (o salir de él) no cambia tu saldo: solo apareces o dejas de aparecer en su clasificación.
 
 ### Premios semanales (monedas)
 - 1º: **100** 🪙 + trofeo · 2º: **60** 🪙 · 3º: **30** 🪙 · Haber jugado al menos 1 día: **10** 🪙.
+- **Solo cobras por tu mejor puesto**: si estás en varios grupos, recibes el premio del grupo donde mejor has quedado, no la suma. El de haber jugado se cobra una vez.
+- **Un grupo solo reparte premios si tiene al menos 2 personas** que hayan jugado esa semana 🔧 (que hayan jugado, para que un amigo que nunca entra no cuente). Así no sirve de nada crear grupos vacíos para ser 1º. La ceremonia y los premios de broma se ven igual en cualquier grupo.
 - Premios de broma (solo para presumir, sin monedas): más blackjacks, apuesta más loca, peor racha, más manos jugadas, "rey del seguro"...
 
 ### Baraja del día
-- Todos los jugadores del grupo juegan **las mismas cartas** ese día (misma semilla).
+- Todos los jugadores juegan **las mismas cartas** ese día (una sola semilla para todos), así que tu partida cuenta en todos tus grupos.
 - **10 manos**, saldo virtual de 1.000 aparte de la liga y la misma apuesta fija de 100 por mano, para que solo cuenten las decisiones.
-- Clasificación diaria propia. Premio para el 1º del día: **+500 fichas** en la liga.
+- Clasificación diaria propia en cada grupo. Premio para el 1º del día: **+500 fichas** en tu saldo, como mucho una vez al día aunque seas 1º en varios grupos, y solo en grupos donde hayan jugado la baraja al menos 2 personas.
 - Al terminar, puedes compartir el resultado en el grupo, estilo Wordle: `🃏 Baraja del día #42 · +650 · 🟩🟩🟥🟩⬜🟩🟥🟩🟩🟩`.
 - Hasta que acabas tus 10 manos no ves las de los demás, para que nadie te haga spoiler.
 
 ### Retos y logros
-- **Retos diarios**: 3 al día, iguales para todo el grupo (p. ej. "gana 3 manos seguidas", "haz un split ganador", "gana con 5 cartas"). Cada uno da 🔧 **+200 fichas**.
+- **Retos diarios**: 3 al día, iguales para todos los jugadores (p. ej. "gana 3 manos seguidas", "haz un split ganador", "gana con 5 cartas"). Cada uno da 🔧 **+200 fichas**.
 - **Logros** permanentes con insignia en el perfil y algunos con cosmético o monedas de premio (p. ej. "Primer blackjack", "Gana una semana", "10 semanas en el podio", "Sobrevive con 1 ficha").
 
 ---
@@ -186,8 +191,8 @@ El mazo de cada mano se guarda en el servidor y **nunca se envía al cliente**. 
 | Cuándo | Qué |
 |---|---|
 | Cada hora | Comprueba si en Madrid ya es lunes 00:00 para cerrar las semanas. Se ejecuta cada hora para no depender del cambio de horario. |
-| Cierre de semana | Calcula el podio, los premios de broma, las monedas y los trofeos. Archiva las estadísticas, reinicia los saldos y crea la nueva temporada. |
-| Diario 00:00 Madrid | Genera la semilla de la Baraja del día y los 3 retos diarios de cada grupo. |
+| Cierre de semana | Congela la clasificación de cada grupo, calcula podios y premios de broma, da a cada jugador las monedas de su mejor puesto y los trofeos, archiva las estadísticas, reinicia los saldos y crea la nueva temporada (una para todos). |
+| Diario 00:00 Madrid | Genera la semilla de la Baraja del día y los 3 retos diarios (los mismos para todos). |
 | Domingo 21:00 | Push: "Quedan 3 horas para el cierre de la liga". |
 
 La paga diaria **no** usa cron: se calcula al cobrarla, según los días que han pasado. Es más sencillo y no falla si el cron se retrasa.
@@ -200,20 +205,20 @@ La paga diaria **no** usa cron: se calcula al cobrarla, según los días que han
 erDiagram
   profiles ||--o{ group_members : "pertenece"
   groups ||--o{ group_members : "tiene"
-  groups ||--o{ seasons : "temporadas"
-  seasons ||--o{ season_standings : "clasificación"
+  seasons ||--o{ season_results : "resultado de cada jugador"
+  seasons ||--o{ season_standings : "puesto en cada grupo"
+  groups ||--o{ season_standings : ""
   profiles ||--o{ hands : "juega"
   seasons ||--o{ hands : "en"
   groups ||--o{ feed_events : "actividad"
   feed_events ||--o{ reactions : ""
   groups ||--o{ messages : "chat"
-  groups ||--o{ daily_decks : "baraja del día"
+  profiles ||--o{ daily_deck_runs : "partidas"
   daily_decks ||--o{ daily_deck_runs : "partidas"
   profiles ||--o{ user_achievements : ""
   achievements ||--o{ user_achievements : ""
   profiles ||--o{ user_cosmetics : "colección"
   cosmetics ||--o{ user_cosmetics : ""
-  groups ||--o{ daily_challenges : ""
   profiles ||--o{ push_subscriptions : ""
 
   profiles {
@@ -222,6 +227,8 @@ erDiagram
     text avatar_url
     text idioma
     int monedas
+    bigint saldo "fichas de la liga, una sola para todos los grupos"
+    date ultima_paga
     jsonb estilos_equipados
   }
   groups {
@@ -229,28 +236,31 @@ erDiagram
     text nombre
     uuid admin_id
     text codigo_invitacion
-    jsonb ajustes "paga diaria, saldo inicial..."
+    jsonb ajustes "ocultar ranking en la vista previa..."
   }
   group_members {
     uuid group_id PK
     uuid user_id PK
     text rol "admin | miembro"
-    bigint saldo
-    date ultima_paga
   }
   seasons {
     uuid id PK
-    uuid group_id
     date semana_inicio
     text estado "activa | cerrada"
   }
-  season_standings {
+  season_results {
     uuid season_id PK
     uuid user_id PK
-    int posicion
     bigint saldo_final
     jsonb estadisticas
-    jsonb premios
+    int monedas_ganadas "las de su mejor puesto"
+  }
+  season_standings {
+    uuid season_id PK
+    uuid group_id PK
+    uuid user_id PK
+    int posicion
+    jsonb premios "trofeo y premios de broma de ese grupo"
   }
   hands {
     uuid id PK
@@ -273,6 +283,7 @@ erDiagram
 
 Notas:
 - **Manos**: `ronda` guarda el estado entero del motor (mazo incluido) y nunca sale tal cual del servidor; al cliente solo le llega la vista pública. `version` evita que dos acciones a la vez se apliquen sobre la misma mano, y un índice único impide tener más de una mano abierta por jugador y modo. Mientras no hay grupos, se juega con `profiles.fichas_prueba` (1000 al empezar, recargables al quedarte sin fichas).
+- **Saldo único**: el saldo y la paga viven en `profiles`, no en el grupo. La clasificación de un grupo es una consulta de los saldos de sus miembros; al cerrar la semana se congela en `season_standings`, y `season_results` guarda lo de cada jugador una sola vez (saldo final y monedas de su mejor puesto).
 - **Solo el backend toca la base de datos**: la app nunca se conecta a ella. Cada ruta de la API comprueba la sesión y que eres miembro del grupo, así que solo ves los datos de tus grupos. Los saldos, manos y monedas **solo** los cambia el backend.
 - El campo `cosmetics.origen` deja la puerta abierta a añadir más adelante un origen "compra" sin cambiar nada más. **No hay ninguna huella visible de esto en la app.**
 
@@ -294,12 +305,12 @@ flowchart TD
   D --> E[Elegir nombre y avatar]
   B -- Sí --> F
   E --> F[Unirse al grupo]
-  F --> G[Recibe saldo inicial de la semana]
+  F --> G[Aparece en el ranking con su saldo de siempre]
   G --> H[Aviso de instalar la PWA]
   H --> I[Inicio del grupo]
 ```
 
-Quien llega a mitad de semana empieza con el saldo inicial más las pagas de los días ya transcurridos (ver [Economía de la liga](#economía-de-la-liga)).
+Unirse a un grupo no da ni quita fichas: el saldo es el mismo en todos los grupos. Quien empieza a jugar a mitad de semana arranca con el saldo inicial más las pagas de los días ya transcurridos (ver [Economía de la liga](#economía-de-la-liga)).
 
 ### Bucle diario
 
@@ -421,7 +432,7 @@ Al apostar, se toca sobre fichas de 10 / 50 / 100 / 500 / 1.000. También hay bo
 
 **Ceremonia semanal**: a pantalla completa y en secuencia: redoble → 3º → 2º → 1º con confeti → premios de broma → "has ganado X 🪙" → "¡Nueva semana!".
 
-**Ajustes**: idioma, sonido, vibración, notificaciones (por tipo) y cerrar sesión. Si eres admin, también los ajustes del grupo: paga diaria, saldo inicial, expulsar miembros y renovar el enlace de invitación.
+**Ajustes**: idioma, sonido, vibración, notificaciones (por tipo) y cerrar sesión. Si eres admin, también los ajustes del grupo: expulsar miembros, ocultar el ranking en la vista previa y renovar el enlace de invitación. La paga, el saldo inicial y el reinicio semanal los fija el servidor y no se pueden cambiar por grupo.
 
 ### Cosméticos iniciales (propuesta)
 - **Gratis** (los "pochos"): tapete verde básico, cartas clásicas y dorso rojo.
@@ -435,7 +446,7 @@ Al apostar, se toca sobre fichas de 10 / 50 / 100 / 500 / 1.000. También hay bo
 
 | Función | Detalle |
 |---|---|
-| Grupos | El creador es admin. Se entra por enlace de invitación (renovable). Puedes estar en varios grupos, cada uno con su saldo. |
+| Grupos | El creador es admin. Se entra por enlace de invitación (renovable). Puedes estar en varios grupos; tu saldo es el mismo en todos y cada grupo es una clasificación. |
 | Feed | Eventos automáticos destacables: blackjack con apuesta alta, ganancia o pérdida grande, adelantamiento en el ranking, ruina, reto o logro completado, resultado de la Baraja del día. |
 | Reacciones | 🔥 😂 💀 👏 😱 en cada evento del feed. |
 | Chat | Texto y emojis; se refresca cada pocos segundos mientras está abierto. Se pueden citar eventos del feed. |
@@ -517,7 +528,7 @@ Cada fase termina con algo usable y desplegado.
 | 1 | ✅ Fundaciones | Base de datos Neon + Drizzle; login con código por email (Better Auth + Resend); i18n; estilo base oscuro; navegación con pestañas; despliegue en Vercel; tarjeta de vista previa estática para la página principal |
 | 2 | ✅ Motor de blackjack | Módulo puro con todas las reglas y una batería completa de tests |
 | 3 | ✅ Mesa jugable | endpoint `POST /api/play` del backend, manos guardadas en BD y mesa con animaciones básicas, todavía con un saldo de prueba |
-| 4 | Grupos y liga | Crear grupo, unirse, saldo por grupo, paga diaria, ranking en vivo y admin |
+| 4 | Grupos y liga | Saldo único de liga y paga diaria; crear grupo, unirse, ranking en vivo de cada grupo y admin |
 | 4b | Invitaciones | Pantalla "Invitar" con compartir, copiar y **QR**; **vista previa del enlace** con imagen generada (`next/og`); renovar el enlace |
 | 5 | Ciclo semanal | Cierre automático, ceremonia, estadísticas, trofeos y monedas |
 | 6 | Social | Feed, reacciones y chat |
@@ -541,7 +552,8 @@ Para empezar a probar con amigos de verdad bastan las fases 1–5 (incluida la 4
 | Quien entra a mitad de semana | Saldo inicial + todas las pagas de los días ya transcurridos |
 | Cierre de semana | Domingo 23:59, hora de Madrid |
 | Baraja del día | 10 manos con apuesta fija; el 1º del día gana +500 fichas en la liga |
-| Premios en monedas | 100 / 60 / 30 para el podio, 10 por haber jugado |
+| Saldo | Uno por jugador, común a todos sus grupos; los grupos son clasificaciones |
+| Premios en monedas | 100 / 60 / 30 para el podio, 10 por haber jugado; solo cuenta tu mejor puesto y el grupo necesita al menos 2 personas que hayan jugado |
 | Nombre | Blackjack with Friends |
 | Dominio | Subdominio gratuito de Vercel (`*.vercel.app`), sin dominio propio |
 | Invitaciones | Enlace con vista previa enriquecida + código QR |

@@ -31,7 +31,9 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  min-height: 380px;
+  /* Sized by the space left, never by its content, so the rail always stays on screen */
+  min-height: 0;
+  container: felt / size;
   padding: 0 var(--page-x) 16px;
   overflow: hidden;
 }
@@ -313,6 +315,7 @@
 
 .rail {
   display: flex;
+  flex: none;
   flex-direction: column;
   justify-content: center;
   gap: 12px;
@@ -549,6 +552,78 @@
 
 .net.push {
   color: rgb(244 241 232 / 0.6);
+}
+
+/*
+  The felt takes whatever height is left between the top bar and the rail and
+  fits into it (container queries on .felt): first the print in the middle of a
+  hand goes, then cards and spacing get smaller.
+*/
+@container felt (max-height: 560px) {
+  .middle .print {
+    display: none;
+  }
+}
+
+@container felt (max-height: 440px) {
+  .feltTop {
+    position: absolute;
+    top: 0;
+    right: var(--page-x);
+    min-height: 0;
+  }
+
+  .spot {
+    width: 96px;
+    height: 96px;
+    margin-top: 8px;
+  }
+
+  .spotLabel {
+    margin-top: 8px;
+  }
+
+  .dealer {
+    --card-w: 58px;
+  }
+
+  .hands {
+    --card-w: 64px;
+  }
+
+  .hands.small {
+    --card-w: 46px;
+  }
+
+  .dealer,
+  .hand {
+    gap: 6px;
+  }
+
+  .spotSmall,
+  .small .spotSmall {
+    width: 42px;
+    height: 42px;
+  }
+
+  .stackSmall,
+  .small .stackSmall {
+    width: 30px;
+    height: 30px;
+    border-width: 3px;
+    font-size: 9px;
+  }
+
+  .pill {
+    margin-top: 6px;
+  }
+}
+
+@media (max-height: 720px) {
+  .rail {
+    min-height: 0;
+    padding-top: 12px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

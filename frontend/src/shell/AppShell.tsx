@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import type { ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { currentLanguage } from '@/i18n'
 import { InstallBanner } from '@/install/InstallBanner'
@@ -32,8 +32,16 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
   // The table is played on a full-screen felt.
   const felted = pathname.startsWith('/jugar')
 
+  // The content is what scrolls, not the page, so Next can't reset it on navigation.
+  const content = useRef<HTMLElement>(null)
+  useEffect(() => {
+    content.current?.scrollTo(0, 0)
+  }, [pathname])
+
   return (
     <div className={`${styles.shell} ${felted ? styles.felted : ''}`}>
+      {/* iOS 27 paints the status bar from a fixed element at the top; without it the edge is blurred */}
+      <div className={styles.statusTint} aria-hidden="true" />
       <header className={styles.topbar}>
         {/* Group selector: enabled in phase 2, when groups exist. */}
         <button className={styles.group} type="button" disabled>
@@ -46,7 +54,7 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
         </div>
       </header>
 
-      <main className={styles.content}>{children}</main>
+      <main ref={content} className={styles.content}>{children}</main>
 
       {/* Not over the table's controls. */}
       {!felted && <InstallBanner />}

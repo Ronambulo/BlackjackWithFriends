@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
 import { SessionProvider } from '@/auth/SessionProvider'
 import '@/i18n'
+import { KeyboardFix } from '@/pwa/KeyboardFix'
 import { NoZoom } from '@/pwa/NoZoom'
 import { RegisterServiceWorker } from '@/pwa/RegisterServiceWorker'
 
@@ -20,6 +21,7 @@ export function Providers({ children }: { children: ReactNode }) {
       <SessionProvider>{children}</SessionProvider>
       <RegisterServiceWorker />
       <NoZoom />
+      <KeyboardFix />
     </QueryClientProvider>
   )
 }
