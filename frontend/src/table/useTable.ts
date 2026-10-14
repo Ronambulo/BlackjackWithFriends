@@ -3,6 +3,7 @@
 import type { Action, PublicRoundView } from '@bwf/engine'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useUser } from '@/auth/session-context'
+import type { League } from '@/league/useLeague'
 import { ApiError, api } from '@/lib/api'
 
 /** A hand as the server shows it: no shoe, and the dealer's hole card is null until it's revealed. */
@@ -16,7 +17,7 @@ export interface TableState {
   hand: HandView | null
 }
 
-export type PlayRequest = { action: 'bet'; bet: number } | { action: 'refill' } | { action: Action; handId: string; version: number }
+export type PlayRequest = { action: 'bet'; bet: number } | { action: Action; handId: string; version: number }
 
 export function useTable() {
   const user = useUser()
@@ -34,7 +35,17 @@ export function usePlay() {
   const key = ['table', user.id]
   return useMutation({
     mutationFn: (request: PlayRequest) => api<TableState>('/play', { method: 'POST', body: request }),
-    onSuccess: (table) => queryClient.setQueryData(key, table),
+    onSuccess: (table) => {
+      queryClient.setQueryData(key, table)
+      // The table plays with the league balance, so the rankings move too.
+      queryClient.setQueryData<League>(['league', user.id], (league) =>
+        league ? { ...league, balance: table.chips } : league,
+      )
+      if (table.hand?.phase === 'settled') {
+        void queryClient.invalidateQueries({ queryKey: ['groups', user.id] })
+        void queryClient.invalidateQueries({ queryKey: ['group', user.id] })
+      }
+    },
     onError: (err) => {
       // The hand moved on (another tab, a double tap): show what the server has.
       if (err instanceof ApiError && err.status === 409) void queryClient.invalidateQueries({ queryKey: key })

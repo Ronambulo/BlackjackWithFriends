@@ -1,0 +1,79 @@
+.root {
+  position: relative;
+  min-width: 0;
+}
+
+.label {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 8px);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  width: min(280px, calc(100vw - 32px));
+  max-height: 60vh;
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.45);
+}
+
+.heading {
+  padding: 8px 10px 4px;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+}
+
+.item:hover,
+.item:focus-visible {
+  background: rgb(255 255 255 / 0.06);
+}
+
+.item[aria-current] {
+  color: var(--accent);
+}
+
+.rank {
+  margin-left: auto;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.hash {
+  width: 16px;
+  text-align: center;
+}
+
+.divider {
+  margin: 6px 4px;
+  border: 0;
+  border-top: 1px solid var(--border);
+}

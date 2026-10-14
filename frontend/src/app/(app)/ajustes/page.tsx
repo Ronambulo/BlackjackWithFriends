@@ -4,10 +4,11 @@ import { useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useCurrentGroup } from '@/groups/useGroups'
 import { currentLanguage, LANGUAGES, type Language } from '@/i18n'
 import { authClient } from '@/lib/auth-client'
 import { isValidName, NAME_MAX, useProfile, useUpdateProfile } from '@/profile/useProfile'
-import { ChevronLeftIcon } from '@/ui/icons'
+import { ChevronLeftIcon, GearIcon } from '@/ui/icons'
 import styles from '../pages.module.css'
 
 export default function SettingsPage() {
@@ -16,6 +17,7 @@ export default function SettingsPage() {
   const { data: profile } = useProfile()
   const updateName = useUpdateProfile()
   const updateLanguage = useUpdateProfile()
+  const group = useCurrentGroup()
   // The (app) layout only renders this once the profile is loaded.
   const [name, setName] = useState(profile?.nombre ?? '')
 
@@ -96,6 +98,15 @@ export default function SettingsPage() {
           )}
         </div>
       </section>
+
+      {group && (
+        <Link className={`btn btn-secondary ${styles.rowButton}`} href="/grupo">
+          <span>
+            {t('settings.group')}: {group.nombre}
+          </span>
+          <GearIcon width={18} height={18} />
+        </Link>
+      )}
 
       <button className="btn btn-danger btn-block" onClick={() => void onSignOut()}>
         {t('settings.signOut')}

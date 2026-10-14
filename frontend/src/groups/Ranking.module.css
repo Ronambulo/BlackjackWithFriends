@@ -1,0 +1,98 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 14px 8px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: rgb(0 0 0 / 0.22);
+}
+
+.mine {
+  border-color: rgb(242 193 78 / 0.35);
+  background: rgb(242 193 78 / 0.08);
+}
+
+.place {
+  flex: none;
+  width: 30px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--felt), #13432b);
+  box-shadow: 0 0 0 2px var(--border);
+  font-weight: 800;
+}
+
+.who {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.name {
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gain,
+.loss {
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.gain {
+  color: var(--success);
+}
+
+.loss {
+  color: var(--danger);
+}
+
+.rankUp,
+.rankDown {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.rankUp {
+  color: var(--success);
+}
+
+.rankDown {
+  color: var(--danger);
+}
+
+.balance {
+  flex: none;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
