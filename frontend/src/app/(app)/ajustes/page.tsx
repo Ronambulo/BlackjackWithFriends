@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { currentLanguage, LANGUAGES, type Language } from '@/i18n'
-import { supabase } from '@/lib/supabase'
+import { authClient } from '@/lib/auth-client'
 import { isValidName, NAME_MAX, useProfile, useUpdateProfile } from '@/profile/useProfile'
 import { ChevronLeftIcon } from '@/ui/icons'
 import styles from '../pages.module.css'
@@ -33,7 +33,7 @@ export default function SettingsPage() {
   }
 
   async function onSignOut() {
-    await supabase().auth.signOut()
+    await authClient.signOut()
     queryClient.clear()
   }
 

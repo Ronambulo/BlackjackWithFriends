@@ -10,14 +10,20 @@
   "scripts": {
     "dev": "tsx watch --clear-screen=false dev-server.ts",
     "build": "npm run build -w @bwf/engine && tsc --noEmit",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@bwf/engine": "*",
-    "@supabase/supabase-js": "^2.117.3"
+    "@neondatabase/serverless": "^1.2.0",
+    "better-auth": "^1.7.7",
+    "drizzle-orm": "^0.45.4"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
+    "drizzle-kit": "^0.31.11",
     "tsx": "^4.20.6",
     "typescript": "~6.0.2"
   }

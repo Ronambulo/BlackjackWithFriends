@@ -1,11 +1,11 @@
 'use client'
 
-import type { Session, User } from '@supabase/supabase-js'
 import { createContext, useContext } from 'react'
+import type { AuthSession } from '@/lib/auth-client'
 
 export interface SessionState {
-  session: Session | null
-  /** True until Supabase has restored (or ruled out) a saved session. */
+  session: AuthSession | null
+  /** True until the saved session has been restored (or ruled out). */
   loading: boolean
 }
 
@@ -16,7 +16,7 @@ export function useSession(): SessionState {
 }
 
 /** The signed-in user. Only for screens behind the login. */
-export function useUser(): User {
+export function useUser(): AuthSession['user'] {
   const { session } = useSession()
   if (!session) throw new Error('useUser() necesita una sesión iniciada')
   return session.user

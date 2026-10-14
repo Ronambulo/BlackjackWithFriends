@@ -12,10 +12,6 @@ const nextConfig: NextConfig = {
   // npm workspaces hoist the dependencies to the repo root.
   turbopack: { root: join(import.meta.dirname, '..') },
   env: {
-    // VITE_* fallbacks keep deployments working with the env vars from the Vite days.
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? '',
-    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '',
     // Lets an open app notice that a newer deployment is live (src/pwa/autoUpdate.ts).
     NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_DEPLOYMENT_ID ?? process.env.VERCEL_GIT_COMMIT_SHA ?? 'dev',
   },

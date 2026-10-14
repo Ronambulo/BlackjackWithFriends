@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { currentLanguage, LANGUAGES } from '@/i18n'
-import { supabase } from '@/lib/supabase'
+import { authClient } from '@/lib/auth-client'
 import { MailIcon } from '@/ui/icons'
 import styles from './LoginScreen.module.css'
 
@@ -12,12 +12,15 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 type Step = { name: 'email' } | { name: 'code'; email: string }
 
-function errorKey(error: { status?: number } | null, fallback: 'common.error' | 'login.errors.invalidCode') {
+type AuthError = { status?: number; code?: string } | null
+
+function errorKey(error: AuthError, fallback: 'common.error' | 'login.errors.invalidCode') {
   if (error?.status === 429) return 'login.errors.rateLimit' as const
+  if (error?.code === 'TOO_MANY_ATTEMPTS') return 'login.errors.tooManyAttempts' as const
   return fallback
 }
 
-/** Email-only sign in: Supabase sends a magic link that also carries a 6-digit code. */
+/** Email-only sign in: the backend emails a 6-digit code (Better Auth email OTP). */
 export function LoginScreen() {
   const { t, i18n } = useTranslation()
   const [step, setStep] = useState<Step>({ name: 'email' })
@@ -35,10 +38,11 @@ export function LoginScreen() {
   }, [cooldown])
 
   async function sendEmail(address: string) {
-    const { error } = await supabase().auth.signInWithOtp({
-      email: address,
-      options: { emailRedirectTo: window.location.origin, data: { idioma: currentLanguage() } },
-    })
+    // x-lang picks the language of the email.
+    const { error } = await authClient.emailOtp.sendVerificationOtp(
+      { email: address, type: 'sign-in' },
+      { headers: { 'x-lang': currentLanguage() } },
+    )
     return error
   }
 
@@ -68,13 +72,9 @@ export function LoginScreen() {
     if (step.name !== 'code') return
     setBusy(true)
     setError(null)
-    const { error: verifyError } = await supabase().auth.verifyOtp({
-      email: step.email,
-      token: code.trim(),
-      type: 'email',
-    })
+    const { error: verifyError } = await authClient.signIn.emailOtp({ email: step.email, otp: code.trim() })
     setBusy(false)
-    // On success onAuthStateChange swaps this screen out.
+    // On success the session store updates and SessionProvider swaps this screen out.
     if (verifyError) setError(t(errorKey(verifyError, 'login.errors.invalidCode')))
   }
 
@@ -153,7 +153,6 @@ export function LoginScreen() {
           <p className="muted">
             <Trans i18nKey="login.sentTo" values={{ email: step.email }} components={{ b: <strong /> }} />
           </p>
-          <p className={`muted ${styles.small}`}>{t('login.installedHint')}</p>
 
           <label className="field">
             <span className="field-label">{t('login.codeLabel')}</span>
@@ -162,7 +161,7 @@ export function LoginScreen() {
               inputMode="numeric"
               autoComplete="one-time-code"
               pattern="[0-9]*"
-              maxLength={10}
+              maxLength={6}
               placeholder="123456"
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}

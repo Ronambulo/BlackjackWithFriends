@@ -19,8 +19,7 @@ export const en: Messages = {
     sending: 'Sending…',
     noPassword: 'No passwords: we email you a code.',
     checkInbox: 'Check your email',
-    sentTo: 'We sent an email to <b>{{email}}</b>. Type the code here or tap the link in the email.',
-    installedHint: 'If you use the installed app, use the code: the link opens in the browser.',
+    sentTo: 'We sent a code to <b>{{email}}</b>. Type it here.',
     codeLabel: 'Code',
     verify: 'Sign in',
     verifying: 'Checking…',
@@ -32,6 +31,7 @@ export const en: Messages = {
       invalidEmail: 'That email doesn’t look right.',
       invalidCode: 'The code is wrong or has expired.',
       rateLimit: 'Too many attempts. Wait a bit and try again.',
+      tooManyAttempts: 'Too many tries with this code. Ask for a new one.',
     },
   },
   onboarding: {

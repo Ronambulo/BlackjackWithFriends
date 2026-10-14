@@ -18,8 +18,7 @@ export const es = {
     sending: 'Enviando…',
     noPassword: 'Sin contraseñas: te mandamos un código al correo.',
     checkInbox: 'Revisa tu correo',
-    sentTo: 'Te hemos enviado un email a <b>{{email}}</b>. Escribe aquí el código o toca el enlace del correo.',
-    installedHint: 'Si usas la app instalada, mejor el código: el enlace se abre en el navegador.',
+    sentTo: 'Te hemos enviado un código a <b>{{email}}</b>. Escríbelo aquí.',
     codeLabel: 'Código',
     verify: 'Entrar',
     verifying: 'Comprobando…',
@@ -31,6 +30,7 @@ export const es = {
       invalidEmail: 'Ese email no parece válido.',
       invalidCode: 'El código no es correcto o ha caducado.',
       rateLimit: 'Demasiados intentos. Espera un poco y vuelve a probar.',
+      tooManyAttempts: 'Demasiados intentos con este código. Pide uno nuevo.',
     },
   },
   onboarding: {

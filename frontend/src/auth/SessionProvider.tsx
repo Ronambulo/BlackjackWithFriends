@@ -1,19 +1,11 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
-import { supabase } from '@/lib/supabase'
-import { SessionContext, type SessionState } from './session-context'
+import { type ReactNode } from 'react'
+import { authClient } from '@/lib/auth-client'
+import { SessionContext } from './session-context'
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<SessionState>({ session: null, loading: true })
-
-  useEffect(() => {
-    // Fires INITIAL_SESSION straight away, then on every sign in, sign out and token refresh.
-    const { data } = supabase().auth.onAuthStateChange((_event, session) => {
-      setState({ session, loading: false })
-    })
-    return () => data.subscription.unsubscribe()
-  }, [])
-
-  return <SessionContext value={state}>{children}</SessionContext>
+  // Re-renders on sign in and sign out, and refetches when the app comes back to the foreground.
+  const { data, isPending } = authClient.useSession()
+  return <SessionContext value={{ session: data ?? null, loading: isPending }}>{children}</SessionContext>
 }

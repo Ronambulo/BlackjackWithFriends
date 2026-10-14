@@ -86,12 +86,10 @@ flowchart LR
 
   Engine[[packages/engine<br/>motor compartido]]
 
-  subgraph Supabase["☁️ Supabase (plan gratuito)"]
-    Auth[Auth<br/>email, enlace mágico]
-    DB[(Postgres<br/>+ RLS)]
-    RT[Realtime<br/>feed, chat, ranking]
-    Cron[pg_cron<br/>cierre semanal, retos]
-    Storage[Storage<br/>avatares]
+  subgraph Datos["☁️ Servicios (planes gratuitos)"]
+    DB[(Neon Postgres<br/>+ Drizzle)]
+    Mail[Resend<br/>código de login]
+    Cron[Vercel Cron<br/>cierre semanal, retos]
   end
 
   Push[Servicios push<br/>Apple / Google]
@@ -104,11 +102,9 @@ flowchart LR
   RW --> API
   RW --> OG
   OG -- datos públicos de la invitación --> DB
-  UI -- login --> Auth
-  API -- clave secreta --> DB
-  UI -- lecturas permitidas por RLS --> DB
-  RT -- cambios en vivo --> UI
-  Cron --> DB
+  API -- Better Auth: sesiones y datos --> DB
+  API -- email con el código --> Mail
+  Cron --> API
   API -- Web Push --> Push --> SW
 ```
 
@@ -118,12 +114,16 @@ flowchart LR
 |---|---|---|
 | Frontend | Next.js 16 (App Router, Turbopack) + React 19 + TypeScript | Rutas por carpetas, metadatos y vistas previas de enlaces en el propio frontend |
 | Rutas | App Router de Next.js | La app es cliente tras el login; el servidor solo sirve HTML, metadatos e imágenes OG |
-| Datos del servidor | TanStack Query + cliente de Supabase | Caché y reintentos automáticos |
+| Datos del servidor | TanStack Query contra nuestra `/api` | Caché, reintentos y refresco periódico (en vez de tiempo real) |
 | Animaciones | Motion (antes Framer Motion) | Cartas volando, fichas, podio |
 | Sonido | Howler.js | Fiable en iOS y fácil de silenciar |
 | Idiomas | i18next (es + en) | Desde el día 1 |
 | Backend (API) | Vercel Functions en Node/TypeScript, en la carpeta `backend/` | La lógica de juego y las vistas previas, en un proyecto de Vercel aparte |
-| Base de datos y servicios | Supabase: Postgres, Auth (solo email), Realtime, Storage y pg_cron | Todo en uno, gratis para cientos de usuarios |
+| Base de datos | Neon Postgres (desde el Marketplace de Vercel) + Drizzle ORM | Postgres estándar: sin atarnos a un proveedor; migraciones en el repo |
+| Login | Better Auth con código de 6 cifras por email (sin contraseñas) | Librería, no servicio: usuarios y sesiones en nuestra BD, cookie en nuestro dominio |
+| Emails | Resend | Envío fiable y gratis hasta 3.000 al mes; necesita un dominio verificado para escribir a cualquiera |
+| Tareas programadas | Vercel Cron llamando a la API | Sin servicios extra |
+| Avatares | Generados (inicial y color); fotos más adelante con Vercel Blob | Nada que alojar al principio |
 | Hosting | Dos proyectos de Vercel: el frontend (`blackjack-con-amigos.vercel.app`) y el backend (`blackjackwithfriends-backend.vercel.app`) | HTTPS gratis (necesario para la PWA). El frontend reenvía `/api` al backend, así que no hay CORS |
 | Vistas previas de enlaces | `generateMetadata` + `opengraph-image` de Next.js (`next/og`) | El HTML de cada invitación ya sale del servidor con sus metadatos e imagen |
 | Códigos QR | Librería `qrcode`, generada en el navegador | Sin servidor y funciona sin conexión |
@@ -176,12 +176,12 @@ sequenceDiagram
     F->>DB: guarda estado
   end
   F-->>J: estado visible (sin la carta tapada de la banca ni el mazo)
-  DB-->>J: Realtime: el ranking del grupo se actualiza para todos
+  Note over J,DB: los demás ven el ranking nuevo en su siguiente refresco (cada pocos segundos)
 ```
 
 El mazo de cada mano se guarda en el servidor y **nunca se envía al cliente**. La carta tapada de la banca solo se envía cuando se descubre.
 
-### Tareas programadas (pg_cron)
+### Tareas programadas (Vercel Cron)
 
 | Cuándo | Qué |
 |---|---|
@@ -272,7 +272,7 @@ erDiagram
 ```
 
 Notas:
-- **RLS** (seguridad a nivel de fila): solo ves los datos de tus grupos. Los saldos, manos y monedas **solo** los modifica el backend (con la clave secreta), nunca el cliente directamente.
+- **Solo el backend toca la base de datos**: la app nunca se conecta a ella. Cada ruta de la API comprueba la sesión y que eres miembro del grupo, así que solo ves los datos de tus grupos. Los saldos, manos y monedas **solo** los cambia el backend.
 - El campo `cosmetics.origen` deja la puerta abierta a añadir más adelante un origen "compra" sin cambiar nada más. **No hay ninguna huella visible de esto en la app.**
 
 ---
@@ -320,7 +320,7 @@ flowchart LR
 
 ```mermaid
 sequenceDiagram
-  participant C as pg_cron
+  participant C as Vercel Cron
   participant DB as Postgres
   participant P as Push
   participant J as Jugador
@@ -437,7 +437,7 @@ Al apostar, se toca sobre fichas de 10 / 50 / 100 / 500 / 1.000. También hay bo
 | Grupos | El creador es admin. Se entra por enlace de invitación (renovable). Puedes estar en varios grupos, cada uno con su saldo. |
 | Feed | Eventos automáticos destacables: blackjack con apuesta alta, ganancia o pérdida grande, adelantamiento en el ranking, ruina, reto o logro completado, resultado de la Baraja del día. |
 | Reacciones | 🔥 😂 💀 👏 😱 en cada evento del feed. |
-| Chat | Texto y emojis, en tiempo real con Supabase Realtime. Se pueden citar eventos del feed. |
+| Chat | Texto y emojis; se refresca cada pocos segundos mientras está abierto. Se pueden citar eventos del feed. |
 | Push | Paga lista (si no has cobrado a las 🔧 18:00), te han adelantado, mención en el chat, quedan 3 h de liga y ceremonia lista. Cada tipo se activa o desactiva por separado. |
 | Compartir fuera | Resultado de la Baraja del día y podio semanal como texto o imagen para WhatsApp. |
 
@@ -489,7 +489,7 @@ Moderación mínima: el admin puede expulsar miembros y cualquiera puede borrar 
 Cómo funciona:
 - Los bots que generan la vista previa **no ejecutan JavaScript**: solo leen las etiquetas `<meta>` del HTML que devuelve el servidor.
 - Por eso, las rutas que se comparten (`/i/[código]`) son páginas de Next.js renderizadas en el servidor, fuera del grupo `(app)` que exige login:
-  1. Pide a Supabase los datos públicos de la invitación (nombre del grupo, quién invita, número de miembros y top 3) mediante una función de solo lectura que no expone nada más.
+  1. Pide al backend los datos públicos de la invitación (nombre del grupo, quién invita, número de miembros y top 3) mediante una función de solo lectura que no expone nada más.
   2. `generateMetadata` rellena las etiquetas Open Graph y de Twitter. Para una persona, la app carga con normalidad. Para un bot, la tarjeta queda bonita.
   3. `og:image` sale de `opengraph-image.tsx` en esa misma ruta, que dibuja la imagen 1200×630 con `next/og`.
 - En Discord, el color de la barra lateral de la tarjeta sale de `theme-color`.
@@ -513,7 +513,7 @@ Cada fase termina con algo usable y desplegado.
 | # | Fase | Resultado |
 |---|---|---|
 | 0 | ✅ PWA base | Instalación con aviso y botón, y actualización automática |
-| 1 | ✅ Fundaciones | Proyecto de Supabase; login con email (enlace mágico); i18n; estilo base oscuro; navegación con pestañas; despliegue en Vercel; tarjeta de vista previa estática para la página principal |
+| 1 | ✅ Fundaciones | Base de datos Neon + Drizzle; login con código por email (Better Auth + Resend); i18n; estilo base oscuro; navegación con pestañas; despliegue en Vercel; tarjeta de vista previa estática para la página principal |
 | 2 | ✅ Motor de blackjack | Módulo puro con todas las reglas y una batería completa de tests |
 | 3 | Mesa jugable | endpoint `POST /api/play` del backend, manos guardadas en BD y mesa con animaciones básicas, todavía con un saldo de prueba |
 | 4 | Grupos y liga | Crear grupo, unirse, saldo por grupo, paga diaria, ranking en vivo y admin |

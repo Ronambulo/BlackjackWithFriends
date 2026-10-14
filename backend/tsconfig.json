@@ -18,5 +18,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["api", "lib", "dev-server.ts"]
+  "include": ["api", "lib", "routes", "dev-server.ts", "drizzle.config.ts"]
 }
