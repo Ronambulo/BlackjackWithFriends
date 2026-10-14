@@ -1,0 +1,339 @@
+/* Fills the space between the top bar and the tab bar; actions sit in the bottom third. */
+.table {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: calc(100dvh - 186px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+
+.loading {
+  min-height: 60vh;
+}
+
+.message {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: center;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.9rem;
+}
+
+.chips,
+.bet {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.chips {
+  font-size: 1.15rem;
+}
+
+.chipIcon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border: 3px dashed rgb(255 255 255 / 0.85);
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.3);
+}
+
+/* ---------- Felt ---------- */
+
+.felt {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 340px;
+  padding: 18px 12px;
+  overflow: hidden;
+  border-radius: 28px;
+  background:
+    radial-gradient(120% 80% at 50% 30%, #148a4d, var(--felt) 45%, #063d21 100%);
+  box-shadow:
+    inset 0 0 0 6px rgb(0 0 0 / 0.18),
+    inset 0 0 60px rgb(0 0 0 / 0.45),
+    0 12px 40px rgb(0 0 0 / 0.4);
+}
+
+/* Where the cards fly in from */
+.shoe {
+  position: absolute;
+  top: -18px;
+  right: 18px;
+  width: 54px;
+  height: 64px;
+  border-radius: 8px;
+  background: linear-gradient(#2a2d33, #141619);
+  box-shadow: 0 6px 14px rgb(0 0 0 / 0.4);
+  transform: rotate(8deg);
+}
+
+.idle {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.feltTitle {
+  color: rgb(255 255 255 / 0.18);
+  font-size: 2.4rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.feltRules {
+  color: rgb(255 255 255 / 0.45);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.feltHand {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dealer,
+.hand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.cards {
+  display: flex;
+  justify-content: center;
+  min-height: calc(var(--card-w, 64px) * 1.4);
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: rgb(255 255 255 / 0.7);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.value {
+  min-width: 34px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.45);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  text-transform: none;
+  animation: pop 0.25s ease var(--at, 0s) both;
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+.bet {
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.insured {
+  color: rgb(255 255 255 / 0.75);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.hands {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 18px 14px;
+}
+
+.small {
+  --card-w: 48px;
+}
+
+.hand {
+  padding: 8px;
+  border-radius: 16px;
+  transition: background-color 0.2s ease;
+}
+
+.active {
+  background: rgb(255 255 255 / 0.08);
+  box-shadow: inset 0 0 0 1px rgb(242 193 78 / 0.6);
+}
+
+.outcome {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  animation: pop 0.3s ease both;
+}
+
+.outcome.win {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.outcome.lose {
+  background: rgb(0 0 0 / 0.5);
+  color: #ff9a9a;
+}
+
+.outcome.push {
+  background: rgb(255 255 255 / 0.18);
+  color: var(--text);
+}
+
+/* ---------- Controls ---------- */
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.betLine {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.85rem;
+}
+
+.betAmount {
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.chipRow {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.chip {
+  aspect-ratio: 1;
+  max-width: 64px;
+  margin: 0 auto;
+  width: 100%;
+  border: 4px dashed rgb(255 255 255 / 0.85);
+  border-radius: 50%;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 2px rgb(0 0 0 / 0.25),
+    0 6px 14px rgb(0 0 0 / 0.35);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.5);
+  transition:
+    transform 0.12s ease,
+    opacity 0.12s ease;
+}
+
+.chip:active:not(:disabled) {
+  transform: translateY(-4px) scale(0.96);
+}
+
+.chip:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.chip10 {
+  background: #3a73d8;
+}
+
+.chip50 {
+  background: #d23f4c;
+}
+
+.chip100 {
+  background: #1b9a59;
+}
+
+.chip500 {
+  background: #7b47c9;
+}
+
+.chip1000 {
+  background: #1d1f24;
+  color: var(--accent);
+}
+
+.betTools {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.actionGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: pop 0.3s ease both;
+}
+
+.net {
+  font-size: 2rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.net.win {
+  color: var(--accent);
+}
+
+.net.lose {
+  color: var(--danger);
+}
+
+.net.push {
+  color: var(--text-dim);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .value {
+    animation-delay: 0s !important;
+  }
+}
