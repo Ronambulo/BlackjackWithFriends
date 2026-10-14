@@ -3,12 +3,17 @@
   width: var(--card-w, 64px);
   aspect-ratio: 5 / 7;
   perspective: 600px;
+  transform: rotate(var(--tilt, -3deg));
   animation: deal 0.42s cubic-bezier(0.2, 0.8, 0.3, 1) var(--deal-delay, 0s) both;
 }
 
-/* Cards overlap like on a real table */
+/* Cards overlap like on a real table, each one a little askew */
 .slot + .slot {
   margin-left: calc(var(--card-w, 64px) * -0.48);
+}
+
+.slot:nth-child(even) {
+  --tilt: 3deg;
 }
 
 /* From the shoe, top right of the felt */
@@ -60,12 +65,12 @@
 }
 
 .face {
-  background: linear-gradient(160deg, #ffffff, #eef0f2);
+  background: #fbfaf6;
   color: #16181c;
 }
 
 .red {
-  color: #d22f3c;
+  color: #c3243a;
 }
 
 .corner {
@@ -97,9 +102,9 @@
 
 .back {
   transform: rotateY(180deg);
-  border: calc(var(--card-w, 64px) * 0.06) solid #f5f5f5;
+  border: calc(var(--card-w, 64px) * 0.06) solid #fbfaf6;
   background:
     repeating-linear-gradient(45deg, rgb(255 255 255 / 0.12) 0 3px, transparent 3px 8px),
     repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.12) 0 3px, transparent 3px 8px),
-    #b3263a;
+    #8e1d2c;
 }

@@ -1,51 +1,27 @@
-/* Fills the space between the top bar and the tab bar; actions sit in the bottom third. */
+/*
+  Casino felt (docs/DISENO.md): the felt fills the screen behind the shell
+  (AppShell's felted mode), the cards and the bet sit on it, and the controls
+  live on a wooden rail docked above the tab bar.
+*/
 .table {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: 14px;
-  min-height: calc(100dvh - 186px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
 }
 
 .loading {
-  min-height: 60vh;
+  flex: 1;
 }
 
 .message {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px var(--page-x);
   text-align: center;
-}
-
-.bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 0.9rem;
-}
-
-.chips,
-.bet {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-
-.chips {
-  font-size: 1.15rem;
-}
-
-.chipIcon {
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  border: 3px dashed rgb(255 255 255 / 0.85);
-  border-radius: 50%;
-  background: var(--success);
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.3);
 }
 
 /* ---------- Felt ---------- */
@@ -55,30 +31,87 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  min-height: 340px;
-  padding: 18px 12px;
+  min-height: 380px;
+  padding: 0 var(--page-x) 16px;
   overflow: hidden;
-  border-radius: 28px;
-  background:
-    radial-gradient(120% 80% at 50% 30%, #148a4d, var(--felt) 45%, #063d21 100%);
-  box-shadow:
-    inset 0 0 0 6px rgb(0 0 0 / 0.18),
-    inset 0 0 60px rgb(0 0 0 / 0.45),
-    0 12px 40px rgb(0 0 0 / 0.4);
+}
+
+.feltTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  min-height: 40px;
+}
+
+/* The player's chips, at the foot of the felt just above the chip row */
+.pill {
+  display: inline-flex;
+  align-self: center;
+  margin-top: 12px;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.28);
+  font-size: 0.9rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.chipIcon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  border: 3px dashed #fff;
+  border-radius: 50%;
+  background: #1b9a59;
 }
 
 /* Where the cards fly in from */
 .shoe {
-  position: absolute;
-  top: -18px;
-  right: 18px;
-  width: 54px;
-  height: 64px;
+  width: 50px;
+  height: 58px;
+  margin-top: -24px;
   border-radius: 8px;
-  background: linear-gradient(#2a2d33, #141619);
-  box-shadow: 0 6px 14px rgb(0 0 0 / 0.4);
+  background: linear-gradient(#3a2a1f, #1c130d);
+  box-shadow:
+    inset 0 0 0 2px #6b5240,
+    0 6px 14px rgb(0 0 0 / 0.4);
   transform: rotate(8deg);
 }
+
+/* What's printed on the cloth */
+.print {
+  display: block;
+  width: calc(100% + 2 * var(--page-x));
+  max-width: 460px;
+  margin: 0 calc(-1 * var(--page-x));
+  overflow: visible;
+}
+
+.printCompact {
+  max-width: 400px;
+  opacity: 0.85;
+}
+
+.printPayout {
+  fill: rgb(242 193 78 / 0.8);
+  font-family: var(--font-felt), Georgia, serif;
+  font-size: 22px;
+  font-style: italic;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.printRules {
+  fill: rgb(244 241 232 / 0.38);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+}
+
+/* ---------- Betting ---------- */
 
 .idle {
   display: flex;
@@ -86,32 +119,72 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  text-align: center;
 }
 
-.feltTitle {
-  color: rgb(255 255 255 / 0.18);
-  font-size: 2.4rem;
+.spot {
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 112px;
+  margin-top: 28px;
+  border: 2px dashed rgb(242 193 78 / 0.6);
+  border-radius: 50%;
+}
+
+.spotLabel {
+  margin-top: 14px;
+  color: rgb(244 241 232 / 0.55);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* A stack: the top chip, with the ones under it drawn as its shadow */
+.stack {
+  display: grid;
+  place-items: center;
+  width: 66px;
+  height: 66px;
+  border: 6px dashed #fff;
+  border-radius: 50%;
+  font-size: 15px;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  animation: drop 0.2s ease both;
 }
 
-.feltRules {
-  color: rgb(255 255 255 / 0.45);
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+@keyframes drop {
+  from {
+    opacity: 0;
+    translate: 0 -12px;
+  }
 }
+
+.spotSmall {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border: 2px solid rgb(242 193 78 / 0.55);
+  border-radius: 50%;
+}
+
+.stackSmall {
+  width: 40px;
+  height: 40px;
+  border-width: 4px;
+  font-size: 11px;
+}
+
+/* ---------- Hand in play ---------- */
 
 .feltHand {
   display: flex;
   flex: 1;
   flex-direction: column;
   justify-content: space-between;
-  gap: 16px;
+  gap: 4px;
 }
 
 .dealer,
@@ -120,6 +193,16 @@
   flex-direction: column;
   align-items: center;
   gap: 10px;
+}
+
+.dealer {
+  --card-w: 70px;
+}
+
+.middle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .cards {
@@ -132,21 +215,22 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  color: rgb(255 255 255 / 0.7);
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  color: rgb(244 241 232 / 0.7);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .value {
   min-width: 34px;
-  padding: 3px 10px;
+  padding: 3px 12px;
   border-radius: 999px;
-  background: rgb(0 0 0 / 0.45);
-  color: var(--text);
-  font-size: 0.95rem;
+  background: rgb(0 0 0 / 0.4);
+  color: #f4f1e8;
+  font-size: 16px;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
   text-align: center;
   text-transform: none;
   animation: pop 0.25s ease var(--at, 0s) both;
@@ -159,28 +243,36 @@
   }
 }
 
-.bet {
-  color: var(--text);
-  font-size: 0.9rem;
-}
-
 .insured {
-  color: rgb(255 255 255 / 0.75);
+  color: rgb(244 241 232 / 0.75);
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 700;
   text-align: center;
 }
 
 .hands {
+  --card-w: 78px;
+
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: center;
-  gap: 18px 14px;
+  gap: 14px 10px;
 }
 
 .small {
-  --card-w: 48px;
+  --card-w: 52px;
+}
+
+.small .spotSmall {
+  width: 48px;
+  height: 48px;
+}
+
+.small .stackSmall {
+  width: 34px;
+  height: 34px;
+  font-size: 10px;
 }
 
 .hand {
@@ -190,8 +282,8 @@
 }
 
 .active {
-  background: rgb(255 255 255 / 0.08);
-  box-shadow: inset 0 0 0 1px rgb(242 193 78 / 0.6);
+  background: rgb(0 0 0 / 0.14);
+  box-shadow: inset 0 0 0 2px rgb(242 193 78 / 0.6);
 }
 
 .outcome {
@@ -213,111 +305,238 @@
 }
 
 .outcome.push {
-  background: rgb(255 255 255 / 0.18);
-  color: var(--text);
+  background: rgb(244 241 232 / 0.2);
+  color: #f4f1e8;
 }
 
-/* ---------- Controls ---------- */
+/* ---------- Rail ---------- */
 
-.controls {
+.rail {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 12px;
+  min-height: 160px;
+  padding: 16px 14px 14px;
+  border-top: 3px solid #b8892f;
+  background: #1c130d;
+  box-shadow: 0 -10px 30px rgb(0 0 0 / 0.45);
 }
 
-.betLine {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+.error {
+  color: var(--danger);
   font-size: 0.85rem;
+  text-align: center;
 }
 
-.betAmount {
-  font-size: 1.5rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
+.note {
+  color: rgb(244 241 232 / 0.85);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.note small {
+  color: rgb(244 241 232 / 0.55);
+  font-size: 0.8rem;
 }
 
 .chipRow {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
 }
 
 .chip {
-  aspect-ratio: 1;
-  max-width: 64px;
+  width: 56px;
+  height: 56px;
   margin: 0 auto;
-  width: 100%;
-  border: 4px dashed rgb(255 255 255 / 0.85);
+  border: 5px dashed #fff;
   border-radius: 50%;
   color: #fff;
-  font-size: 0.9rem;
+  font-size: 14px;
   font-weight: 800;
   cursor: pointer;
-  box-shadow:
-    0 0 0 2px rgb(0 0 0 / 0.25),
-    0 6px 14px rgb(0 0 0 / 0.35);
-  text-shadow: 0 1px 2px rgb(0 0 0 / 0.5);
-  transition:
-    transform 0.12s ease,
-    opacity 0.12s ease;
+  box-shadow: 0 4px 0 var(--edge);
+  transition: transform 0.12s ease;
 }
 
 .chip:active:not(:disabled) {
-  transform: translateY(-4px) scale(0.96);
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--edge);
 }
 
 .chip:disabled {
-  opacity: 0.3;
+  border-color: rgb(255 255 255 / 0.3);
+  background: #2a1e16;
+  color: rgb(242 193 78 / 0.4);
+  box-shadow: none;
   cursor: not-allowed;
 }
 
 .chip10 {
+  --edge: #1e4a92;
+
   background: #3a73d8;
 }
 
 .chip50 {
+  --edge: #8f2731;
+
   background: #d23f4c;
 }
 
 .chip100 {
+  --edge: #11693c;
+
   background: #1b9a59;
 }
 
 .chip500 {
+  --edge: #522d8c;
+
   background: #7b47c9;
 }
 
 .chip1000 {
-  background: #1d1f24;
+  --edge: #0d0e10;
+
+  background: #26272c;
   color: var(--accent);
 }
 
-.betTools {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-}
-
-.actionGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.row {
+  display: flex;
   gap: 10px;
 }
 
-.result {
+.wood,
+.gold {
+  flex: 1;
+  min-width: 0;
+  height: 50px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.wood {
+  background: #3a2a1f;
+  color: #f4f1e8;
+  box-shadow: inset 0 0 0 2px #6b5240;
+}
+
+.gold {
+  background: var(--accent);
+  color: var(--accent-text);
+  font-size: 16px;
+  font-weight: 800;
+  box-shadow: 0 4px 0 #a9822b;
+}
+
+.wide {
+  flex: 2;
+}
+
+.wood:active:not(:disabled),
+.gold:active:not(:disabled) {
+  transform: translateY(2px);
+}
+
+.wood:disabled,
+.gold:disabled {
+  background: #2a1e16;
+  color: rgb(244 241 232 / 0.35);
+  box-shadow: inset 0 0 0 2px #3c2d22;
+  cursor: not-allowed;
+}
+
+/* Player actions: round buttons with the name underneath */
+.actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.action {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  animation: pop 0.3s ease both;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #f4f1e8;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.actionIcon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #3a2a1f;
+  color: #f4f1e8;
+  font-size: 17px;
+  font-weight: 800;
+  box-shadow:
+    inset 0 0 0 2px #6b5240,
+    0 4px 0 #120c08;
+  transition: transform 0.12s ease;
+}
+
+.actionGold .actionIcon {
+  background: var(--accent);
+  color: var(--accent-text);
+  box-shadow: 0 4px 0 #a9822b;
+}
+
+.action:active:not(:disabled) .actionIcon {
+  transform: translateY(3px);
+}
+
+.action:disabled {
+  color: rgb(244 241 232 / 0.4);
+  cursor: not-allowed;
+}
+
+.action:disabled .actionIcon {
+  background: #2a1e16;
+  color: rgb(244 241 232 / 0.35);
+  box-shadow: inset 0 0 0 2px #3c2d22;
+}
+
+.textButton {
+  align-self: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: rgb(244 241 232 / 0.55);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Keeps the rail the same height whether or not surrender is offered */
+.textButton[hidden] {
+  display: block;
+  visibility: hidden;
 }
 
 .net {
   font-size: 2rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
   text-align: center;
+  animation: pop 0.3s ease both;
 }
 
 .net.win {
@@ -325,11 +544,11 @@
 }
 
 .net.lose {
-  color: var(--danger);
+  color: #ff8a8a;
 }
 
 .net.push {
-  color: var(--text-dim);
+  color: rgb(244 241 232 / 0.6);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -41,22 +41,19 @@ function pgCode(err: unknown): string | undefined {
   return e?.code ?? e?.cause?.code
 }
 
-async function loadChips(userId: string): Promise<number> {
-  await db().insert(profiles).values({ id: userId }).onConflictDoNothing()
-  const [row] = await db().select({ chips: profiles.fichasPrueba }).from(profiles).where(eq(profiles.id, userId))
-  return row.chips
-}
-
 // GET /api/play: the player's chips and the hand left half-played, if any.
 export async function getTable(request: Request): Promise<Response> {
   const user = await requireUser(request)
-  const chips = await loadChips(user.id)
-  const [open] = await db()
-    .select()
-    .from(hands)
-    .where(and(eq(hands.userId, user.id), eq(hands.modo, 'prueba'), ne(hands.fase, 'settled')))
-    .orderBy(desc(hands.createdAt))
-    .limit(1)
+  const [, [{ chips }], [open]] = await db().batch([
+    db().insert(profiles).values({ id: user.id }).onConflictDoNothing(),
+    db().select({ chips: profiles.fichasPrueba }).from(profiles).where(eq(profiles.id, user.id)),
+    db()
+      .select()
+      .from(hands)
+      .where(and(eq(hands.userId, user.id), eq(hands.modo, 'prueba'), ne(hands.fase, 'settled')))
+      .orderBy(desc(hands.createdAt))
+      .limit(1),
+  ])
   return json(tableJson(chips, open ? handJson(open, open.ronda, chips) : null))
 }
 
@@ -79,56 +76,58 @@ async function bet(userId: string, amount: unknown): Promise<Response> {
   if (typeof amount !== 'number' || !Number.isInteger(amount) || amount < MIN_BET) {
     throw new HttpError(400, 'Apuesta no válida')
   }
-  const chips = await loadChips(userId)
-  if (amount > chips) throw new HttpError(400, 'No tienes fichas suficientes')
-
   const state = startRound(amount, createShoe(DEFAULT_RULES.decks, cryptoRng()), DEFAULT_RULES)
   // A natural (or a dealer blackjack without an ace showing) settles straight away.
   const payout = state.settlement?.totalPayout ?? 0
   const id = crypto.randomUUID()
 
+  // One round trip, one transaction: make sure the profile exists, then take the bet
+  // and save the hand in a single statement. The chips only move if they cover the
+  // bet, and the hand is only saved if they moved; if another hand is still open
+  // (unique index), nothing is saved.
+  let result
   try {
-    // One transaction: if the chips would go below 0 (check constraint) or another
-    // hand is still open (unique index), nothing is saved.
-    const [[updated]] = await db().batch([
-      db()
-        .update(profiles)
-        .set({ fichasPrueba: sql`${profiles.fichasPrueba} - ${amount} + ${payout}` })
-        .where(eq(profiles.id, userId))
-        .returning({ chips: profiles.fichasPrueba }),
-      db()
-        .insert(hands)
-        .values({
-          id,
-          userId,
-          modo: 'prueba',
-          apuesta: amount,
-          ronda: state,
-          fase: state.phase,
-          neto: state.settlement?.net ?? null,
-        }),
+    ;[, result] = await db().batch([
+      db().insert(profiles).values({ id: userId }).onConflictDoNothing(),
+      db().execute<{ chips: number }>(sql`
+        with p as (
+          update ${profiles}
+          set fichas_prueba = fichas_prueba - ${amount} + ${payout}
+          where id = ${userId} and fichas_prueba >= ${amount}
+          returning fichas_prueba
+        ), h as (
+          insert into ${hands} (id, user_id, modo, apuesta, ronda, fase, neto)
+          select ${id}, ${userId}, 'prueba', ${amount}, ${JSON.stringify(state)}::jsonb, ${state.phase}, ${state.settlement?.net ?? null}
+          from p
+          returning id
+        )
+        select p.fichas_prueba::float8 as chips from p, h
+      `),
     ])
-    return json(tableJson(updated.chips, handJson({ id, version: 0 }, state, updated.chips)))
   } catch (err) {
-    if (pgCode(err) === '23514') throw new HttpError(400, 'No tienes fichas suficientes')
     if (pgCode(err) === '23505') throw new HttpError(409, 'Ya tienes una mano en juego')
     throw err
   }
+  const [updated] = result.rows
+  if (!updated) throw new HttpError(400, 'No tienes fichas suficientes')
+  return json(tableJson(updated.chips, handJson({ id, version: 0 }, state, updated.chips)))
 }
 
 async function refill(userId: string): Promise<Response> {
-  await loadChips(userId)
-  const [updated] = await db()
-    .update(profiles)
-    .set({ fichasPrueba: REFILL })
-    .where(
-      and(
-        eq(profiles.id, userId),
-        sql`${profiles.fichasPrueba} < ${MIN_BET}`,
-        sql`not exists (select 1 from ${hands} where ${hands.userId} = ${userId} and ${hands.fase} <> 'settled')`,
-      ),
-    )
-    .returning({ chips: profiles.fichasPrueba })
+  const [, [updated]] = await db().batch([
+    db().insert(profiles).values({ id: userId }).onConflictDoNothing(),
+    db()
+      .update(profiles)
+      .set({ fichasPrueba: REFILL })
+      .where(
+        and(
+          eq(profiles.id, userId),
+          sql`${profiles.fichasPrueba} < ${MIN_BET}`,
+          sql`not exists (select 1 from ${hands} where ${hands.userId} = ${userId} and ${hands.fase} <> 'settled')`,
+        ),
+      )
+      .returning({ chips: profiles.fichasPrueba }),
+  ])
   if (!updated) throw new HttpError(409, 'Todavía tienes fichas')
   return json(tableJson(updated.chips, null))
 }
