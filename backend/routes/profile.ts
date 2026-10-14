@@ -1,7 +1,8 @@
 import { eq } from 'drizzle-orm'
-import { requireUser } from '../lib/auth.js'
+import { requireUser, type SessionUser } from '../lib/auth.js'
 import { db } from '../lib/db.js'
 import { HttpError, json } from '../lib/http.js'
+import { leagueClock } from '../lib/league.js'
 import { LANGUAGES, profiles, type Language } from '../lib/schema.js'
 
 const NAME_MIN = 2
@@ -19,11 +20,19 @@ function toJson(row: ProfileRow) {
   }
 }
 
-/** The player's profile, created on first use. */
-async function loadProfile(userId: string): Promise<ProfileRow> {
-  const [created] = await db().insert(profiles).values({ id: userId }).onConflictDoNothing().returning()
+/** The player's profile, created on first use with their username as the name. */
+function loadProfile(user: SessionUser): ProfileRow {
+  const name = user.name.trim()
+  const nombre = name.length >= NAME_MIN && name.length <= NAME_MAX ? name : null
+  const { today, weekStart } = leagueClock()
+  const created = db()
+    .insert(profiles)
+    .values({ id: user.id, nombre, semana: weekStart, dia: today })
+    .onConflictDoNothing()
+    .returning()
+    .get()
   if (created) return created
-  const [existing] = await db().select().from(profiles).where(eq(profiles.id, userId))
+  const existing = db().select().from(profiles).where(eq(profiles.id, user.id)).get()
   if (!existing) throw new HttpError(404, 'No existe el perfil')
   return existing
 }
@@ -31,7 +40,7 @@ async function loadProfile(userId: string): Promise<ProfileRow> {
 // GET /api/profile
 export async function getProfile(request: Request): Promise<Response> {
   const user = await requireUser(request)
-  return json(toJson(await loadProfile(user.id)))
+  return json(toJson(loadProfile(user)))
 }
 
 // PATCH /api/profile: the player can only change their name, avatar and language.
@@ -58,8 +67,8 @@ export async function patchProfile(request: Request): Promise<Response> {
     patch.avatarUrl = url
   }
 
-  await loadProfile(user.id)
-  if (Object.keys(patch).length === 0) return getProfile(request)
-  const [updated] = await db().update(profiles).set(patch).where(eq(profiles.id, user.id)).returning()
+  const current = loadProfile(user)
+  if (Object.keys(patch).length === 0) return json(toJson(current))
+  const updated = db().update(profiles).set(patch).where(eq(profiles.id, user.id)).returning().get()
   return json(toJson(updated))
 }
