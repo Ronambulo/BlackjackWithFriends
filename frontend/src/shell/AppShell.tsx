@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { currentLanguage } from '@/i18n'
@@ -9,21 +9,21 @@ import { InstallBanner } from '@/install/InstallBanner'
 import { formatNumber } from '@/lib/format'
 import type { Profile } from '@/profile/useProfile'
 import { GroupPicker } from '@/groups/GroupPicker'
-import { CardsIcon, ChatIcon, HomeIcon, PodiumIcon, UserIcon } from '@/ui/icons'
+import { joinPath, pendingInvite } from '@/groups/pendingInvite'
+import { useLiveUpdates } from '@/groups/useLiveUpdates'
+import { CardsIcon, ChatIcon, GroupIcon, HomeIcon, UserIcon } from '@/ui/icons'
 import styles from './AppShell.module.css'
 
 const TABS = [
   { href: '/', key: 'home', Icon: HomeIcon },
-  { href: '/ranking', key: 'ranking', Icon: PodiumIcon },
+  { href: '/grupos', key: 'groups', Icon: GroupIcon },
   { href: '/jugar', key: 'play', Icon: CardsIcon },
   { href: '/social', key: 'social', Icon: ChatIcon },
   { href: '/perfil', key: 'profile', Icon: UserIcon },
 ] as const
 
 function isActive(href: string, pathname: string) {
-  // Creating or joining a group starts from home; a group's settings hang off its ranking.
-  if (href === '/') return pathname === '/' || pathname.startsWith('/grupos')
-  if (href === '/ranking') return pathname.startsWith('/ranking') || pathname === '/grupo'
+  if (href === '/') return pathname === '/'
   // Settings lives under the profile tab.
   if (href === '/perfil') return pathname.startsWith('/perfil') || pathname.startsWith('/ajustes')
   return pathname.startsWith(href)
@@ -32,6 +32,14 @@ function isActive(href: string, pathname: string) {
 export function AppShell({ profile, children }: { profile: Profile; children: ReactNode }) {
   const { t } = useTranslation()
   const pathname = usePathname()
+  const router = useRouter()
+  useLiveUpdates()
+
+  // Signed up from a friend's link: now that they're in, back to that invite.
+  useEffect(() => {
+    const codigo = pendingInvite()
+    if (codigo && pathname !== '/grupos/unirse') router.replace(joinPath(codigo))
+  }, [pathname, router])
   // The table is played on a full-screen felt.
   const felted = pathname.startsWith('/jugar')
 

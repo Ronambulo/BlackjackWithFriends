@@ -1,0 +1,58 @@
+# Para ZimaOS: App Store → "+" → Instalar app personalizada → Importar, y pegar esto.
+# Si la abres desde otra dirección (otra IP o un dominio https), cámbiala en BETTER_AUTH_URL y en icon.
+name: blackjackwithfriends
+
+services:
+  blackjackwithfriends:
+    image: ghcr.io/ronambulo/blackjackwithfriends:latest
+    container_name: blackjackwithfriends
+    restart: unless-stopped
+    ports:
+      - "3021:3000"
+    volumes:
+      # La base de datos (blackjack.db) y el secreto de las sesiones.
+      - type: bind
+        source: /DATA/AppData/blackjackwithfriends
+        target: /data
+    environment:
+      # La dirección desde la que se abre la app: la cookie de sesión es de ahí.
+      # Para instalarla como PWA en el móvil tiene que ser https (proxy inverso o túnel).
+      BETTER_AUTH_URL: https://blackjack.rodriguezdelreal.com
+      # Otras direcciones desde las que se abra, separadas por comas.
+      BETTER_AUTH_TRUSTED_ORIGINS: http://10.147.13.1:3021,http://localhost:3021
+      TZ: Europe/Madrid
+    x-casaos:
+      volumes:
+        - container: /data
+          description:
+            es_es: Base de datos y secreto de las sesiones
+            en_us: Database and session secret
+      ports:
+        - container: "3000"
+          description:
+            es_es: Web
+            en_us: Web UI
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: blackjackwithfriends
+  category: Games
+  description:
+    en_us: A weekly blackjack league with friends — play every day with the same chips as everyone else, climb your group's ranking and win the week.
+    es_es: Tu liga semanal de blackjack con amigos — juega cada día con las mismas fichas que los demás, sube en el ranking de tu grupo y gana la semana.
+  tagline:
+    en_us: Blackjack league with friends
+    es_es: Liga de blackjack con amigos
+  developer: Ronambulo
+  author: Ronambulo
+  # El repo es privado, así que el icono lo sirve la propia app.
+  icon: https://blackjack.rodriguezdelreal.com/icon.svg
+  thumbnail: ""
+  title:
+    en_us: Blackjack with Friends
+  index: /
+  port_map: "3021"
+  scheme: http
+  store_app_id: blackjackwithfriends

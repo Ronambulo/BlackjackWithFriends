@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useTranslation } from 'react-i18next'
 import { useUser } from '@/auth/session-context'
+import { StatsPanel } from '@/profile/StatsPanel'
 import { useProfile } from '@/profile/useProfile'
 import { Avatar } from '@/ui/Avatar'
 import { ChevronRightIcon, GearIcon, SlidersIcon } from '@/ui/icons'
@@ -14,14 +15,6 @@ export default function ProfilePage() {
   const { data: profile } = useProfile()
   const name = profile?.nombre ?? ''
   const handle = user.displayUsername ?? user.username
-
-  // Real numbers arrive with the game (phase 3).
-  const stats = [
-    { label: t('profile.hands'), value: '—' },
-    { label: t('profile.winRate'), value: '—' },
-    { label: t('profile.blackjacks'), value: '—' },
-    { label: t('profile.bestHand'), value: '—' },
-  ]
 
   return (
     <div className={styles.page}>
@@ -40,14 +33,7 @@ export default function ProfilePage() {
         </div>
       </section>
 
-      <section className={`card ${styles.stats}`} aria-label={t('profile.stats')}>
-        {stats.map((stat) => (
-          <div key={stat.label} className={styles.stat}>
-            <span className={styles.statValue}>{stat.value}</span>
-            <span className={styles.statLabel}>{stat.label}</span>
-          </div>
-        ))}
-      </section>
+      <StatsPanel />
 
       <section className={styles.group}>
         <h2 className="label">{t('profile.trophies')}</h2>

@@ -32,6 +32,8 @@
   --blur: blur(18px) saturate(140%);
   --tabbar-height: 64px;
   --topbar-height: 60px;
+  /* The tabs as a sidebar on wide screens (AppShell) */
+  --sidebar-width: 220px;
   /* The visible height; StandaloneFix replaces it with the screen height on iOS home screen apps */
   --app-height: 100dvh;
   --page-x: 16px;

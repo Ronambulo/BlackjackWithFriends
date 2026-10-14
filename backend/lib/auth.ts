@@ -33,6 +33,10 @@ function createAuth() {
       cookieCache: { enabled: true, maxAge: 5 * 60 },
     },
     rateLimit: { storage: 'database' },
+    // Players come through Cloudflare and Next's rewrite, so x-forwarded-for is a chain
+    // Better Auth won't trust. Without a client IP every player shares one rate-limit
+    // bucket and a few sign-ins lock everyone out. cf-connecting-ip is the real client.
+    advanced: { ipAddress: { ipAddressHeaders: ['cf-connecting-ip', 'x-forwarded-for'] } },
     // Classic username + password. Better Auth still wants an email, so the app
     // signs up with a made-up one (see frontend/src/auth/LoginScreen.tsx); nothing is ever emailed.
     emailAndPassword: {

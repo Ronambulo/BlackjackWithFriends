@@ -206,11 +206,13 @@ export function Table() {
   const act = (action: Action) => {
     if (hand) play.mutate({ action, handId: hand.id, version: hand.version })
   }
-  const addToBet = (value: number) => setBet((b) => Math.min(b + value, table.chips))
+  // The most you can put down: the table's limit, or everything you have if it's less.
+  const limit = Math.min(table.maxBet, table.chips)
+  const addToBet = (value: number) => setBet((b) => Math.min(b + value, limit))
 
   const settled = hand?.phase === 'settled' ? hand.settlement : null
   const errorText = play.error ? t(play.error instanceof ApiError && play.error.status === 409 ? 'play.changed' : 'common.error') : null
-  const canRepeat = lastBet >= table.minBet && lastBet <= table.chips
+  const canRepeat = lastBet >= table.minBet && lastBet <= limit
 
   return (
     <div className={styles.table}>
@@ -226,7 +228,7 @@ export function Table() {
             <FeltPrint />
             <div className={styles.spot}>{(pendingBet ?? bet) > 0 && <BetStack amount={pendingBet ?? bet} />}</div>
             <p className={styles.spotLabel}>
-              {t('play.yourBet')} · {t('play.minBet', { amount: fmt(table.minBet) })}
+              {t('play.yourBet')} · {t('play.betLimits', { min: fmt(table.minBet), max: fmt(table.maxBet) })}
             </p>
           </div>
         )}
@@ -257,13 +259,13 @@ export function Table() {
         {!hand && table.chips >= table.minBet && (
           <>
             <div className={styles.chipRow}>
-              {CHIP_VALUES.map((value) => (
+              {CHIP_VALUES.filter((value) => value <= table.maxBet).map((value) => (
                 <button
                   key={value}
                   type="button"
                   className={`${styles.chip} ${styles[`chip${value}`]}`}
                   aria-label={`+${fmt(value)}`}
-                  disabled={busy || bet + value > table.chips}
+                  disabled={busy || bet + value > limit}
                   onClick={() => addToBet(value)}
                 >
                   {value >= 1000 ? `${value / 1000}K` : value}
@@ -276,7 +278,7 @@ export function Table() {
                   <button className={styles.wood} disabled={busy} onClick={() => setBet(0)}>
                     {t('play.clear')}
                   </button>
-                  <button className={styles.wood} disabled={busy || bet * 2 > table.chips} onClick={() => setBet(bet * 2)}>
+                  <button className={styles.wood} disabled={busy || bet * 2 > limit} onClick={() => setBet(bet * 2)}>
                     {t('play.double')}
                   </button>
                 </>
@@ -285,14 +287,14 @@ export function Table() {
                   <button className={styles.wood} disabled={busy || !canRepeat} onClick={() => setBet(lastBet)}>
                     {t('play.repeat')}
                   </button>
-                  <button className={styles.wood} disabled={busy} onClick={() => setBet(table.chips)}>
-                    {t('play.allIn')}
+                  <button className={styles.wood} disabled={busy} onClick={() => setBet(limit)}>
+                    {t('play.maxBet')}
                   </button>
                 </>
               )}
               <button
                 className={`${styles.gold} ${styles.wide}`}
-                disabled={busy || bet < table.minBet || bet > table.chips}
+                disabled={busy || bet < table.minBet || bet > limit}
                 onClick={() => deal(bet)}
               >
                 {t(pendingBet === null ? 'play.deal' : 'play.dealing')}

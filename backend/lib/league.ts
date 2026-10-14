@@ -49,6 +49,8 @@ export interface LeagueClock {
   today: string
   /** This week's Monday, 'YYYY-MM-DD' */
   weekStart: string
+  /** When the week opened: that Monday 00:00 in Madrid. */
+  weekBegin: Date
   /** When the week closes: next Monday 00:00 in Madrid. */
   weekEnd: Date
 }
@@ -58,7 +60,7 @@ export function leagueClock(now = new Date()): LeagueClock {
   // 0 Monday ... 6 Sunday
   const weekday = (new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7
   const weekStart = addDays(today, -weekday)
-  return { today, weekStart, weekEnd: madridMidnight(addDays(weekStart, 7)) }
+  return { today, weekStart, weekBegin: madridMidnight(weekStart), weekEnd: madridMidnight(addDays(weekStart, 7)) }
 }
 
 /** A profile's balance as of now, for players who haven't opened the app this week. */

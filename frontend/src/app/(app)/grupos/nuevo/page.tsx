@@ -20,14 +20,14 @@ export default function NewGroupPage() {
   function onSubmit(event: FormEvent) {
     event.preventDefault()
     if (!valid) return
-    // The new group opens on its settings, where the invite code is.
-    createGroup.mutate(trimmed, { onSuccess: () => router.push('/grupo') })
+    // A new group is empty: straight to inviting friends.
+    createGroup.mutate(trimmed, { onSuccess: ({ id }) => router.push(`/grupos/${id}/invitar`) })
   }
 
   const error = createGroup.error
   return (
     <div className={styles.page}>
-      <Link href="/" className={styles.back}>
+      <Link href="/grupos" className={styles.back}>
         <ChevronLeftIcon width={20} height={20} />
         {t('common.back')}
       </Link>

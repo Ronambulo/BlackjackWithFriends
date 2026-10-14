@@ -343,16 +343,16 @@
   font-size: 0.8rem;
 }
 
+/* Side by side in the middle, however wide the rail is */
 .chipRow {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
+  display: flex;
+  justify-content: center;
+  gap: 16px;
 }
 
 .chip {
   width: 56px;
   height: 56px;
-  margin: 0 auto;
   border: 5px dashed #fff;
   border-radius: 50%;
   color: #fff;
@@ -629,5 +629,64 @@
 @media (prefers-reduced-motion: reduce) {
   .value {
     animation-delay: 0s !important;
+  }
+}
+
+/*
+  Desktop: the felt keeps filling the screen, but what's on it stays in a table-sized
+  area in the middle, the cards are bigger and the rail's controls don't stretch.
+*/
+@media (min-width: 900px) {
+  .felt {
+    padding: 8px max(var(--page-x), (100% - 860px) / 2) 20px;
+  }
+
+  .dealer {
+    --card-w: 92px;
+  }
+
+  .hands {
+    --card-w: 100px;
+
+    gap: 20px 28px;
+  }
+
+  .small {
+    --card-w: 72px;
+  }
+
+  .print {
+    max-width: 560px;
+  }
+
+  .printCompact {
+    max-width: 480px;
+  }
+
+  .spot {
+    width: 132px;
+    height: 132px;
+  }
+
+  .rail {
+    padding-right: max(14px, (100% - 600px) / 2);
+    padding-left: max(14px, (100% - 600px) / 2);
+  }
+
+  .actions {
+    grid-template-columns: repeat(4, 92px);
+    justify-content: center;
+  }
+
+  .wood:hover:not(:disabled) {
+    background: #46342a;
+  }
+
+  .gold:hover:not(:disabled) {
+    filter: brightness(1.06);
+  }
+
+  .chip:hover:not(:disabled) {
+    transform: translateY(-2px);
   }
 }

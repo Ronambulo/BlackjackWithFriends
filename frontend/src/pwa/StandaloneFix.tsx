@@ -15,8 +15,10 @@ function isIosStandalone() {
  * Two iOS home screen app quirks:
  *
  * - On launch WebKit sometimes lays the app out with a viewport that's too short,
- *   so the tab bar floats above the bottom until the first scroll. The installed
- *   app always fills the whole screen, so --app-height pins it to the screen size.
+ *   so the tab bar floats above the bottom until the first scroll. --app-height is
+ *   measured again as the viewport settles. It's the window's height, not the
+ *   screen's: with the fix below the app starts under the status bar, so the screen
+ *   height would push the tab bar off the bottom.
  *
  * - iOS 27 blurs the top of the app over the top bar. Sliding a fixed, almost
  *   transparent panel in and back out (and keeping it, off screen) switches the
@@ -29,16 +31,14 @@ export function StandaloneFix() {
     const root = document.documentElement
 
     const measure = () => {
-      // screen.* doesn't rotate on iOS; the app is portrait-only anyway (manifest.ts).
-      const portrait = window.matchMedia('(orientation: portrait)').matches
-      const screenHeight = portrait ? screen.height : screen.width
-      root.style.setProperty('--app-height', `${Math.max(screenHeight, window.innerHeight)}px`)
+      root.style.setProperty('--app-height', `${window.innerHeight}px`)
       if (window.scrollY !== 0) window.scrollTo(0, 0)
     }
     measure()
     // WebKit settles the viewport a moment after launch and after coming back.
     const timers = [100, 500, 1500].map((ms) => window.setTimeout(measure, ms))
     window.addEventListener('pageshow', measure)
+    window.addEventListener('resize', measure)
     window.addEventListener('orientationchange', measure)
 
     const cover = document.createElement('div')
@@ -83,6 +83,7 @@ export function StandaloneFix() {
       window.clearTimeout(slideBack)
       cancelAnimationFrame(frame)
       window.removeEventListener('pageshow', measure)
+      window.removeEventListener('resize', measure)
       window.removeEventListener('orientationchange', measure)
       cover.remove()
       panel.remove()

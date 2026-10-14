@@ -237,3 +237,91 @@
   /* The table always fits the screen: it never scrolls */
   overflow: hidden;
 }
+
+/* ---------- Desktop ---------- */
+
+/*
+  On a wide screen the tabs become a sidebar on the left and the content gets a
+  wider column: a bar of five icons stretched across a monitor reads like a phone app.
+*/
+@media (min-width: 900px) {
+  .shell {
+    padding-left: var(--sidebar-width);
+  }
+
+  .tabbar {
+    position: fixed;
+    top: var(--topbar-height);
+    bottom: 0;
+    left: 0;
+    width: var(--sidebar-width);
+    height: auto;
+    grid-template-columns: 1fr;
+    grid-auto-rows: 48px;
+    align-content: start;
+    gap: 4px;
+    padding: 20px 12px;
+    border-top: 0;
+    border-right: 1px solid rgb(255 255 255 / 0.07);
+  }
+
+  .tab,
+  .chipTab {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 14px;
+    height: 48px;
+    padding: 0 14px;
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+  }
+
+  .tab:hover {
+    background: var(--layer-1);
+    color: var(--text);
+    --icon-cutout: var(--layer-1);
+  }
+
+  .tab[aria-current='page'] {
+    background: var(--layer-2);
+    --icon-cutout: var(--layer-2);
+  }
+
+  .chip {
+    width: 30px;
+    height: 30px;
+    margin: -4px;
+    box-shadow: none;
+  }
+
+  .chipFace {
+    width: 22px;
+    height: 22px;
+    border-width: 1.5px;
+  }
+
+  .chipFace svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .content {
+    padding: 32px max(32px, (100% - 680px) / 2) 48px;
+  }
+
+  .felted .tabbar {
+    background: #08331f;
+    border-right-color: rgb(0 0 0 / 0.25);
+    --icon-cutout: #08331f;
+  }
+
+  .felted .tab:hover {
+    background: #0a2a1b;
+    --icon-cutout: #0a2a1b;
+  }
+
+  .felted .tab[aria-current='page'] {
+    background: #062216;
+    --icon-cutout: #062216;
+  }
+}

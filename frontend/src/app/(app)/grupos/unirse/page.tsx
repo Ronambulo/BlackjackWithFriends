@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Suspense, useState, type FormEvent } from 'react'
+import { Suspense, useEffect, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { forgetInvite } from '@/groups/pendingInvite'
 import { CODE_LENGTH, selectGroup, useInvite, useJoinGroup } from '@/groups/useGroups'
 import { currentLanguage } from '@/i18n'
 import { ApiError } from '@/lib/api'
@@ -13,7 +14,7 @@ import styles from '../../pages.module.css'
 
 /** Only the characters an invite code can have; pasted links or spaces are trimmed away. */
 function cleanCode(value: string) {
-  const match = /[?&]codigo=([^&\s]+)/.exec(value)
+  const match = /(?:[?&]codigo=|\/i\/)([^&?#/\s]+)/.exec(value)
   return (match ? match[1] : value).replace(/[^A-Za-z0-9]/g, '').slice(0, CODE_LENGTH)
 }
 
@@ -25,15 +26,18 @@ function JoinForm() {
   const invite = useInvite(code)
   const joinGroup = useJoinGroup()
 
+  // The invite the player came with is on screen now: it no longer needs keeping.
+  useEffect(forgetInvite, [])
+
   function onSubmit(event: FormEvent) {
     event.preventDefault()
     if (!invite.data) return
     if (invite.data.member) {
       selectGroup(invite.data.id)
-      router.push('/ranking')
+      router.push(`/grupos/${invite.data.id}`)
       return
     }
-    joinGroup.mutate(code, { onSuccess: () => router.push('/ranking') })
+    joinGroup.mutate(code, { onSuccess: ({ id }) => router.push(`/grupos/${id}`) })
   }
 
   const expired = invite.error instanceof ApiError && invite.error.status === 404
@@ -109,7 +113,7 @@ export default function JoinGroupPage() {
   const { t } = useTranslation()
   return (
     <div className={styles.page}>
-      <Link href="/" className={styles.back}>
+      <Link href="/grupos" className={styles.back}>
         <ChevronLeftIcon width={20} height={20} />
         {t('common.back')}
       </Link>

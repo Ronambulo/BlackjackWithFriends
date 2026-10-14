@@ -1,18 +1,13 @@
 'use client'
 
 import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CheckIcon, ChevronDownIcon, CrownIcon, PlusIcon, SlidersIcon } from '@/ui/icons'
-import { avatarColor } from '@/ui/avatarColor'
+import { avatarColor, initials } from '@/ui/avatarColor'
 import { selectGroup, useCurrentGroup, useGroups } from './useGroups'
 import styles from './GroupPicker.module.css'
-
-/** Up to two initials: "Los del Curro" → "LC", "Familia" → "F". */
-function initials(name: string) {
-  const words = name.split(/\s+/).filter((word) => word.length > 2 || /^\p{Lu}/u.test(word))
-  return (words.length > 1 ? words[0][0] + words[words.length - 1][0] : name.charAt(0)).toUpperCase()
-}
 
 /** The top bar's group button: shows the group in view and switches between the player's groups. */
 export function GroupPicker({ className }: { className: string }) {
@@ -20,6 +15,8 @@ export function GroupPicker({ className }: { className: string }) {
   const { data: groups } = useGroups()
   const current = useCurrentGroup()
   const [open, setOpen] = useState(false)
+  const pathname = usePathname()
+  const router = useRouter()
   const root = useRef<HTMLDivElement>(null)
 
   // Closes when picking, tapping outside or pressing Escape.
@@ -71,6 +68,9 @@ export function GroupPicker({ className }: { className: string }) {
                       onClick={() => {
                         selectGroup(group.id)
                         setOpen(false)
+                        // Looking at a group: switch to the one picked.
+                        const page = /^\/grupos\/(?!nuevo|unirse)[^/]+(\/invitar)?$/.exec(pathname)
+                        if (page) router.push(`/grupos/${group.id}${page[1] ?? ''}`)
                       }}
                     >
                       <span className={styles.tile} style={{ background: selected ? 'var(--accent)' : avatarColor(group.id) }} aria-hidden="true">
@@ -108,7 +108,7 @@ export function GroupPicker({ className }: { className: string }) {
               {t('topbar.joinGroup')}
             </Link>
             {current && (
-              <Link className={`${styles.item} ${styles.settings}`} href="/grupo" onClick={() => setOpen(false)}>
+              <Link className={`${styles.item} ${styles.settings}`} href={`/grupos/${current.id}`} onClick={() => setOpen(false)}>
                 <span className={styles.tile} aria-hidden="true">
                   <SlidersIcon width={20} height={20} />
                 </span>

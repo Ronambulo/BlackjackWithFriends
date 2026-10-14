@@ -55,15 +55,18 @@ export const GROUP_NAME_MIN = 2
 export const GROUP_NAME_MAX = 30
 export const CODE_LENGTH = 10
 
-/** Others' balances change as they play: the ranking refreshes every few seconds while it's on screen. */
-const LIVE_MS = 10_000
+/**
+ * Others' balances change as they play. The API pushes those changes (useLiveUpdates);
+ * this slow poll is only a safety net if the live connection can't get through.
+ */
+const FALLBACK_MS = 30_000
 
 export function useGroups() {
   const user = useUser()
   return useQuery({
     queryKey: ['groups', user.id],
     queryFn: () => api<GroupSummary[]>('/groups'),
-    refetchInterval: LIVE_MS * 3,
+    refetchInterval: FALLBACK_MS,
   })
 }
 
@@ -73,7 +76,7 @@ export function useGroup(id: string | undefined) {
     queryKey: ['group', user.id, id],
     queryFn: () => api<Group>(`/group?id=${encodeURIComponent(id!)}`),
     enabled: Boolean(id),
-    refetchInterval: LIVE_MS,
+    refetchInterval: FALLBACK_MS,
   })
 }
 
