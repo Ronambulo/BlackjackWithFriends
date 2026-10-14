@@ -256,11 +256,11 @@ erDiagram
     uuid id PK
     uuid user_id
     uuid season_id
-    text modo "liga | baraja_del_dia"
+    text modo "prueba | liga | baraja_del_dia"
     bigint apuesta
-    jsonb estado_publico
-    jsonb mazo "solo servidor"
-    text estado
+    jsonb ronda "estado completo con el mazo, solo servidor"
+    text fase "insurance | player | settled"
+    int version
     bigint neto
   }
   cosmetics {
@@ -272,6 +272,7 @@ erDiagram
 ```
 
 Notas:
+- **Manos**: `ronda` guarda el estado entero del motor (mazo incluido) y nunca sale tal cual del servidor; al cliente solo le llega la vista pública. `version` evita que dos acciones a la vez se apliquen sobre la misma mano, y un índice único impide tener más de una mano abierta por jugador y modo. Mientras no hay grupos, se juega con `profiles.fichas_prueba` (1000 al empezar, recargables al quedarte sin fichas).
 - **Solo el backend toca la base de datos**: la app nunca se conecta a ella. Cada ruta de la API comprueba la sesión y que eres miembro del grupo, así que solo ves los datos de tus grupos. Los saldos, manos y monedas **solo** los cambia el backend.
 - El campo `cosmetics.origen` deja la puerta abierta a añadir más adelante un origen "compra" sin cambiar nada más. **No hay ninguna huella visible de esto en la app.**
 
@@ -515,7 +516,7 @@ Cada fase termina con algo usable y desplegado.
 | 0 | ✅ PWA base | Instalación con aviso y botón, y actualización automática |
 | 1 | ✅ Fundaciones | Base de datos Neon + Drizzle; login con código por email (Better Auth + Resend); i18n; estilo base oscuro; navegación con pestañas; despliegue en Vercel; tarjeta de vista previa estática para la página principal |
 | 2 | ✅ Motor de blackjack | Módulo puro con todas las reglas y una batería completa de tests |
-| 3 | Mesa jugable | endpoint `POST /api/play` del backend, manos guardadas en BD y mesa con animaciones básicas, todavía con un saldo de prueba |
+| 3 | ✅ Mesa jugable | endpoint `POST /api/play` del backend, manos guardadas en BD y mesa con animaciones básicas, todavía con un saldo de prueba |
 | 4 | Grupos y liga | Crear grupo, unirse, saldo por grupo, paga diaria, ranking en vivo y admin |
 | 4b | Invitaciones | Pantalla "Invitar" con compartir, copiar y **QR**; **vista previa del enlace** con imagen generada (`next/og`); renovar el enlace |
 | 5 | Ciclo semanal | Cierre automático, ceremonia, estadísticas, trofeos y monedas |
