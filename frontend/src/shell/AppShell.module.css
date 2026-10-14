@@ -5,7 +5,10 @@
 */
 .shell {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: var(--app-height);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -39,6 +42,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  max-width: 100%;
   min-height: 36px;
   padding: 0 14px;
   border: 1px solid var(--border);
