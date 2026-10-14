@@ -34,7 +34,7 @@ Separarlas es clave: gastar en la tienda **nunca** te baja en el ranking.
 - 🔧 6 barajas, **barajado nuevo en cada mano** (equivale a una barajadora continua: no se pueden contar cartas).
 - La banca **se planta en 17 suave** (S17).
 - Blackjack paga **3:2**.
-- **Doblar** con cualquier par de cartas iniciales, también después de dividir.
+- **Doblar** solo con 9, 10 u 11 en las dos primeras cartas (`doubleOn` en `packages/engine/src/rules.ts`), también después de dividir.
 - **Dividir** hasta 3 veces (4 manos). Los ases divididos reciben una sola carta.
 - **Seguro** cuando la banca muestra un As (paga 2:1).
 - **Rendirse** (tardío): recuperas la mitad de la apuesta.

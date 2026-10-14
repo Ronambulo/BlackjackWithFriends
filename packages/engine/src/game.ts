@@ -217,11 +217,15 @@ function candidateActions(s: RoundState): Action[] {
   const actions: Action[] = ['hit', 'stand']
   const twoCards = hand.cards.length === 2
 
-  if (twoCards && (!hand.fromSplit || rules.doubleAfterSplit)) actions.push('double')
+  if (twoCards && (!hand.fromSplit || rules.doubleAfterSplit) && canDouble(hand.cards, rules)) actions.push('double')
   if (twoCards && s.hands.length < rules.maxHands && canSplitPair(hand.cards, rules)) actions.push('split')
   if (rules.surrender && twoCards && s.hands.length === 1 && !hand.fromSplit) actions.push('surrender')
 
   return actions
+}
+
+function canDouble(cards: Card[], rules: Rules): boolean {
+  return rules.doubleOn === null || rules.doubleOn.includes(handValue(cards).total)
 }
 
 function canSplitPair([a, b]: Card[], rules: Rules): boolean {
