@@ -4,6 +4,7 @@ import { DEFAULT_RULES } from '@bwf/engine'
 import { auth, requireUser } from '../lib/auth.js'
 import { isDatabaseConfigured } from '../lib/db.js'
 import { HttpError, json } from '../lib/http.js'
+import { getTable, postPlay } from '../routes/play.js'
 import { getProfile, patchProfile } from '../routes/profile.js'
 
 type Route = (request: Request) => Promise<Response> | Response
@@ -28,6 +29,10 @@ const routes: Routes = {
   '/api/profile': {
     GET: getProfile,
     PATCH: patchProfile,
+  },
+  '/api/play': {
+    GET: getTable,
+    POST: postPlay,
   },
 }
 
