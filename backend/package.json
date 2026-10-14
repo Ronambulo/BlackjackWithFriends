@@ -1,0 +1,24 @@
+{
+  "name": "@bwf/backend",
+  "private": true,
+  "version": "0.0.0",
+  "description": "API de Blackjack with Friends (Vercel Functions)",
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false dev-server.ts",
+    "build": "npm run build -w @bwf/engine && tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@bwf/engine": "*",
+    "@supabase/supabase-js": "^2.117.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "tsx": "^4.20.6",
+    "typescript": "~6.0.2"
+  }
+}

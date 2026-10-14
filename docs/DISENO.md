@@ -73,38 +73,43 @@ El navegador **nunca** decide las cartas ni calcula premios. Solo envía accione
 
 ```mermaid
 flowchart LR
-  subgraph Cliente["📱 PWA (React + TS + Vite)"]
-    UI[Interfaz y animaciones]
+  subgraph Front["▲ Vercel · proyecto frontend/"]
+    UI[PWA React + TS + Vite<br/>interfaz y animaciones]
     SW[Service worker<br/>caché + autoupdate + push]
-    Engine1[Motor blackjack<br/>solo para mostrar]
+    RW[Rewrites<br/>/api/* e /i/* → backend]
   end
 
+  subgraph Back["▲ Vercel · proyecto backend/"]
+    API[Vercel Functions /api<br/>lógica de juego]
+    OG[Vistas previas de enlaces<br/>+ imágenes OG]
+  end
+
+  Engine[[packages/engine<br/>motor compartido]]
+
   subgraph Supabase["☁️ Supabase (plan gratuito)"]
-    Auth[Auth<br/>Google + email]
+    Auth[Auth<br/>email, enlace mágico]
     DB[(Postgres<br/>+ RLS)]
     RT[Realtime<br/>feed, chat, ranking]
-    EF[Edge Functions<br/>lógica de juego]
     Cron[pg_cron<br/>cierre semanal, retos]
     Storage[Storage<br/>avatares]
   end
 
-  subgraph Vercel["▲ Vercel (plan gratuito)"]
-    Hosting[Archivos estáticos<br/>HTTPS]
-    OG[Vercel Functions<br/>vistas previas de enlaces<br/>+ imágenes OG]
-  end
   Push[Servicios push<br/>Apple / Google]
   Bots[Bots de vista previa<br/>WhatsApp, Discord,<br/>Telegram, iMessage...]
 
-  Hosting --> UI
-  Bots -- /i/código --> OG
+  Engine -. usado por .-> UI
+  Engine -. usado por .-> API
+  Bots -- /i/código --> RW
+  UI -- acciones de juego --> RW
+  RW --> API
+  RW --> OG
   OG -- datos públicos de la invitación --> DB
   UI -- login --> Auth
-  UI -- acciones de juego --> EF
-  EF -- motor compartido --> DB
+  API -- clave secreta --> DB
   UI -- lecturas permitidas por RLS --> DB
   RT -- cambios en vivo --> UI
   Cron --> DB
-  EF -- Web Push --> Push --> SW
+  API -- Web Push --> Push --> SW
 ```
 
 ### Tecnologías
@@ -117,16 +122,17 @@ flowchart LR
 | Animaciones | Motion (antes Framer Motion) | Cartas volando, fichas, podio |
 | Sonido | Howler.js | Fiable en iOS y fácil de silenciar |
 | Idiomas | i18next (es + en) | Desde el día 1 |
-| Backend | Supabase: Postgres, Auth, Realtime, Edge Functions, Storage y pg_cron | Todo en uno, gratis para cientos de usuarios |
-| Hosting | Vercel, en `blackjack-with-friends.vercel.app` (o el subdominio que esté libre) | HTTPS gratis (necesario para la PWA) y funciones para las vistas previas |
+| Backend (API) | Vercel Functions en Node/TypeScript, en la carpeta `backend/` | La lógica de juego y las vistas previas, en un proyecto de Vercel aparte |
+| Base de datos y servicios | Supabase: Postgres, Auth (solo email), Realtime, Storage y pg_cron | Todo en uno, gratis para cientos de usuarios |
+| Hosting | Dos proyectos de Vercel: el frontend (p. ej. `blackjackwithfriends.vercel.app`) y el backend (`blackjackwithfriends-api.vercel.app`) | HTTPS gratis (necesario para la PWA). El frontend reenvía `/api` al backend, así que no hay CORS |
 | Vistas previas de enlaces | Vercel Functions + `@vercel/og` | Generan el HTML con metadatos y la imagen de cada invitación |
 | Códigos QR | Librería `qrcode`, generada en el navegador | Sin servidor y funciona sin conexión |
-| Push | Web Push con claves VAPID desde una Edge Function | En iPhone solo funciona con la app instalada (iOS 16.4+) |
+| Push | Web Push con claves VAPID desde el backend | En iPhone solo funciona con la app instalada (iOS 16.4+) |
 | Tests | Vitest | Sobre todo para el motor de blackjack |
 
 ### Motor de blackjack compartido
-Un único módulo TypeScript **puro**, sin dependencias, en `src/engine/`. Lo usan:
-- la **Edge Function**, que es la autoridad: reparte, valida acciones y calcula pagos;
+Un único paquete TypeScript **puro**, sin dependencias, en `packages/engine/` (`@bwf/engine`). Lo usan:
+- el **backend**, que es la autoridad: reparte, valida acciones y calcula pagos;
 - el **cliente**, solo para mostrar (valor de la mano, qué botones están activos).
 
 Se prueba a fondo con tests unitarios: todas las reglas y casos raros.
@@ -156,7 +162,7 @@ Cada mano se guarda en la base de datos en cada paso. Si se recarga la app (por 
 ```mermaid
 sequenceDiagram
   participant J as Jugador (PWA)
-  participant F as Edge Function "play"
+  participant F as Backend POST /api/play
   participant DB as Postgres
 
   J->>F: { handId, acción: "pedir" } + token de sesión
@@ -266,7 +272,7 @@ erDiagram
 ```
 
 Notas:
-- **RLS** (seguridad a nivel de fila): solo ves los datos de tus grupos. Los saldos, manos y monedas **solo** los modifican las Edge Functions (rol de servicio), nunca el cliente directamente.
+- **RLS** (seguridad a nivel de fila): solo ves los datos de tus grupos. Los saldos, manos y monedas **solo** los modifica el backend (con la clave secreta), nunca el cliente directamente.
 - El campo `cosmetics.origen` deja la puerta abierta a añadir más adelante un origen "compra" sin cambiar nada más. **No hay ninguna huella visible de esto en la app.**
 
 ---
@@ -283,7 +289,7 @@ flowchart TD
   A2 --> A
   A --> B{¿Tiene sesión?}
   B -- No --> C[Pantalla de invitación<br/>'Luis te invita a Los del Curro'<br/>miembros, ranking actual]
-  C --> D[Entrar con Google / email]
+  C --> D[Entrar con email]
   D --> E[Elegir nombre y avatar]
   B -- Sí --> F
   E --> F[Unirse al grupo]
@@ -507,9 +513,9 @@ Cada fase termina con algo usable y desplegado.
 | # | Fase | Resultado |
 |---|---|---|
 | 0 | ✅ PWA base | Instalación con aviso y botón, y actualización automática |
-| 1 | Fundaciones | Proyecto de Supabase; login con Google y email; i18n; estilo base oscuro; navegación con pestañas; despliegue en Vercel; tarjeta de vista previa estática para la página principal |
-| 2 | Motor de blackjack | Módulo puro con todas las reglas y una batería completa de tests |
-| 3 | Mesa jugable | Edge Function `play`, manos guardadas en BD y mesa con animaciones básicas, todavía con un saldo de prueba |
+| 1 | Fundaciones | Proyecto de Supabase; login con email (enlace mágico); i18n; estilo base oscuro; navegación con pestañas; despliegue en Vercel; tarjeta de vista previa estática para la página principal |
+| 2 | ✅ Motor de blackjack | Módulo puro con todas las reglas y una batería completa de tests |
+| 3 | Mesa jugable | endpoint `POST /api/play` del backend, manos guardadas en BD y mesa con animaciones básicas, todavía con un saldo de prueba |
 | 4 | Grupos y liga | Crear grupo, unirse, saldo por grupo, paga diaria, ranking en vivo y admin |
 | 4b | Invitaciones | Pantalla "Invitar" con compartir, copiar y **QR**; **vista previa del enlace** con imagen generada (Vercel Functions + `@vercel/og`); renovar el enlace |
 | 5 | Ciclo semanal | Cierre automático, ceremonia, estadísticas, trofeos y monedas |
@@ -538,3 +544,5 @@ Para empezar a probar con amigos de verdad bastan las fases 1–5 (incluida la 4
 | Nombre | Blackjack with Friends |
 | Dominio | Subdominio gratuito de Vercel (`*.vercel.app`), sin dominio propio |
 | Invitaciones | Enlace con vista previa enriquecida + código QR |
+| Login | Solo email con enlace mágico (sin Google ni Apple) |
+| Estructura | Monorepo con npm workspaces: `frontend/`, `backend/` y `packages/engine/`; frontend y backend son dos proyectos de Vercel |
