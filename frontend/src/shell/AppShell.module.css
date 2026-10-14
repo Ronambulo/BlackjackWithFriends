@@ -67,13 +67,10 @@
   z-index: 30;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  align-items: end;
   height: calc(var(--tabbar-height) + env(safe-area-inset-bottom));
   padding: 0 6px env(safe-area-inset-bottom);
-  border-top: 1px solid var(--border);
-  background: rgb(10 12 15 / 0.75);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
+  border-top: 1px solid rgb(184 137 47 / 0.25);
+  background: #140d09;
 }
 
 .tab {
@@ -81,16 +78,17 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
   height: var(--tabbar-height);
-  color: var(--text-dim);
+  color: rgb(244 241 232 / 0.5);
   font-size: 0.7rem;
-  font-weight: 600;
+  font-weight: 700;
   transition: color 0.15s ease;
 }
 
 .tab[aria-current='page'] {
-  color: var(--text);
+  color: var(--accent);
+  font-weight: 800;
 }
 
 .tabIcon {
@@ -98,33 +96,52 @@
   place-items: center;
 }
 
-.tab[aria-current='page'] .tabIcon {
-  color: var(--accent);
+.tabIcon svg {
+  width: 22px;
+  height: 22px;
 }
 
-/* The play tab is a raised gold button in the middle */
-.play .tabIcon {
-  width: 58px;
-  height: 58px;
-  margin-top: -26px;
-  border-radius: 50%;
+/* Gold underline under the current tab */
+.tab::after {
+  content: '';
+  width: 18px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.tab[aria-current='page']::after {
   background: var(--accent);
-  color: var(--accent-text);
-  box-shadow:
-    0 8px 24px rgb(242 193 78 / 0.3),
-    0 0 0 5px var(--bg);
-  transition: transform 0.12s ease;
 }
 
-.play:active .tabIcon {
-  transform: scale(0.94);
+/* ---------- Felt mode (/jugar) ---------- */
+
+.felted {
+  display: flex;
+  flex-direction: column;
+  background-color: #0c5a34;
+  background-image: radial-gradient(ellipse 90% 60% at 50% 38%, #14834c 0%, #0c5a34 60%, #073a22 100%);
+  background-attachment: fixed;
+  color: #f4f1e8;
 }
 
-.play[aria-current='page'] .tabIcon {
-  color: var(--accent-text);
+.felted .topbar {
+  border-bottom: 0;
+  background: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
-.play .tabIcon svg {
-  width: 28px;
-  height: 28px;
+.felted .group,
+.felted .coins {
+  border: 0;
+  background: rgb(0 0 0 / 0.28);
+  color: #f4f1e8;
+}
+
+.felted .content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  max-width: none;
+  padding: 0 0 calc(var(--tabbar-height) + env(safe-area-inset-bottom));
 }

@@ -1,12 +1,14 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Metadata, Viewport } from 'next'
-import { Manrope } from 'next/font/google'
+import { Fraunces, Manrope } from 'next/font/google'
 import type { ReactNode } from 'react'
 import './globals.css'
 import { Providers } from './providers'
 
 const manrope = Manrope({ subsets: ['latin'], variable: '--font-sans', display: 'swap' })
+// Only for the lettering printed on the felt.
+const fraunces = Fraunces({ subsets: ['latin'], style: 'italic', weight: '600', variable: '--font-felt', display: 'swap' })
 
 // iOS 27.2 ignores manifest icons and only fetches apple-touch-icon lazily, so
 // an installed PWA ends up with the letter fallback. Inlining the 180x180 PNG
@@ -63,7 +65,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="es" className={manrope.variable} suppressHydrationWarning>
+    <html lang="es" className={`${manrope.variable} ${fraunces.variable}`} suppressHydrationWarning>
       <body>
         <Providers>{children}</Providers>
       </body>

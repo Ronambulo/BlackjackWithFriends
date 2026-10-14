@@ -29,9 +29,11 @@ function isActive(href: string, pathname: string) {
 export function AppShell({ profile, children }: { profile: Profile; children: ReactNode }) {
   const { t } = useTranslation()
   const pathname = usePathname()
+  // The table is played on a full-screen felt.
+  const felted = pathname.startsWith('/jugar')
 
   return (
-    <div className={styles.shell}>
+    <div className={`${styles.shell} ${felted ? styles.felted : ''}`}>
       <header className={styles.topbar}>
         {/* Group selector: enabled in phase 2, when groups exist. */}
         <button className={styles.group} type="button" disabled>
@@ -46,18 +48,14 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
 
       <main className={styles.content}>{children}</main>
 
-      <InstallBanner />
+      {/* Not over the table's controls. */}
+      {!felted && <InstallBanner />}
 
       <nav className={styles.tabbar} aria-label="Menú">
         {TABS.map(({ href, key, Icon }) => {
           const active = isActive(href, pathname)
           return (
-            <Link
-              key={href}
-              href={href}
-              className={`${styles.tab} ${key === 'play' ? styles.play : ''}`}
-              aria-current={active ? 'page' : undefined}
-            >
+            <Link key={href} href={href} className={styles.tab} aria-current={active ? 'page' : undefined}>
               <span className={styles.tabIcon}>
                 <Icon />
               </span>
