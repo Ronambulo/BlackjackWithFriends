@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: appleTouchIcon, sizes: '180x180', type: 'image/png' }],
   },
-  appleWebApp: { capable: true, title: 'Blackjack', statusBarStyle: 'black-translucent' },
+  appleWebApp: { capable: true, title: 'Blackjack', statusBarStyle: 'default' },
   formatDetection: { telephone: false },
   openGraph: {
     type: 'website',

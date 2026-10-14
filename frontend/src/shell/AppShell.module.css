@@ -1,16 +1,25 @@
+/*
+  The shell is pinned to the screen and only the content scrolls: the page itself
+  never moves, so iOS can't slide the whole app up (rubber band, keyboard) or push
+  the top bar under the status bar.
+*/
 .shell {
-  min-height: 100dvh;
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .topbar {
-  position: sticky;
-  top: 0;
+  flex: none;
   z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: calc(10px + env(safe-area-inset-top)) var(--page-x) 10px;
+  padding: calc(10px + env(safe-area-inset-top)) calc(var(--page-x) + env(safe-area-inset-right)) 10px
+    calc(var(--page-x) + env(safe-area-inset-left));
   border-bottom: 1px solid var(--border);
   background: rgb(10 12 15 / 0.7);
   backdrop-filter: var(--blur);
@@ -52,23 +61,25 @@
   box-shadow: inset 0 0 0 2px rgb(0 0 0 / 0.15);
 }
 
+/* The only part that scrolls; the padding keeps the column 560px wide at most */
 .content {
-  width: 100%;
-  max-width: 560px;
-  margin: 0 auto;
-  padding: 20px var(--page-x) calc(var(--tabbar-height) + 32px + env(safe-area-inset-bottom));
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px max(var(--page-x) + env(safe-area-inset-right), (100% - 560px) / 2) 32px
+    max(var(--page-x) + env(safe-area-inset-left), (100% - 560px) / 2);
 }
 
 .tabbar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  flex: none;
   z-index: 30;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   height: calc(var(--tabbar-height) + env(safe-area-inset-bottom));
-  padding: 0 6px env(safe-area-inset-bottom);
+  padding: 0 calc(6px + env(safe-area-inset-right)) env(safe-area-inset-bottom) calc(6px + env(safe-area-inset-left));
   border-top: 1px solid rgb(184 137 47 / 0.25);
   background: #140d09;
 }
@@ -115,12 +126,26 @@
 
 /* ---------- Felt mode (/jugar) ---------- */
 
+.statusTint {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  width: 100%;
+  height: 1px;
+  background-color: var(--bg);
+  pointer-events: none;
+}
+
+.felted .statusTint {
+  background-color: #0c5a34;
+}
+
 .felted {
   display: flex;
   flex-direction: column;
   background-color: #0c5a34;
   background-image: radial-gradient(ellipse 90% 60% at 50% 38%, #14834c 0%, #0c5a34 60%, #073a22 100%);
-  background-attachment: fixed;
   color: #f4f1e8;
 }
 
@@ -142,6 +167,7 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  max-width: none;
-  padding: 0 0 calc(var(--tabbar-height) + env(safe-area-inset-bottom));
+  padding: 0 env(safe-area-inset-right) 0 env(safe-area-inset-left);
+  /* The table always fits the screen: it never scrolls */
+  overflow: hidden;
 }
