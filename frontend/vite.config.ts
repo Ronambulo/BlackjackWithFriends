@@ -52,11 +52,11 @@ export default defineConfig(({ mode }) => {
           background_color: '#0b6b3a',
           theme_color: '#0b6b3a',
           icons: [
-            { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png', purpose: 'any' },
-            { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-            { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+            { src: 'pwa-64x64.png?v=3', sizes: '64x64', type: 'image/png', purpose: 'any' },
+            { src: 'pwa-192x192.png?v=3', sizes: '192x192', type: 'image/png', purpose: 'any' },
+            { src: 'pwa-512x512.png?v=3', sizes: '512x512', type: 'image/png', purpose: 'any' },
             {
-              src: 'maskable-icon-512x512.png',
+              src: 'maskable-icon-512x512.png?v=3',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',

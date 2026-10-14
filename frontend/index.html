@@ -6,9 +6,14 @@
     <title>Blackjack with Friends</title>
     <meta name="description" content="Juega al blackjack con tus amigos" />
     <meta name="theme-color" content="#0b6b3a" />
-    <link rel="icon" href="/favicon.ico" sizes="48x48" />
-    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
+    <!--
+      ?v=N: iOS caches the home screen icon per URL the first time someone taps
+      "Añadir a pantalla de inicio" and never asks again, even if the file changes.
+      Bump N whenever the icons change so Safari fetches them again.
+    -->
+    <link rel="icon" href="/favicon.ico?v=3" sizes="48x48" />
+    <link rel="icon" href="/icon.svg?v=3" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png?v=3" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
