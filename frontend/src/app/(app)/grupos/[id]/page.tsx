@@ -7,6 +7,7 @@ import { Trans, useTranslation } from 'react-i18next'
 import { useUser } from '@/auth/session-context'
 import { Podium, Ranking } from '@/groups/Ranking'
 import { useLeaveGroup } from '@/groups/useGroups'
+import { WeekChart } from '@/groups/WeekChart'
 import { useRouteGroup } from '@/groups/useRouteGroup'
 import { currentLanguage } from '@/i18n'
 import { useCountdown } from '@/league/useCountdown'
@@ -73,6 +74,7 @@ export default function GroupPage() {
             </div>
             <Podium members={ranking.slice(0, 3)} />
             {ranking.length > 3 && <Ranking members={ranking.slice(3)} />}
+            <WeekChart groupId={data.id} ranking={ranking} />
           </section>
 
           {countdown && (

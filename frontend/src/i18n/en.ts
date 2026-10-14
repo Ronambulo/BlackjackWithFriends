@@ -83,6 +83,9 @@ export const en: Messages = {
     rules: 'Everyone starts Monday with 1,000 chips and gets paid every day. At midnight on Sunday, the most chips wins.',
   },
   ranking: {
+    chartTitle: 'This week',
+    chartLabel: 'Each player’s balance over the week',
+    now: 'Now',
     title: 'Ranking',
     empty: 'Once you’re in a group, this week’s standings show up here.',
     live: 'Live',

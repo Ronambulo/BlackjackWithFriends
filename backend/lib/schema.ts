@@ -167,6 +167,20 @@ export const hands = sqliteTable(
   ],
 )
 
+/** Every claim of the daily pay this week, for the groups' chart; older ones are deleted. */
+export const pays = sqliteTable(
+  'pays',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    cantidad: integer('cantidad').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('pays_user_id_idx').on(t.userId, t.createdAt)],
+)
+
 export const GROUP_ROLES = ['admin', 'miembro'] as const
 export type GroupRole = (typeof GROUP_ROLES)[number]
 

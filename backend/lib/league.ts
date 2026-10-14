@@ -1,6 +1,6 @@
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq, lt, sql } from 'drizzle-orm'
 import type { Tx } from './db.js'
-import { profiles } from './schema.js'
+import { pays, profiles } from './schema.js'
 
 // The league economy. Everything is fixed by the server and the same for every
 // group: the balance is the player's, groups only rank it.
@@ -126,11 +126,17 @@ export function selectLeague(tx: Tx, userId: string, c = leagueClock()): LeagueS
 
 /** Claims every unclaimed day of pay this week at once. Returns false if there was nothing. */
 export function claimPay(tx: Tx, userId: string, c = leagueClock()): boolean {
+  // What the claim pays, worked out before the update moves ultimaPaga.
+  const paid = DAILY_PAY * (tx.select({ days: pendingDays(c) }).from(profiles).where(eq(profiles.id, userId)).get()?.days ?? 0)
   const claimed = tx
     .update(profiles)
     .set({ saldo: sql`${profiles.saldo} + ${DAILY_PAY} * ${pendingDays(c)}`, ultimaPaga: c.today })
     .where(and(eq(profiles.id, userId), sql`${pendingDays(c)} > 0`))
     .returning({ id: profiles.id })
     .get()
-  return claimed !== undefined
+  if (!claimed) return false
+  tx.insert(pays).values({ userId, cantidad: paid }).run()
+  // Only this week's chart reads them: older ones go.
+  tx.delete(pays).where(and(eq(pays.userId, userId), lt(pays.createdAt, c.weekBegin))).run()
+  return true
 }

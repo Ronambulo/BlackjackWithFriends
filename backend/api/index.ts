@@ -8,6 +8,7 @@ import { HttpError, json } from '../lib/http.js'
 import {
   createGroup,
   getGroup,
+  getGroupHistory,
   getInvite,
   getInvitePreview,
   joinGroup,
@@ -74,6 +75,7 @@ const routes: Routes = {
   '/api/groups': { GET: listGroups, POST: createGroup },
   '/api/groups/join': { POST: live(joinGroup) },
   '/api/group': { GET: getGroup, PATCH: live(patchGroup) },
+  '/api/group/history': { GET: getGroupHistory },
   '/api/group/leave': { POST: live(leaveGroup) },
   '/api/group/renew': { POST: live(renewCode) },
   '/api/group/kick': { POST: live(kickMember) },
