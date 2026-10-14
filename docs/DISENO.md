@@ -412,7 +412,7 @@ Barra inferior con 5 pestañas. El botón central **Jugar** es más grande. Arri
 ```
 Al apostar, se toca sobre fichas de 10 / 50 / 100 / 500 / 1.000. También hay botones de "repetir apuesta", "x2" y "all-in".
 
-**Grupos**: una tarjeta por grupo con tu puesto, la variación del día (▲▼) y quién va primero, más los botones de crear y unirse. Al tocar una tarjeta se abre el grupo (`/grupos/[id]`): el botón **Invitar amigos** (enlace, código y QR, en `/grupos/[id]/invitar`), la clasificación en vivo, la lista de miembros, los ajustes si eres admin y salir del grupo. Más adelante, el historial de semanas pasadas y la clasificación de la Baraja del día.
+**Grupos**: una tarjeta por grupo con tu puesto, la variación del día (▲▼) y quién va primero, más los botones de crear y unirse. Al tocar una tarjeta se abre el grupo (`/grupos/[id]`): el botón **Invitar amigos** (enlace, código y QR, en `/grupos/[id]/invitar`), la clasificación en vivo con el podio, una gráfica de líneas con el saldo de cada miembro a lo largo de la semana (de lunes a domingo; tocar o arrastrar muestra el saldo de cada uno en ese momento; `GET /api/group/history`, que reconstruye el saldo con las manos y las pagas de la semana, guardadas en la tabla `pays`, que solo conserva las de la semana en curso), la lista de miembros, los ajustes si eres admin y salir del grupo. Más adelante, el historial de semanas pasadas y la clasificación de la Baraja del día.
 
 **Social**: dos subpestañas, **Feed** (con reacciones) y **Chat** del grupo.
 

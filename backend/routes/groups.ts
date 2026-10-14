@@ -1,9 +1,9 @@
-import { and, asc, count, eq, inArray, sql, type SQL } from 'drizzle-orm'
+import { and, asc, count, eq, gte, inArray, sql, type SQL } from 'drizzle-orm'
 import { requireUser } from '../lib/auth.js'
 import { db, sqliteCode, type Tx } from '../lib/db.js'
 import { HttpError, json } from '../lib/http.js'
-import { currentBalance, dayStartBalance, leagueClock, rollover } from '../lib/league.js'
-import { groupMembers, groups, profiles, user, type GroupRole, type GroupSettings } from '../lib/schema.js'
+import { currentBalance, DAILY_PAY, dayStartBalance, leagueClock, rollover, START_BALANCE } from '../lib/league.js'
+import { groupMembers, groups, hands, pays, profiles, user, type GroupRole, type GroupSettings } from '../lib/schema.js'
 
 // Groups are rankings: each one orders its members by their league balance, which
 // is the same in every group. Only members see a group; only its admin changes it.
@@ -190,6 +190,56 @@ function groupJson(
     ajustes: { ocultarRanking: group.ajustes.ocultarRanking === true },
     ranking: rank(members),
   }
+}
+
+// The chart keeps the balance at the end of every half hour that changed it.
+const HISTORY_STEP = 30 * 60 * 1000
+
+// GET /api/group/history?id=: every member's balance over this week, for the group's chart.
+export async function getGroupHistory(request: Request): Promise<Response> {
+  const me = await requireUser(request)
+  const id = groupId(new URL(request.url).searchParams.get('id'))
+  const clock = leagueClock()
+  const begin = clock.weekBegin.getTime()
+  const now = Date.now()
+  const { members, changes } = db().transaction((tx) => {
+    rollover(tx, me.id, clock)
+    const members = selectMembers(tx, [id])
+    if (!members.some((m) => m.userId === me.id)) throw new HttpError(404, 'No existe el grupo')
+    const ids = members.map((m) => m.userId)
+    // A hand counts when it's settled; its bet stays out of the line until then.
+    const played = tx
+      .select({ userId: hands.userId, at: hands.updatedAt, amount: sql<number>`${hands.neto}` })
+      .from(hands)
+      .where(and(inArray(hands.userId, ids), eq(hands.fase, 'settled'), gte(hands.updatedAt, clock.weekBegin)))
+      .all()
+    const paid = tx
+      .select({ userId: pays.userId, at: pays.createdAt, amount: pays.cantidad })
+      .from(pays)
+      .where(and(inArray(pays.userId, ids), gte(pays.createdAt, clock.weekBegin)))
+      .all()
+    return { members, changes: [...played, ...paid].sort((a, b) => a.at.getTime() - b.at.getTime()) }
+  })
+
+  const series = members.map((member) => {
+    const points: [number, number][] = [[begin, START_BALANCE]]
+    let balance = START_BALANCE
+    for (const change of changes) {
+      if (change.userId !== member.userId) continue
+      // A hand can't lose more than the balance, so a dip below 0 means pay that
+      // wasn't recorded (claimed before the pays table existed): it came just before.
+      if (balance + change.amount < 0) balance += Math.ceil(-(balance + change.amount) / DAILY_PAY) * DAILY_PAY
+      balance += change.amount
+      const at = Math.min(now, begin + Math.ceil((change.at.getTime() - begin) / HISTORY_STEP) * HISTORY_STEP)
+      const last = points[points.length - 1]
+      if (last[0] === at) last[1] = balance
+      else points.push([at, balance])
+    }
+    // Ends on the real balance: also covers a bet still on the table, or pay from before it was recorded.
+    points.push([now, member.balance])
+    return { userId: member.userId, nombre: member.nombre, points }
+  })
+  return json({ from: begin, to: clock.weekEnd.getTime(), now, series })
 }
 
 // GET /api/invite?codigo=: what joining a group would look like, before joining.

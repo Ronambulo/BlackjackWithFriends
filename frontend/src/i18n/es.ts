@@ -82,6 +82,9 @@ export const es = {
     rules: 'Todos empezáis el lunes con 1.000 fichas y cada día hay paga. El domingo a medianoche gana quien tenga más.',
   },
   ranking: {
+    chartTitle: 'Esta semana',
+    chartLabel: 'Saldo de cada jugador a lo largo de la semana',
+    now: 'Ahora',
     title: 'Ranking',
     empty: 'Cuando estés en un grupo verás aquí la clasificación de la semana.',
     live: 'En directo',
