@@ -44,7 +44,7 @@ Separarlas es clave: gastar en la tienda **nunca** te baja en el ranking.
 - Todo esto lo fija **el servidor** y es igual para todos: ningún admin de grupo puede cambiar el saldo inicial, la paga ni el reinicio semanal.
 - Saldo inicial cada lunes: **1.000 fichas**.
 - Paga diaria: **+1.000 fichas**, se cobra con un botón (no caduca dentro de la semana: si no entras el martes, el miércoles cobras 2).
-- 🔧 Apuesta mínima **10**. Máxima: **todo tu saldo** (el all-in está permitido).
+- 🔧 Apuesta mínima **10** y máxima **500** por mano, para que una sola mano no decida la semana (doblar y separar sí pueden pasar de 500).
 - Si te quedas a 0, esperas a la paga del día siguiente.
 - Cierre de semana: **domingo 23:59, hora de Madrid**.
 - **Quien empieza a jugar a mitad de semana** recibe el saldo inicial más **todas las pagas de los días ya transcurridos** (incluido el de hoy). Empieza con lo mismo que habría tenido alguien que empezó el lunes y no jugó.
@@ -361,8 +361,8 @@ Barra inferior con 5 pestañas. El botón central **Jugar** es más grande. Arri
 │          (pantalla)         │
 │                             │
 ├─────────────────────────────┤
-│  🏠    🏆    (🃏)    💬   👤 │
-│ Inicio Ranking Jugar Social Perfil
+│  🏠    👥    (🃏)    💬   👤 │
+│ Inicio Grupos Jugar Social Perfil 
 └─────────────────────────────┘
 ```
 
@@ -389,7 +389,7 @@ Barra inferior con 5 pestañas. El botón central **Jugar** es más grande. Arri
 │ Luis ganó 4.000 con BJ 🔥3  │
 │ Marta se arruinó 💀5        │
 ├─────────────────────────────┤
-│  🏠    🏆    (🃏)    💬   👤 │
+│  🏠    👥    (🃏)    💬   👤 │
 └─────────────────────────────┘
 ```
 
@@ -412,12 +412,12 @@ Barra inferior con 5 pestañas. El botón central **Jugar** es más grande. Arri
 ```
 Al apostar, se toca sobre fichas de 10 / 50 / 100 / 500 / 1.000. También hay botones de "repetir apuesta", "x2" y "all-in".
 
-**Ranking**: la clasificación en vivo con la variación del día (▲▼). Debajo, el historial de semanas pasadas y la clasificación de la Baraja del día.
+**Grupos**: una tarjeta por grupo con tu puesto, la variación del día (▲▼) y quién va primero, más los botones de crear y unirse. Al tocar una tarjeta se abre el grupo (`/grupos/[id]`): el botón **Invitar amigos** (enlace, código y QR, en `/grupos/[id]/invitar`), la clasificación en vivo, la lista de miembros, los ajustes si eres admin y salir del grupo. Más adelante, el historial de semanas pasadas y la clasificación de la Baraja del día.
 
 **Social**: dos subpestañas, **Feed** (con reacciones) y **Chat** del grupo.
 
 **Perfil**:
-- Estadísticas: manos jugadas, % de victorias, blackjacks, mayor ganancia, semanas ganadas.
+- Estadísticas de esta semana o de siempre: resultado, reparto de manos ganadas / empatadas / perdidas, neto global, manos jugadas, blackjacks, mayor ganancia, mejor racha y una gráfica de las últimas 30 manos. Se calculan a partir de las manos guardadas (`GET /api/profile/stats`). Más adelante, semanas ganadas.
 - Vitrina de trofeos y logros.
 - Acceso a **Estilos**.
 
@@ -473,6 +473,7 @@ Moderación mínima: el admin puede expulsar miembros y cualquiera puede borrar 
 - El **QR** se genera en el propio navegador con el estilo oscuro de la app y el icono en el centro. Se puede guardar como imagen.
 - Para escanearlo no hace falta lector dentro de la app: basta la cámara del móvil, que abre el enlace.
 - **Renovar enlace** invalida el anterior (y su QR). Sirve si se ha filtrado.
+- Si quien abre el enlace no tiene cuenta, primero se registra (o inicia sesión) y elige nombre. La invitación se guarda en el dispositivo durante 24 h y, al entrar, la app le lleva directamente a la pantalla de unirse a ese grupo.
 
 **Vista previa del enlace** (la tarjeta que aparece al pegarlo en WhatsApp, Discord, Telegram, iMessage, X...):
 
@@ -498,6 +499,7 @@ Cómo funciona:
   2. `generateMetadata` rellena las etiquetas Open Graph y de Twitter. Para una persona, la app carga con normalidad. Para un bot, la tarjeta queda bonita.
   3. `og:image` sale de `opengraph-image.tsx` en esa misma ruta, que dibuja la imagen 1200×630 con `next/og`.
 - En Discord, el color de la barra lateral de la tarjeta sale de `theme-color`.
+- La URL de la imagen tiene que ser absoluta: se construye con `SITE_URL` o, si no está, con `BETTER_AUTH_URL` (el dominio público).
 - Las respuestas se guardan en caché unos minutos, para no consultar la BD cada vez que alguien pega el enlace.
 - **Página principal y enlaces genéricos**: tarjeta estática con el logo y "Tu liga semanal de blackjack con amigos".
 - **Otros enlaces compartibles** que reutilizan el mismo sistema: el resultado de la Baraja del día (`/r/…`) y el podio semanal (`/p/…`), cada uno con su imagen generada.
@@ -522,7 +524,7 @@ Cada fase termina con algo usable y desplegado.
 | 2 | ✅ Motor de blackjack | Módulo puro con todas las reglas y una batería completa de tests |
 | 3 | ✅ Mesa jugable | endpoint `POST /api/play` del backend, manos guardadas en BD y mesa con animaciones básicas, todavía con un saldo de prueba |
 | 4 | ✅ Grupos y liga | Saldo único de liga y paga diaria; crear grupo, unirse, ranking en vivo de cada grupo y admin |
-| 4b | Invitaciones | Pantalla "Invitar" con compartir, copiar y **QR**; **vista previa del enlace** con imagen generada (`next/og`); renovar el enlace |
+| 4b | ✅ Invitaciones | Pantalla "Invitar" con compartir, copiar y **QR**; **vista previa del enlace** con imagen generada (`next/og`); renovar el enlace |
 | 5 | Ciclo semanal | Cierre automático, ceremonia, estadísticas, trofeos y monedas |
 | 6 | Social | Feed, reacciones y chat |
 | 7 | Notificaciones push | Suscripción, preferencias y envíos |
@@ -541,7 +543,7 @@ Para empezar a probar con amigos de verdad bastan las fases 1–5 (incluida la 4
 | Tema | Decisión |
 |---|---|
 | Saldo inicial semanal / paga diaria | 1.000 / 1.000 fichas |
-| Apuesta máxima | Todo el saldo (all-in permitido) |
+| Apuesta mínima / máxima | 10 / 500 fichas por mano |
 | Quien entra a mitad de semana | Saldo inicial + todas las pagas de los días ya transcurridos |
 | Cierre de semana | Domingo 23:59, hora de Madrid |
 | Baraja del día | 10 manos con apuesta fija; el 1º del día gana +500 fichas en la liga |

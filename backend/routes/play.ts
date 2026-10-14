@@ -21,6 +21,8 @@ import { hands, profiles } from '../lib/schema.js'
 // The server deals and settles; the app only sends actions and shows what comes back.
 
 export const MIN_BET = 10
+// So one hand can't decide the week: a big win or loss still takes a few hands.
+export const MAX_BET = 500
 
 const ACTIONS: readonly Action[] = ['hit', 'stand', 'double', 'split', 'surrender', 'insurance', 'noInsurance']
 
@@ -31,7 +33,7 @@ function handJson(row: Pick<HandRow, 'id' | 'version'>, state: RoundState, chips
 }
 
 function tableJson(chips: number, hand: ReturnType<typeof handJson> | null) {
-  return { chips, minBet: MIN_BET, hand }
+  return { chips, minBet: MIN_BET, maxBet: MAX_BET, hand }
 }
 
 // GET /api/play: the player's chips and the hand left half-played, if any.
@@ -66,7 +68,7 @@ export async function postPlay(request: Request): Promise<Response> {
 }
 
 function bet(userId: string, amount: unknown): Response {
-  if (typeof amount !== 'number' || !Number.isInteger(amount) || amount < MIN_BET) {
+  if (typeof amount !== 'number' || !Number.isInteger(amount) || amount < MIN_BET || amount > MAX_BET) {
     throw new HttpError(400, 'Apuesta no válida')
   }
   const state = startRound(amount, createShoe(DEFAULT_RULES.decks, cryptoRng()), DEFAULT_RULES)

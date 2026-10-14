@@ -131,7 +131,7 @@ export default function SettingsPage() {
             )}
           </div>
           {group && (
-            <Link className={styles.listRow} href="/grupo">
+            <Link className={styles.listRow} href={`/grupos/${group.id}`}>
               <span className={styles.listText}>
                 {t('settings.group')}
                 <small>{t('settings.groupHint', { name: group.nombre })}</small>

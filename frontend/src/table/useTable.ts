@@ -13,6 +13,7 @@ export type HandView = PublicRoundView & { id: string; version: number; actions:
 export interface TableState {
   chips: number
   minBet: number
+  maxBet: number
   /** The hand being played, or the one that just finished (POST only). */
   hand: HandView | null
 }
@@ -44,6 +45,7 @@ export function usePlay() {
       if (table.hand?.phase === 'settled') {
         void queryClient.invalidateQueries({ queryKey: ['groups', user.id] })
         void queryClient.invalidateQueries({ queryKey: ['group', user.id] })
+        void queryClient.invalidateQueries({ queryKey: ['stats', user.id] })
       }
     },
     onError: (err) => {

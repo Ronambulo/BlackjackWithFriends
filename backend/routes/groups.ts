@@ -213,6 +213,26 @@ export async function getInvite(request: Request): Promise<Response> {
   })
 }
 
+// GET /api/invite/preview?codigo=: the link preview of an invite, without a session.
+// Whoever has the link sees this much (docs/DISENO.md, "Invitar"): the group's name,
+// how many play and, unless the group hides it, the top 3.
+export function getInvitePreview(request: Request): Response {
+  const codigo = new URL(request.url).searchParams.get('codigo')?.trim() ?? ''
+  if (codigo.length !== CODE_LENGTH) throw new HttpError(404, 'Invitación caducada')
+  const group = db()
+    .select({ id: groups.id, nombre: groups.nombre, ajustes: groups.ajustes })
+    .from(groups)
+    .where(eq(groups.codigoInvitacion, codigo))
+    .get()
+  if (!group) throw new HttpError(404, 'Invitación caducada')
+  const ranking = rank(selectMembers(db(), [group.id]))
+  return json({
+    nombre: group.nombre,
+    members: ranking.length,
+    top: group.ajustes.ocultarRanking ? [] : ranking.slice(0, 3).map(({ nombre, balance }) => ({ nombre, balance })),
+  })
+}
+
 // ── Joining and leaving ─────────────────────────────────────────────────────
 
 // POST /api/groups { nombre }: creates a group with the player as its admin.

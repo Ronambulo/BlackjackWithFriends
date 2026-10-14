@@ -1,0 +1,160 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgb(255 255 255 / 0.07);
+  border-radius: var(--radius);
+  background: var(--layer-1);
+  color: var(--text);
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+/* The group shown in the top bar. */
+.card[aria-current='true'] {
+  border-color: rgb(242 193 78 / 0.35);
+}
+
+.card:active {
+  background: var(--layer-2, var(--layer-1));
+}
+
+@media (hover: hover) {
+  .card:hover {
+    border-color: rgb(255 255 255 / 0.18);
+  }
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.tile {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  color: var(--bg);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.name {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 0.85rem;
+}
+
+.name > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.title {
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+.place {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.rank {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent);
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.of {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid rgb(255 255 255 / 0.06);
+}
+
+.stack {
+  display: flex;
+  flex: none;
+}
+
+.stacked {
+  box-shadow: 0 0 0 2px var(--layer-1);
+}
+
+.stacked + .stacked {
+  margin-left: -8px;
+}
+
+.leader {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leader b {
+  margin-left: 6px;
+  color: var(--text);
+}
+
+.chevron {
+  flex: none;
+  color: var(--text-dim);
+}
+
+/*
+  Pushed to the bottom of the screen, and kept there over a long list. It also
+  covers the content's bottom padding (AppShell), or the list shows through it.
+*/
+.footer {
+  position: sticky;
+  bottom: -32px;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: auto 0 -32px;
+  padding: 18px 0 32px;
+  background: linear-gradient(to bottom, transparent, var(--bg) 18px);
+}
+
+.footer > :first-child {
+  margin-top: 0;
+}

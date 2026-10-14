@@ -3,11 +3,13 @@ import { DEFAULT_RULES } from '@bwf/engine'
 import { auth, requireUser } from '../lib/auth.js'
 import { sql } from 'drizzle-orm'
 import { db } from '../lib/db.js'
+import { eventStream, groupmates, notifyGroups } from '../lib/events.js'
 import { HttpError, json } from '../lib/http.js'
 import {
   createGroup,
   getGroup,
   getInvite,
+  getInvitePreview,
   joinGroup,
   kickMember,
   leaveGroup,
@@ -18,9 +20,29 @@ import {
 import { getLeague, postPay } from '../routes/league.js'
 import { getTable, postPlay } from '../routes/play.js'
 import { getProfile, patchProfile } from '../routes/profile.js'
+import { getStats } from '../routes/stats.js'
 
 type Route = (request: Request) => Promise<Response> | Response
 type Routes = Record<string, Partial<Record<string, Route>>>
+
+/**
+ * A change other players see in their rankings: once it succeeds, everyone who shared
+ * a group with the player before or after it (so joins, leaves and kicks count) is told.
+ */
+function live(fn: Route): Route {
+  return async (request) => {
+    const me = await requireUser(request)
+    const before = groupmates(me.id)
+    const response = await fn(request)
+    if (response.ok) {
+      const others = new Set([...before, ...groupmates(me.id)])
+      // The player's own app already refreshes after its own change.
+      others.delete(me.id)
+      notifyGroups(others)
+    }
+    return response
+  }
+}
 
 const routes: Routes = {
   // Quick check that the API is up and wired correctly.
@@ -40,21 +62,27 @@ const routes: Routes = {
   },
   '/api/profile': {
     GET: getProfile,
-    PATCH: patchProfile,
+    PATCH: live(patchProfile),
   },
+  '/api/profile/stats': { GET: getStats },
   '/api/play': {
     GET: getTable,
-    POST: postPlay,
+    POST: live(postPlay),
   },
   '/api/league': { GET: getLeague },
-  '/api/league/pay': { POST: postPay },
+  '/api/league/pay': { POST: live(postPay) },
   '/api/groups': { GET: listGroups, POST: createGroup },
-  '/api/groups/join': { POST: joinGroup },
-  '/api/group': { GET: getGroup, PATCH: patchGroup },
-  '/api/group/leave': { POST: leaveGroup },
-  '/api/group/renew': { POST: renewCode },
-  '/api/group/kick': { POST: kickMember },
+  '/api/groups/join': { POST: live(joinGroup) },
+  '/api/group': { GET: getGroup, PATCH: live(patchGroup) },
+  '/api/group/leave': { POST: live(leaveGroup) },
+  '/api/group/renew': { POST: live(renewCode) },
+  '/api/group/kick': { POST: live(kickMember) },
   '/api/invite': { GET: getInvite },
+  '/api/invite/preview': { GET: getInvitePreview },
+  // Live updates (lib/events.ts).
+  '/api/events': {
+    GET: async (request) => eventStream((await requireUser(request)).id),
+  },
 }
 
 async function route(request: Request): Promise<Response> {

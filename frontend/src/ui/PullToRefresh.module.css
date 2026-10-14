@@ -1,0 +1,71 @@
+.root {
+  position: relative;
+}
+
+.fill {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.fill > .body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.fill > .body > * {
+  flex: 1;
+}
+
+.indicator {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-left: -18px;
+  border-radius: 50%;
+  background: var(--surface-strong);
+  pointer-events: none;
+  transition:
+    transform 0.25s ease,
+    opacity 0.25s ease;
+}
+
+.ring {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid var(--accent);
+  border-right-color: transparent;
+  border-radius: 50%;
+  opacity: 0.55;
+}
+
+.ring[data-ready='true'] {
+  opacity: 1;
+}
+
+.spinning .ring {
+  opacity: 1;
+  animation: spin 0.8s linear infinite;
+}
+
+.body {
+  transition: transform 0.25s ease;
+}
+
+/* Under the finger, no easing. */
+.dragging,
+.root:has(.dragging) .indicator {
+  transition: none;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -3,6 +3,7 @@
 import { useEffect, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LoginScreen } from '@/auth/LoginScreen'
+import { rememberInvite } from '@/groups/pendingInvite'
 import { useSession } from '@/auth/session-context'
 import { AppShell } from '@/shell/AppShell'
 import { OnboardingScreen } from '@/profile/OnboardingScreen'
@@ -15,6 +16,15 @@ import { Splash } from '@/ui/Splash'
  */
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { session, loading } = useSession()
+
+  // Opening an invite signed out: it waits until the player has signed up.
+  const signedOut = !loading && !session
+  useEffect(() => {
+    if (!signedOut || window.location.pathname !== '/grupos/unirse') return
+    const codigo = new URLSearchParams(window.location.search).get('codigo')
+    if (codigo) rememberInvite(codigo)
+  }, [signedOut])
+
   if (loading) return <Splash />
   if (!session) return <LoginScreen />
   return <SignedIn>{children}</SignedIn>

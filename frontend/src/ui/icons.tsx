@@ -70,6 +70,19 @@ export function ChatIcon(props: IconProps) {
   )
 }
 
+/** Three friends, the one in front over the other two */
+export function GroupIcon(props: IconProps) {
+  return (
+    <Icon strokeWidth="1.8" {...props}>
+      <circle cx="6" cy="9" r="2.3" />
+      <circle cx="18" cy="9" r="2.3" />
+      <path d="M2 18.5a4.3 4.3 0 0 1 6.4-3.7M22 18.5a4.3 4.3 0 0 0-6.4-3.7" />
+      <circle cx="12" cy="8.2" r="3" style={CUTOUT} />
+      <path d="M6.8 20a5.2 5.2 0 0 1 10.4 0Z" style={CUTOUT} />
+    </Icon>
+  )
+}
+
 /** The player inside a poker chip */
 export function UserIcon(props: IconProps) {
   return (

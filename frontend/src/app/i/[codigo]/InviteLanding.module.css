@@ -1,0 +1,14 @@
+.expired {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  min-height: var(--app-height);
+  padding: 24px var(--page-x);
+  text-align: center;
+}
+
+.expired img {
+  border-radius: 18px;
+}

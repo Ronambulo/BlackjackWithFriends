@@ -4,6 +4,9 @@
 import { existsSync } from 'node:fs'
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import { join } from 'node:path'
+import { Readable } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
+import type { ReadableStream as WebReadableStream } from 'node:stream/web'
 
 const envFile = join(import.meta.dirname, '.env.local')
 if (existsSync(envFile)) process.loadEnvFile(envFile)
@@ -39,7 +42,14 @@ async function send(res: ServerResponse, response: Response): Promise<void> {
   const cookies = response.headers.getSetCookie()
   if (cookies.length > 0) headers['set-cookie'] = cookies
   res.writeHead(response.status, headers)
-  res.end(Buffer.from(await response.arrayBuffer()))
+  if (!response.body) return void res.end()
+  // Streamed, not buffered: /api/events stays open. If the player goes away,
+  // pipeline cancels the stream, which unsubscribes it.
+  try {
+    await pipeline(Readable.fromWeb(response.body as WebReadableStream), res)
+  } catch {
+    // The connection closed before the end: nothing left to send.
+  }
 }
 
 const server = createServer(async (req, res) => {
@@ -55,7 +65,7 @@ const server = createServer(async (req, res) => {
     response = Response.json({ error: 'Error interno' }, { status: 500 })
   }
   await send(res, response)
-  if (url.pathname !== '/api/health') {
+  if (url.pathname !== '/api/health' && url.pathname !== '/api/events') {
     console.log(`${req.method} ${url.pathname} → ${response.status} (${Math.round(performance.now() - started)} ms)`)
   }
 })
