@@ -1,6 +1,22 @@
+import { readFileSync } from 'node:fs'
 import react from '@vitejs/plugin-react'
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+
+/**
+ * Inlines the 180px apple-touch-icon into index.html as a data: URI.
+ * On iOS 27 the "Add to Home Screen" sheet fails to fetch icons by URL and
+ * shows a letter tile instead; an inlined icon needs no request.
+ */
+function inlineAppleTouchIcon(): Plugin {
+  return {
+    name: 'inline-apple-touch-icon',
+    transformIndexHtml(html) {
+      const png = readFileSync(new URL('./public/apple-touch-icon-180x180.png', import.meta.url))
+      return html.replace('%APPLE_TOUCH_ICON%', `data:image/png;base64,${png.toString('base64')}`)
+    },
+  }
+}
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -17,6 +33,7 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       react(),
+      inlineAppleTouchIcon(),
       VitePWA({
         registerType: 'autoUpdate',
         // Registered from src/pwa/registerServiceWorker.ts so we can check for updates.
