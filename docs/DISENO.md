@@ -124,7 +124,7 @@ flowchart LR
 | Emails | Resend | Envío fiable y gratis hasta 3.000 al mes; necesita un dominio verificado para escribir a cualquiera |
 | Tareas programadas | Vercel Cron llamando a la API | Sin servicios extra |
 | Avatares | Generados (inicial y color); fotos más adelante con Vercel Blob | Nada que alojar al principio |
-| Hosting | Dos proyectos de Vercel: el frontend (`blackjack-con-amigos.vercel.app`) y el backend (`blackjackwithfriends-backend.vercel.app`) | HTTPS gratis (necesario para la PWA). El frontend reenvía `/api` al backend, así que no hay CORS |
+| Hosting | Dos proyectos de Vercel: el frontend (`blackjackwithfriends.vercel.app`) y el backend (`blackjackwithfriends-backend.vercel.app`) | HTTPS gratis (necesario para la PWA). El frontend reenvía `/api` al backend, así que no hay CORS |
 | Vistas previas de enlaces | `generateMetadata` + `opengraph-image` de Next.js (`next/og`) | El HTML de cada invitación ya sale del servidor con sus metadatos e imagen |
 | Códigos QR | Librería `qrcode`, generada en el navegador | Sin servidor y funciona sin conexión |
 | Push | Web Push con claves VAPID desde el backend | En iPhone solo funciona con la app instalada (iOS 16.4+) |
