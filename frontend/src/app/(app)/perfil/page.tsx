@@ -12,6 +12,7 @@ export default function ProfilePage() {
   const user = useUser()
   const { data: profile } = useProfile()
   const name = profile?.nombre ?? ''
+  const handle = user.displayUsername ?? user.username
 
   // Real numbers arrive with the game (phase 3).
   const stats = [
@@ -30,7 +31,7 @@ export default function ProfilePage() {
           </div>
           <div style={{ minWidth: 0 }}>
             <h1 className={styles.name}>{name}</h1>
-            <p className={`muted ${styles.email}`}>{user.email}</p>
+            {handle && <p className={`muted ${styles.handle}`}>@{handle}</p>}
           </div>
         </div>
         <Link href="/ajustes" className={styles.iconButton} aria-label={t('profile.settings')}>

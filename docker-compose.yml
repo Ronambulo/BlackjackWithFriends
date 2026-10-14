@@ -1,0 +1,46 @@
+name: blackjackwithfriends
+
+services:
+  blackjackwithfriends:
+    image: ghcr.io/ronambulo/blackjackwithfriends:latest
+    # Para construirla aquí en vez de bajarla: docker compose up --build
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: blackjackwithfriends
+    restart: unless-stopped
+    ports:
+      - "3021:3000"
+    volumes:
+      # La base de datos (blackjack.db) y el secreto de las sesiones.
+      - /DATA/AppData/blackjackwithfriends:/data
+    environment:
+      # La dirección desde la que se abre la app: la cookie de sesión es de ahí.
+      # Para instalarla como PWA en el móvil tiene que ser https (proxy inverso o túnel).
+      - BETTER_AUTH_URL=http://localhost:3021
+      # Otras direcciones desde las que se abra, separadas por comas (p. ej. la IP del servidor).
+      - BETTER_AUTH_TRUSTED_ORIGINS=
+      # Opcional: si no se pone, se genera uno la primera vez y se guarda en /data.
+      # - BETTER_AUTH_SECRET=
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: blackjackwithfriends
+  description:
+    en_us: A weekly blackjack league with friends — play every day with the same chips as everyone else, climb your group's ranking and win the week.
+    es_es: Tu liga semanal de blackjack con amigos — juega cada día con las mismas fichas que los demás, sube en el ranking de tu grupo y gana la semana.
+  tagline:
+    en_us: Blackjack league with friends
+    es_es: Liga de blackjack con amigos
+  developer: Ronambulo
+  author: Ronambulo
+  icon: https://raw.githubusercontent.com/Ronambulo/BlackjackWithFriends/main/frontend/public/icon.svg
+  thumbnail: ""
+  title:
+    en_us: Blackjack with Friends
+  index: /
+  port_map: "3021"
+  scheme: http
+  store_app_id: blackjackwithfriends

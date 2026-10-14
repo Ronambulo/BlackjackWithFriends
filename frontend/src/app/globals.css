@@ -23,6 +23,8 @@
   --blur: blur(18px) saturate(140%);
   --tabbar-height: 64px;
   --topbar-height: 60px;
+  /* The visible height; StandaloneFix replaces it with the screen height on iOS home screen apps */
+  --app-height: 100dvh;
   --page-x: 16px;
 
   font-family: var(--font-sans), system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -53,7 +55,7 @@ label {
 
 body {
   margin: 0;
-  min-height: 100dvh;
+  min-height: var(--app-height);
   background:
     radial-gradient(120% 60% at 50% -10%, var(--bg-glow), transparent 70%),
     var(--bg);

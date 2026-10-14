@@ -1,6 +1,6 @@
 'use client'
 
-import { emailOTPClient } from 'better-auth/client/plugins'
+import { usernameClient } from 'better-auth/client/plugins'
 import { createAuthClient } from 'better-auth/react'
 
 /**
@@ -8,7 +8,7 @@ import { createAuthClient } from 'better-auth/react'
  * rewrites it to the backend), and the session lives in an httpOnly cookie.
  */
 export const authClient = createAuthClient({
-  plugins: [emailOTPClient()],
+  plugins: [usernameClient()],
 })
 
 export type AuthSession = typeof authClient.$Infer.Session

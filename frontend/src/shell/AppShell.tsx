@@ -8,7 +8,8 @@ import { currentLanguage } from '@/i18n'
 import { InstallBanner } from '@/install/InstallBanner'
 import { formatNumber } from '@/lib/format'
 import type { Profile } from '@/profile/useProfile'
-import { CardsIcon, ChatIcon, ChevronDownIcon, HomeIcon, PodiumIcon, UserIcon } from '@/ui/icons'
+import { GroupPicker } from '@/groups/GroupPicker'
+import { CardsIcon, ChatIcon, HomeIcon, PodiumIcon, UserIcon } from '@/ui/icons'
 import styles from './AppShell.module.css'
 
 const TABS = [
@@ -20,7 +21,9 @@ const TABS = [
 ] as const
 
 function isActive(href: string, pathname: string) {
-  if (href === '/') return pathname === '/'
+  // Creating or joining a group starts from home; a group's settings hang off its ranking.
+  if (href === '/') return pathname === '/' || pathname.startsWith('/grupos')
+  if (href === '/ranking') return pathname.startsWith('/ranking') || pathname === '/grupo'
   // Settings lives under the profile tab.
   if (href === '/perfil') return pathname.startsWith('/perfil') || pathname.startsWith('/ajustes')
   return pathname.startsWith(href)
@@ -43,11 +46,7 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
       {/* iOS 27 paints the status bar from a fixed element at the top; without it the edge is blurred */}
       <div className={styles.statusTint} aria-hidden="true" />
       <header className={styles.topbar}>
-        {/* Group selector: enabled in phase 2, when groups exist. */}
-        <button className={styles.group} type="button" disabled>
-          <span>{t('topbar.noGroup')}</span>
-          <ChevronDownIcon width={16} height={16} />
-        </button>
+        <GroupPicker className={styles.group} />
         <div className={styles.coins} aria-label={t('common.coins', { count: profile.monedas })}>
           <span className={styles.coin} aria-hidden="true" />
           {formatNumber(profile.monedas, currentLanguage())}

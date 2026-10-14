@@ -1,19 +1,23 @@
 import { join } from 'node:path'
 import type { NextConfig } from 'next'
 
-// /api goes to the backend project, so the browser only ever talks to one origin (no CORS).
-// Locally that is backend/dev-server.ts (npm run dev at the repo root).
-const apiOrigin =
-  process.env.API_ORIGIN ??
-  (process.env.VERCEL ? 'https://blackjackwithfriends-backend.vercel.app' : 'http://localhost:3001')
+// /api goes to the backend (backend/server.ts), so the browser only ever talks to one
+// origin (no CORS). It listens on 127.0.0.1:3001 both locally and in the container.
+// Rewrites are fixed at build time, so API_ORIGIN must be set when building.
+const apiOrigin = process.env.API_ORIGIN ?? 'http://127.0.0.1:3001'
+const root = join(import.meta.dirname, '..')
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  // A self-contained server (.next/standalone) for the Docker image.
+  output: 'standalone',
   // npm workspaces hoist the dependencies to the repo root.
-  turbopack: { root: join(import.meta.dirname, '..') },
+  outputFileTracingRoot: root,
+  turbopack: { root },
   env: {
-    // Lets an open app notice that a newer deployment is live (src/pwa/autoUpdate.ts).
-    NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_DEPLOYMENT_ID ?? process.env.VERCEL_GIT_COMMIT_SHA ?? 'dev',
+    // Lets an open app notice that a newer version is live (src/pwa/RegisterServiceWorker.tsx).
+    // The Docker build passes the commit.
+    NEXT_PUBLIC_BUILD_ID: process.env.BUILD_ID ?? 'dev',
   },
   async rewrites() {
     return [{ source: '/api/:path*', destination: `${apiOrigin}/api/:path*` }]

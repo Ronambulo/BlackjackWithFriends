@@ -1,7 +1,7 @@
 .splash {
   display: grid;
   place-items: center;
-  min-height: 100dvh;
+  min-height: var(--app-height);
 }
 
 .logo {
