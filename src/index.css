@@ -1,0 +1,80 @@
+:root {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: #f4f1ea;
+  background: #0b6b3a;
+  -webkit-tap-highlight-color: transparent;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: radial-gradient(circle at 50% 30%, #12894c, #0b6b3a 55%, #064726);
+}
+
+.home {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: calc(24px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+  text-align: center;
+}
+
+.home-logo {
+  border-radius: 28px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.3);
+}
+
+.home h1 {
+  margin: 8px 0 0;
+  font-size: clamp(1.8rem, 7vw, 2.6rem);
+}
+
+.home p {
+  margin: 0;
+  opacity: 0.85;
+}
+
+.home-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 280px;
+  margin-top: 16px;
+}
+
+.home-actions button {
+  padding: 14px;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.home-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.primary {
+  border: 0;
+  background: #f2c14e;
+  color: #1a1a1a;
+}
+
+.secondary {
+  border: 2px solid #f4f1ea;
+  background: transparent;
+  color: #f4f1ea;
+}
+
+.home-soon {
+  font-size: 0.8rem;
+}
