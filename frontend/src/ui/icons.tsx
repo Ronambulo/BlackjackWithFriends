@@ -21,46 +21,63 @@ function Icon({ children, ...props }: IconProps) {
   )
 }
 
+/** Fill for shapes that hide what is behind them; set --icon-cutout to the background underneath */
+const CUTOUT = { fill: 'var(--icon-cutout, var(--bg))' }
+
 export function HomeIcon(props: IconProps) {
   return (
-    <Icon {...props}>
+    <Icon strokeWidth="1.8" {...props}>
       <path d="M3 10.5 12 3l9 7.5" />
-      <path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5" />
+      <path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5" />
+      <path d="M12 11.6c-1.5 1.5-2.8 2.4-2.8 3.7a1.5 1.5 0 0 0 2.8.7 1.5 1.5 0 0 0 2.8-.7c0-1.3-1.3-2.2-2.8-3.7Z" />
+      <path d="M12 16.2v2.3" />
     </Icon>
   )
 }
 
-export function TrophyIcon(props: IconProps) {
+export function PodiumIcon(props: IconProps) {
   return (
-    <Icon {...props}>
-      <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z" />
-      <path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3" />
+    <Icon strokeWidth="1.8" {...props}>
+      <path d="M4 21v-6h5v6M9 21V11h6v10M15 21v-8h5v8M2.5 21h19" />
+      <path d="m12 3 1 2 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2L8.8 5.3 11 5Z" />
     </Icon>
   )
 }
 
 export function CardsIcon(props: IconProps) {
   return (
-    <Icon {...props}>
-      <rect x="3" y="5" width="11" height="16" rx="2" transform="rotate(-10 8.5 13)" />
-      <rect x="10" y="3" width="11" height="16" rx="2" transform="rotate(8 15.5 11)" />
+    <Icon strokeWidth="1.8" {...props}>
+      <rect x="2.8" y="6" width="10.5" height="14.5" rx="2" transform="rotate(-14 8 13.2)" />
+      <g transform="rotate(6 15 10.75)">
+        <rect x="9.5" y="3" width="11" height="15.5" rx="2" style={CUTOUT} />
+        <path d="M15 7.8c-1.5 1.5-2.8 2.4-2.8 3.7a1.5 1.5 0 0 0 2.8.7 1.5 1.5 0 0 0 2.8-.7c0-1.3-1.3-2.2-2.8-3.7Z" />
+        <path d="M15 12.4v2.1" />
+      </g>
     </Icon>
   )
 }
 
 export function ChatIcon(props: IconProps) {
   return (
-    <Icon {...props}>
-      <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12Z" />
+    <Icon strokeWidth="1.8" {...props}>
+      <path d="M17 9h2a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1v3l-4-3h-3a2 2 0 0 1-2-2v-1" />
+      <path
+        d="M13 3H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h1v3l4-3h3a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Z"
+        style={CUTOUT}
+      />
+      <path d="M6.5 8h.01M9 8h.01M11.5 8h.01" strokeWidth="2.4" />
     </Icon>
   )
 }
 
+/** The player inside a poker chip */
 export function UserIcon(props: IconProps) {
   return (
-    <Icon {...props}>
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4 21a8 8 0 0 1 16 0" />
+    <Icon strokeWidth="1.8" {...props}>
+      <circle cx="12" cy="12" r="9.2" />
+      <path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4" />
+      <circle cx="12" cy="10.2" r="2.4" />
+      <path d="M8 16.3a4.6 4.6 0 0 1 8 0" />
     </Icon>
   )
 }

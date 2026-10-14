@@ -3,7 +3,7 @@
   left: 12px;
   right: 12px;
   /* Sits above the tab bar */
-  bottom: calc(var(--tabbar-height) + 12px + env(safe-area-inset-bottom));
+  bottom: calc(var(--tabbar-height) + 12px + max(4px, env(safe-area-inset-bottom) - 18px));
   z-index: 50;
   display: flex;
   gap: 12px;

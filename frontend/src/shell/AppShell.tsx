@@ -8,12 +8,12 @@ import { currentLanguage } from '@/i18n'
 import { InstallBanner } from '@/install/InstallBanner'
 import { formatNumber } from '@/lib/format'
 import type { Profile } from '@/profile/useProfile'
-import { CardsIcon, ChatIcon, ChevronDownIcon, HomeIcon, TrophyIcon, UserIcon } from '@/ui/icons'
+import { CardsIcon, ChatIcon, ChevronDownIcon, HomeIcon, PodiumIcon, UserIcon } from '@/ui/icons'
 import styles from './AppShell.module.css'
 
 const TABS = [
   { href: '/', key: 'home', Icon: HomeIcon },
-  { href: '/ranking', key: 'ranking', Icon: TrophyIcon },
+  { href: '/ranking', key: 'ranking', Icon: PodiumIcon },
   { href: '/jugar', key: 'play', Icon: CardsIcon },
   { href: '/social', key: 'social', Icon: ChatIcon },
   { href: '/perfil', key: 'profile', Icon: UserIcon },
