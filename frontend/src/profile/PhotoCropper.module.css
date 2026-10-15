@@ -1,0 +1,131 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overscroll-behavior: contain;
+  background: rgb(5 6 8 / 0.7);
+  animation: fade 0.18s ease;
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 560px);
+  padding: 10px 20px calc(24px + env(safe-area-inset-bottom));
+  border-top: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 28px 28px 0 0;
+  background: var(--layer-2);
+  box-shadow: 0 -20px 50px rgb(0 0 0 / 0.5);
+  text-align: center;
+  animation: rise 0.22s ease;
+}
+
+/* On wide screens it floats in the middle instead of hanging from the bottom. */
+@media (min-width: 900px) {
+  .overlay {
+    align-items: center;
+  }
+
+  .sheet {
+    width: 420px;
+    padding-bottom: 24px;
+    border: 1px solid rgb(255 255 255 / 0.1);
+    border-radius: 28px;
+  }
+
+  .grab {
+    display: none;
+  }
+}
+
+.grab {
+  width: 40px;
+  height: 5px;
+  margin-bottom: 18px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.2);
+}
+
+.title {
+  margin-bottom: 4px;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.hint {
+  margin-bottom: 18px;
+  color: var(--text-dim);
+  font-size: 0.875rem;
+}
+
+/* The square that becomes the photo; the ring shows how the round avatar cuts it. */
+.frame {
+  position: relative;
+  width: min(300px, 100%);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--layer-1);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.frame:active {
+  cursor: grabbing;
+}
+
+.photo {
+  position: absolute;
+  max-width: none;
+  height: auto;
+  pointer-events: none;
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 2px rgb(255 255 255 / 0.85),
+    0 0 0 999px rgb(0 0 0 / 0.45);
+  pointer-events: none;
+}
+
+.zoom {
+  width: min(300px, 100%);
+  margin: 18px 0 22px;
+  accent-color: var(--accent);
+}
+
+.buttons {
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 10px;
+  width: 100%;
+}
+
+.buttons > * {
+  flex: 1;
+}
+
+.cancel {
+  background: var(--layer-3);
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+}
