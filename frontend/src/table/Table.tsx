@@ -16,8 +16,8 @@ import { useClearFinishedHand, useClearFinishedHandOnLeave, usePlay, useTable, t
 import styles from './Table.module.css'
 
 // What you bet with; 1s only show up in a stack, for amounts that aren't a multiple of 5.
-const CHIP_VALUES = [5, 10, 25, 100, 500, 1000] as const
-const STACK_VALUES = [1, ...CHIP_VALUES] as const
+const CHIP_VALUES = [1, 5, 10, 25, 100, 500, 1000] as const
+const STACK_VALUES = CHIP_VALUES
 const LAST_BET_KEY = 'lastBet'
 
 // ── Deal timing ─────────────────────────────────────────────────────────────
@@ -137,7 +137,7 @@ type ChipValue = (typeof STACK_VALUES)[number]
 
 /** Casino colours: the face, the darker edge seen on a stack, the number and the stripes. */
 const CHIP_COLORS: Record<ChipValue, { face: string; edge: string; text: string; stripe: string }> = {
-  1: { face: '#f1ede4', edge: '#a9a291', text: '#1c130d', stripe: '#3a73d8' },
+  1: { face: '#f1ede4', edge: '#a9a291', text: '#1c130d', stripe: '#9a968c' },
   5: { face: '#d23f4c', edge: '#8f2731', text: '#fff', stripe: '#fff' },
   10: { face: '#2f62c9', edge: '#1e4a92', text: '#fff', stripe: '#fff' },
   25: { face: '#1b9a59', edge: '#11693c', text: '#fff', stripe: '#fff' },
