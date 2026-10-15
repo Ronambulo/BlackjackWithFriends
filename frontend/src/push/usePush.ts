@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useUser } from '@/auth/session-context'
 import { api } from '@/lib/api'
 
-export const PUSH_KINDS = ['pay', 'overtaken', 'mention', 'closing', 'ceremony', 'review'] as const
+export const PUSH_KINDS = ['pay', 'overtaken', 'mention', 'message', 'reaction', 'closing', 'ceremony', 'review'] as const
 export type PushKind = (typeof PUSH_KINDS)[number]
 export type PushPrefs = Record<PushKind, boolean>
 
@@ -139,5 +139,12 @@ export function useUpdatePushPrefs() {
       if (context?.before) queryClient.setQueryData(key, context.before)
     },
     onSuccess: (prefs) => queryClient.setQueryData(key, prefs),
+  })
+}
+
+/** Sends a test notification to the player's devices; says how many and which failed. */
+export function useTestPush() {
+  return useMutation({
+    mutationFn: () => api<{ devices: number; failed: string[] }>('/push/test', { method: 'POST' }),
   })
 }

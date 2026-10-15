@@ -14,6 +14,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { useUser } from '@/auth/session-context'
 import { currentLanguage } from '@/i18n'
+import { useProfile } from '@/profile/useProfile'
 import { Avatar } from '@/ui/Avatar'
 import { CloseIcon, ReplyIcon, SendIcon, TrashIcon } from '@/ui/icons'
 import { HandCard } from './HandCard'
@@ -247,7 +248,9 @@ function Message({
             ) : message.estadisticas ? (
               <StatsCard stats={message.estadisticas} />
             ) : (
-              <span className={styles.text}>{message.texto}</span>
+              <span className={styles.text}>
+                <MessageText texto={message.texto ?? ''} />
+              </span>
             )}
             <time className={styles.time} dateTime={message.createdAt}>
               {time}
@@ -304,6 +307,38 @@ function Message({
 }
 
 /** The answered message, quoted on top of a reply (or over the composer while writing one). */
+/** An @handle, as the backend reads them (lib/push.ts): a dot or dash ending it is punctuation. */
+const MENTION = /@([\p{L}\p{N}_.-]{2,30})/gu
+
+/** A message's text with its mentions picked out, the player's own ones more. */
+function MessageText({ texto }: { texto: string }) {
+  const me = useUser()
+  const { data: profile } = useProfile()
+  const mine = new Set(
+    [(me as { username?: string | null }).username, profile?.nombre].flatMap((name) => (name ? [name.toLowerCase()] : [])),
+  )
+  const parts: (string | { handle: string; tail: string })[] = []
+  let at = 0
+  for (const match of texto.matchAll(MENTION)) {
+    const handle = match[1].replace(/[.-]+$/, '')
+    if (handle.length < 2) continue
+    parts.push(texto.slice(at, match.index))
+    parts.push({ handle, tail: match[1].slice(handle.length) })
+    at = match.index + match[0].length
+  }
+  parts.push(texto.slice(at))
+  return parts.map((part, i) =>
+    typeof part === 'string' ? (
+      part
+    ) : (
+      <span key={i}>
+        <span className={`${styles.mention} ${mine.has(part.handle.toLowerCase()) ? styles.mentionMe : ''}`}>@{part.handle}</span>
+        {part.tail}
+      </span>
+    ),
+  )
+}
+
 function Quote({
   reply,
   onClick,

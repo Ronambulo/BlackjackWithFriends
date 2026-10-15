@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { requireUser } from '../lib/auth.js'
 import { db } from '../lib/db.js'
 import { HttpError, json } from '../lib/http.js'
-import { prefsOf, publicKey, subscribe, unsubscribe } from '../lib/push.js'
+import { prefsOf, publicKey, subscribe, testPush, unsubscribe } from '../lib/push.js'
 import { profiles, PUSH_KINDS, type PushKind, type PushPrefs } from '../lib/schema.js'
 
 async function readBody(request: Request): Promise<Record<string, unknown>> {
@@ -71,4 +71,11 @@ export async function patchPushPrefs(request: Request): Promise<Response> {
     return next
   })
   return json(prefsJson(prefs))
+}
+
+// POST /api/push/test: a notification to each of the player's devices, and how it went.
+export async function postPushTest(request: Request): Promise<Response> {
+  const me = await requireUser(request)
+  const row = db().select({ idioma: profiles.idioma }).from(profiles).where(eq(profiles.id, me.id)).get()
+  return json(await testPush(me.id, row?.idioma ?? 'es'))
 }

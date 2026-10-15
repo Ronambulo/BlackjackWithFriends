@@ -98,7 +98,7 @@ export const rateLimit = sqliteTable('rate_limits', {
 export const LANGUAGES = ['es', 'en'] as const
 export type Language = (typeof LANGUAGES)[number]
 
-export const PUSH_KINDS = ['pay', 'overtaken', 'mention', 'closing', 'ceremony', 'review'] as const
+export const PUSH_KINDS = ['pay', 'overtaken', 'mention', 'message', 'reaction', 'closing', 'ceremony', 'review'] as const
 export type PushKind = (typeof PUSH_KINDS)[number]
 export type PushPrefs = Partial<Record<PushKind, boolean>>
 
