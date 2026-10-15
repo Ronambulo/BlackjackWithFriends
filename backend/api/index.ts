@@ -1,10 +1,14 @@
 // The whole API in one fetch handler, routed by pathname. server.ts serves it.
 import { DEFAULT_RULES } from '@bwf/engine'
+import { clientIp, isAdmin, isBanned } from '../lib/admin.js'
+import { record, recordError } from '../lib/metrics.js'
+import { announcement, isOn } from '../lib/settings.js'
 import { auth, requireUser } from '../lib/auth.js'
 import { sql } from 'drizzle-orm'
 import { db } from '../lib/db.js'
 import { eventStream, groupmates, notifyGroups } from '../lib/events.js'
 import { HttpError, json } from '../lib/http.js'
+import { serveMedia } from '../lib/storage.js'
 import {
   createGroup,
   getGroup,
@@ -18,9 +22,31 @@ import {
   patchGroup,
   renewCode,
 } from '../routes/groups.js'
+import {
+  banIp,
+  decideReview,
+  deleteUser,
+  getAdminLog,
+  getAdminSettings,
+  getBackups,
+  postAnnouncement,
+  postBackup,
+  postFlag,
+  postRules,
+  getEconomy,
+  getAdminLeague,
+  getModeration,
+  getSystem,
+  getUserDetail,
+  getAdminStats,
+  listBans,
+  listUsers,
+  unbanIp,
+} from '../routes/admin.js'
 import { getLeague, postPay } from '../routes/league.js'
+import { getFriendsRanking, getGlobalRanking } from '../routes/ranking.js'
 import { getTable, postPlay } from '../routes/play.js'
-import { getProfile, patchProfile } from '../routes/profile.js'
+import { getProfile, patchProfile, postAvatar } from '../routes/profile.js'
 import { getStats } from '../routes/stats.js'
 
 type Route = (request: Request) => Promise<Response> | Response
@@ -59,12 +85,16 @@ const routes: Routes = {
       }),
   },
   '/api/me': {
-    GET: async (request) => json(await requireUser(request)),
+    GET: async (request) => {
+      const me = await requireUser(request)
+      return json({ ...me, admin: isAdmin(me.id) })
+    },
   },
   '/api/profile': {
     GET: getProfile,
     PATCH: live(patchProfile),
   },
+  '/api/profile/avatar': { POST: live(postAvatar) },
   '/api/profile/stats': { GET: getStats },
   '/api/play': {
     GET: getTable,
@@ -72,6 +102,8 @@ const routes: Routes = {
   },
   '/api/league': { GET: getLeague },
   '/api/league/pay': { POST: live(postPay) },
+  '/api/ranking/friends': { GET: getFriendsRanking },
+  '/api/ranking/global': { GET: getGlobalRanking },
   '/api/groups': { GET: listGroups, POST: createGroup },
   '/api/groups/join': { POST: live(joinGroup) },
   '/api/group': { GET: getGroup, PATCH: live(patchGroup) },
@@ -81,6 +113,26 @@ const routes: Routes = {
   '/api/group/kick': { POST: live(kickMember) },
   '/api/invite': { GET: getInvite },
   '/api/invite/preview': { GET: getInvitePreview },
+  // The app's own admins (ADMIN_USERNAMES); a 404 for everyone else.
+  '/api/admin/stats': { GET: getAdminStats },
+  '/api/admin/economy': { GET: getEconomy },
+  '/api/admin/league': { GET: getAdminLeague },
+  '/api/admin/system': { GET: getSystem },
+  '/api/admin/moderation': { GET: getModeration },
+  '/api/admin/users': { GET: listUsers },
+  '/api/admin/users/detail': { GET: getUserDetail },
+  '/api/admin/users/delete': { POST: deleteUser },
+  '/api/admin/bans': { GET: listBans, POST: banIp },
+  '/api/admin/bans/delete': { POST: unbanIp },
+  '/api/admin/reviews': { POST: decideReview },
+  '/api/admin/settings': { GET: getAdminSettings },
+  '/api/admin/flags': { POST: postFlag },
+  '/api/admin/announcement': { POST: postAnnouncement },
+  '/api/admin/rules': { POST: postRules },
+  '/api/admin/backups': { GET: getBackups, POST: postBackup },
+  '/api/admin/log': { GET: getAdminLog },
+  // The notice the admins put on top of the app, for everyone.
+  '/api/announcement': { GET: async () => json(announcement()) },
   // Live updates (lib/events.ts).
   '/api/events': {
     GET: async (request) => eventStream((await requireUser(request)).id),
@@ -90,8 +142,15 @@ const routes: Routes = {
 async function route(request: Request): Promise<Response> {
   const { pathname } = new URL(request.url)
   const path = pathname.replace(/\/+$/, '') || '/'
+  // Banned addresses get nothing, signing in included.
+  if (isBanned(clientIp(request))) throw new HttpError(403, 'Acceso bloqueado')
 
+  // Switches from the admin panel (lib/settings.ts).
+  if (path.startsWith('/api/auth/sign-up') && !isOn('signups')) throw new HttpError(503, 'Ahora mismo no se pueden crear cuentas')
+  if (path === '/api/groups/join' && !isOn('invites')) throw new HttpError(503, 'Las invitaciones están paradas un momento')
   if (path === '/api/auth' || path.startsWith('/api/auth/')) return auth().handler(request)
+  // Uploaded photos (lib/storage.ts): public, like any picture on a page.
+  if (path.startsWith('/api/media/') && request.method === 'GET') return serveMedia(path)
 
   const methods = routes[path]
   if (!methods) throw new HttpError(404, 'No existe')
@@ -102,12 +161,21 @@ async function route(request: Request): Promise<Response> {
 
 export default {
   async fetch(request: Request): Promise<Response> {
+    const started = performance.now()
+    const path = new URL(request.url).pathname
+    let response: Response
     try {
-      return await route(request)
+      response = await route(request)
     } catch (err) {
-      if (err instanceof HttpError) return json({ error: err.message }, err.status)
-      console.error(err)
-      return json({ error: 'Error interno' }, 500)
+      if (err instanceof HttpError) response = json({ error: err.message }, err.status)
+      else {
+        console.error(err)
+        recordError(path, 500, err)
+        response = json({ error: 'Error interno' }, 500)
+      }
     }
+    // The event stream stays open; its time says nothing.
+    if (path !== '/api/events') record(path, response.status, performance.now() - started)
+    return response
   },
 }

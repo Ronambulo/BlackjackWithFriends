@@ -1,3 +1,4 @@
+import { isOn } from '../lib/settings.js'
 import {
   actionCost,
   applyAction,
@@ -62,6 +63,8 @@ export async function postPlay(request: Request): Promise<Response> {
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
   if (!body || typeof body !== 'object') throw new HttpError(400, 'Cuerpo no válido')
 
+  // With play switched off (admin panel) no new hand starts; one in progress can still finish.
+  if (body.action === 'bet' && !isOn('play')) throw new HttpError(503, 'La mesa está cerrada un momento')
   if (body.action === 'bet') return bet(user.id, body.bet)
   if (ACTIONS.includes(body.action as Action)) return act(user.id, body.action as Action, body.handId, body.version)
   throw new HttpError(400, 'Acción no válida')

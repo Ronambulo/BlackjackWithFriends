@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useIsAdmin } from '@/admin/useAdmin'
 import { currentLanguage } from '@/i18n'
 import { InstallBanner } from '@/install/InstallBanner'
 import { formatNumber } from '@/lib/format'
@@ -11,7 +12,8 @@ import type { Profile } from '@/profile/useProfile'
 import { GroupPicker } from '@/groups/GroupPicker'
 import { joinPath, pendingInvite } from '@/groups/pendingInvite'
 import { useLiveUpdates } from '@/groups/useLiveUpdates'
-import { CardsIcon, ChatIcon, GroupIcon, HomeIcon, UserIcon } from '@/ui/icons'
+import { CardsIcon, ChatIcon, GearIcon, GroupIcon, HomeIcon, UserIcon } from '@/ui/icons'
+import { AnnouncementBar } from './AnnouncementBar'
 import styles from './AppShell.module.css'
 
 const TABS = [
@@ -33,6 +35,7 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
   const { t } = useTranslation()
   const pathname = usePathname()
   const router = useRouter()
+  const admin = useIsAdmin()
   useLiveUpdates()
 
   // Signed up from a friend's link: now that they're in, back to that invite.
@@ -61,7 +64,10 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
         </div>
       </header>
 
-      <main ref={content} className={styles.content}>{children}</main>
+      <main ref={content} className={styles.content}>
+        {!felted && <AnnouncementBar />}
+        {children}
+      </main>
 
       {/* Not over the table's controls. */}
       {!felted && <InstallBanner />}
@@ -93,6 +99,19 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
             </Link>
           )
         })}
+        {/* Only in the desktop sidebar: on a phone the panel stays one tap away in the profile. */}
+        {admin && (
+          <Link
+            href="/admin"
+            className={`${styles.tab} ${styles.adminTab}`}
+            aria-current={pathname.startsWith('/admin') ? 'page' : undefined}
+          >
+            <span className={styles.tabIcon}>
+              <GearIcon />
+            </span>
+            <span className={styles.tabLabel}>{t('admin.title')}</span>
+          </Link>
+        )}
       </nav>
     </div>
   )

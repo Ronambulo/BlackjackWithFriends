@@ -157,7 +157,8 @@
   height: 52px;
   margin-top: -22px;
   border-radius: 50%;
-  background: repeating-conic-gradient(from 7.5deg, #16181c 0 30deg, var(--accent) 30deg 45deg);
+  /* Red and white, like a real 5 chip */
+  background: repeating-conic-gradient(from 7.5deg, #c8323f 0 30deg, #f4f1e8 30deg 45deg);
   box-shadow:
     0 0 0 6px var(--bg),
     0 8px 18px rgb(0 0 0 / 0.55);
@@ -169,10 +170,11 @@
   place-items: center;
   width: 38px;
   height: 38px;
-  border: 2px dashed var(--accent);
+  border: 2px dashed #f4f1e8;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #2a2e35, #16181c 70%);
-  --icon-cutout: #1d2025;
+  background: radial-gradient(circle at 35% 30%, #e04a56, #b52a36 70%);
+  color: #fff;
+  --icon-cutout: #c3343f;
 }
 
 .chipFace svg {
@@ -182,6 +184,10 @@
 
 .chipTab:active .chip {
   transform: scale(0.94);
+}
+
+.adminTab {
+  display: none;
 }
 
 /* ---------- Felt mode (/jugar) ---------- */
@@ -274,6 +280,15 @@
     padding: 0 14px;
     border-radius: var(--radius-sm);
     font-size: 0.95rem;
+  }
+
+  /* Set apart from the game tabs, at the bottom of the sidebar */
+  .adminTab {
+    display: flex;
+    position: absolute;
+    right: 12px;
+    bottom: 20px;
+    left: 12px;
   }
 
   .tab:hover {

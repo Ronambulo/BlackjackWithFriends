@@ -22,6 +22,8 @@ services:
       - BETTER_AUTH_TRUSTED_ORIGINS=
       # Opcional: si no se pone, se genera uno la primera vez y se guarda en /data.
       # - BETTER_AUTH_SECRET=
+      # Usuarios con acceso al panel de administración, separados por comas.
+      - ADMIN_USERNAMES=Ronambulo
 
 x-casaos:
   architectures:

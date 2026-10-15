@@ -21,6 +21,8 @@ services:
       # Otras direcciones desde las que se abra, separadas por comas.
       BETTER_AUTH_TRUSTED_ORIGINS: http://10.147.13.1:3021,http://localhost:3021
       TZ: Europe/Madrid
+      # Usuarios con acceso al panel de administración, separados por comas.
+      ADMIN_USERNAMES: Ronambulo
     x-casaos:
       volumes:
         - container: /data

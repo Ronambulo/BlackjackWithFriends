@@ -2,7 +2,7 @@ import { and, asc, count, eq, gte, inArray, sql, type SQL } from 'drizzle-orm'
 import { requireUser } from '../lib/auth.js'
 import { db, sqliteCode, type Tx } from '../lib/db.js'
 import { HttpError, json } from '../lib/http.js'
-import { currentBalance, DAILY_PAY, dayStartBalance, leagueClock, rollover, START_BALANCE } from '../lib/league.js'
+import { currentBalance, dayStartBalance, leagueClock, rollover, rulesFor } from '../lib/league.js'
 import { groupMembers, groups, hands, pays, profiles, user, type GroupRole, type GroupSettings } from '../lib/schema.js'
 
 // Groups are rankings: each one orders its members by their league balance, which
@@ -221,14 +221,15 @@ export async function getGroupHistory(request: Request): Promise<Response> {
     return { members, changes: [...played, ...paid].sort((a, b) => a.at.getTime() - b.at.getTime()) }
   })
 
+  const rules = rulesFor(clock.weekStart)
   const series = members.map((member) => {
-    const points: [number, number][] = [[begin, START_BALANCE]]
-    let balance = START_BALANCE
+    const points: [number, number][] = [[begin, rules.startBalance]]
+    let balance = rules.startBalance
     for (const change of changes) {
       if (change.userId !== member.userId) continue
       // A hand can't lose more than the balance, so a dip below 0 means pay that
       // wasn't recorded (claimed before the pays table existed): it came just before.
-      if (balance + change.amount < 0) balance += Math.ceil(-(balance + change.amount) / DAILY_PAY) * DAILY_PAY
+      if (balance + change.amount < 0) balance += Math.ceil(-(balance + change.amount) / rules.dailyPay) * rules.dailyPay
       balance += change.amount
       const at = Math.min(now, begin + Math.ceil((change.at.getTime() - begin) / HISTORY_STEP) * HISTORY_STEP)
       const last = points[points.length - 1]
@@ -336,28 +337,37 @@ export async function leaveGroup(request: Request): Promise<Response> {
   const me = await requireUser(request)
   const id = groupId((await readBody(request)).id)
   db().transaction((tx) => {
-    const left = tx
-      .delete(groupMembers)
-      .where(and(eq(groupMembers.groupId, id), eq(groupMembers.userId, me.id)))
-      .returning({ rol: groupMembers.rol })
-      .get()
-    if (!left) throw new HttpError(404, 'No existe el grupo')
-    const next = tx
-      .select({ userId: groupMembers.userId, rol: groupMembers.rol })
-      .from(groupMembers)
-      .where(eq(groupMembers.groupId, id))
-      .orderBy(asc(groupMembers.createdAt), asc(groupMembers.userId))
-      .all()
-    if (next.length === 0) {
-      tx.delete(groups).where(eq(groups.id, id)).run()
-    } else if (!next.some((m) => m.rol === 'admin')) {
-      tx.update(groupMembers)
-        .set({ rol: 'admin' })
-        .where(and(eq(groupMembers.groupId, id), eq(groupMembers.userId, next[0].userId)))
-        .run()
-    }
+    if (!removeMember(tx, id, me.id)) throw new HttpError(404, 'No existe el grupo')
   })
   return json({ ok: true })
+}
+
+/**
+ * Takes the player out of the group: the group goes if it's left empty, and the
+ * longest-standing member takes over if the admin left. False if they weren't in it.
+ */
+export function removeMember(tx: Tx, id: string, userId: string): boolean {
+  const left = tx
+    .delete(groupMembers)
+    .where(and(eq(groupMembers.groupId, id), eq(groupMembers.userId, userId)))
+    .returning({ rol: groupMembers.rol })
+    .get()
+  if (!left) return false
+  const next = tx
+    .select({ userId: groupMembers.userId, rol: groupMembers.rol })
+    .from(groupMembers)
+    .where(eq(groupMembers.groupId, id))
+    .orderBy(asc(groupMembers.createdAt), asc(groupMembers.userId))
+    .all()
+  if (next.length === 0) {
+    tx.delete(groups).where(eq(groups.id, id)).run()
+  } else if (!next.some((m) => m.rol === 'admin')) {
+    tx.update(groupMembers)
+      .set({ rol: 'admin' })
+      .where(and(eq(groupMembers.groupId, id), eq(groupMembers.userId, next[0].userId)))
+      .run()
+  }
+  return true
 }
 
 // ── Admin ───────────────────────────────────────────────────────────────────
