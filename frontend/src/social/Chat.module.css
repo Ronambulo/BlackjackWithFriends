@@ -124,30 +124,29 @@
   line-height: 1.35;
 }
 
-/* @someone: the accent, so it reads as a mention */
+/* @someone: a lighter yellow than the accent, so it reads as a mention */
 .mention {
-  padding: 0 3px;
-  border-radius: 5px;
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
-  color: var(--accent);
+  color: color-mix(in srgb, var(--accent) 50%, white);
   font-weight: 600;
 }
 
+/* In the player's own (accent) bubble the text is dark: @someone a lighter dark */
 .mine .mention {
-  background: rgb(0 0 0 / 0.14);
+  color: color-mix(in srgb, currentColor 72%, var(--accent));
+  font-weight: 700;
+}
+
+.mine .mentionMe {
   color: inherit;
 }
 
-/* @you: filled, so it stands out from mentions of others */
-.mention.mentionMe,
-.mine .mention.mentionMe {
-  background: var(--accent);
-  color: var(--accent-text);
-}
-
-.mine .mention.mentionMe {
-  background: var(--accent-text);
+/* @you: underlined too, so it stands out from mentions of others */
+.mentionMe {
   color: var(--accent);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
 }
 
 .time {
