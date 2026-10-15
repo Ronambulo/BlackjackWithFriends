@@ -85,6 +85,8 @@ export interface PushMessage {
   url: string
   /** A newer one with the same tag replaces it on the device. */
   tag?: string
+  /** Not shown while the app is open and in front (chat ones: the chat is right there). */
+  quiet?: boolean
 }
 
 /**
@@ -109,26 +111,54 @@ export async function sendPush(userIds: Iterable<string>, kind: PushKind, messag
       .where(inArray(pushSubscriptions.userId, ids))
       .all()
       .filter((row) => prefsOf(row.avisos, kind))
-    await Promise.all(
-      rows.map(async (row) => {
-        try {
-          await webpush.sendNotification(
-            { endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } },
-            JSON.stringify(message(row.idioma)),
-            // An hour late is still news; later it isn't.
-            { TTL: 60 * 60, urgency: 'normal' },
-          )
-        } catch (err) {
-          // Gone (uninstalled, permission taken back): forget the device.
-          const status = (err as { statusCode?: number }).statusCode
-          if (status === 404 || status === 410) db().delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, row.endpoint)).run()
-          else console.error('Push fallido', status ?? err)
-        }
-      }),
-    )
+    await Promise.all(rows.map((row) => deliver(row, message(row.idioma))))
   } catch (err) {
     console.error('Push fallido', err)
   }
+}
+
+type Device = { endpoint: string; p256dh: string; auth: string }
+
+/** Sends one; null if the push service took it, else why not. */
+async function deliver(device: Device, message: PushMessage): Promise<string | null> {
+  try {
+    await webpush.sendNotification(
+      { endpoint: device.endpoint, keys: { p256dh: device.p256dh, auth: device.auth } },
+      JSON.stringify(message),
+      // An hour late is still news; later it isn't.
+      { TTL: 60 * 60, urgency: 'normal' },
+    )
+    return null
+  } catch (err) {
+    // Gone (uninstalled, permission taken back): forget the device.
+    const status = (err as { statusCode?: number }).statusCode
+    if (status === 404 || status === 410) db().delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, device.endpoint)).run()
+    else console.error('Push fallido', status ?? err)
+    return status ? String(status) : err instanceof Error ? err.message : 'error'
+  }
+}
+
+/** One to each of the player's devices, whatever their settings, to check they arrive. */
+export async function testPush(userId: string, lang: Language) {
+  vapid()
+  const devices = db()
+    .select({ endpoint: pushSubscriptions.endpoint, p256dh: pushSubscriptions.p256dh, auth: pushSubscriptions.auth })
+    .from(pushSubscriptions)
+    .where(eq(pushSubscriptions.userId, userId))
+    .all()
+  const failed = (
+    await Promise.all(
+      devices.map((device) =>
+        deliver(device, {
+          title: t(lang, 'Notificación de prueba', 'Test notification'),
+          body: t(lang, 'Si ves esto, las notificaciones funcionan.', 'If you can see this, notifications work.'),
+          url: '/ajustes',
+          tag: 'test',
+        }),
+      ),
+    )
+  ).filter((why): why is string => why !== null)
+  return { devices: devices.length, failed }
 }
 
 // ── Texts ───────────────────────────────────────────────────────────────────
@@ -147,10 +177,19 @@ function nameFor(userId: string) {
 
 // ── Triggers ────────────────────────────────────────────────────────────────
 
-/** Mentions (@username or a one-word name) in a chat message, to those who can read that chat. */
-export function pushMentions(senderId: string, groupId: string | null, texto: string) {
-  const handles = [...new Set([...texto.matchAll(/@([\p{L}\p{N}_.-]{2,30})/gu)].map((m) => m[1].toLowerCase()))]
-  if (handles.length === 0) return
+/** The @handles in a text, lower-cased; a dot or dash ending it is punctuation. */
+export function mentionedHandles(texto: string) {
+  return [...new Set([...texto.matchAll(/@([\p{L}\p{N}_.-]{2,30})/gu)].map((m) => m[1].replace(/[.-]+$/, '').toLowerCase()))].filter(
+    (handle) => handle.length >= 2,
+  )
+}
+
+const snippet = (texto: string) => (texto.length > 120 ? `${texto.slice(0, 119)}…` : texto)
+
+/** Mentions (@username or a one-word name) in a chat message, to those who can read that chat. Returns who got one. */
+export function pushMentions(senderId: string, groupId: string | null, texto: string): string[] {
+  const handles = mentionedHandles(texto)
+  if (handles.length === 0) return []
   const d = db()
   const found = d
     .select({ id: user.id })
@@ -171,10 +210,10 @@ export function pushMentions(senderId: string, groupId: string | null, texto: st
           .where(and(eq(groupMembers.groupId, groupId), inArray(groupMembers.userId, found)))
           .all()
           .map((row) => row.userId)
-  if (readers.length === 0) return
+  if (readers.length === 0) return []
   const sender = nameFor(senderId)
-  const where = groupId === null ? null : (d.select({ nombre: groups.nombre }).from(groups).where(eq(groups.id, groupId)).get()?.nombre ?? null)
-  const body = texto.length > 120 ? `${texto.slice(0, 119)}…` : texto
+  const where = groupId === null ? null : groupName(groupId)
+  const body = snippet(texto)
   void sendPush(readers, 'mention', (lang) => ({
     title: where
       ? t(lang, `${sender} te ha mencionado en ${where}`, `${sender} mentioned you in ${where}`)
@@ -182,6 +221,57 @@ export function pushMentions(senderId: string, groupId: string | null, texto: st
     body,
     url: '/social',
     tag: `mention-${groupId ?? 'global'}`,
+    quiet: true,
+  }))
+  return readers
+}
+
+const groupName = (groupId: string) => db().select({ nombre: groups.nombre }).from(groups).where(eq(groups.id, groupId)).get()?.nombre ?? '?'
+
+/** What a message is, for a notification: its text, or what was shared. */
+export type ChatContent = { texto: string } | { mano: true } | { estadisticas: true }
+
+function describe(lang: Language, content: ChatContent) {
+  if ('texto' in content) return snippet(content.texto)
+  return 'mano' in content ? t(lang, 'Ha compartido una mano', 'Shared a hand') : t(lang, 'Ha compartido sus estadísticas', 'Shared their stats')
+}
+
+/**
+ * A new message in a group's chat, to its other members (not those it already
+ * mentioned). The global chat has too many people: only mentions go from there.
+ * One per chat on the device: the newest replaces the one before.
+ */
+export function pushMessage(senderId: string, groupId: string | null, content: ChatContent, skip: string[] = []) {
+  if (groupId === null) return
+  const members = db()
+    .select({ userId: groupMembers.userId })
+    .from(groupMembers)
+    .where(eq(groupMembers.groupId, groupId))
+    .all()
+    .map((row) => row.userId)
+    .filter((id) => id !== senderId && !skip.includes(id))
+  if (members.length === 0) return
+  const sender = nameFor(senderId)
+  const where = groupName(groupId)
+  void sendPush(members, 'message', (lang) => ({
+    title: where,
+    body: `${sender}: ${describe(lang, content)}`,
+    url: '/social',
+    tag: `chat-${groupId}`,
+    quiet: true,
+  }))
+}
+
+/** Someone reacted to a player's message. */
+export function pushReaction(reactorId: string, authorId: string, messageId: string, emoji: string, content: ChatContent) {
+  if (reactorId === authorId) return
+  const name = nameFor(reactorId)
+  void sendPush([authorId], 'reaction', (lang) => ({
+    title: t(lang, `${name} ha reaccionado ${emoji} a tu mensaje`, `${name} reacted ${emoji} to your message`),
+    body: 'texto' in content ? snippet(content.texto) : 'mano' in content ? t(lang, 'Tu mano', 'Your hand') : t(lang, 'Tus estadísticas', 'Your stats'),
+    url: '/social',
+    tag: `reaction-${messageId}`,
+    quiet: true,
   }))
 }
 

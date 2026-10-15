@@ -124,6 +124,32 @@
   line-height: 1.35;
 }
 
+/* @someone: the accent, so it reads as a mention */
+.mention {
+  padding: 0 3px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.mine .mention {
+  background: rgb(0 0 0 / 0.14);
+  color: inherit;
+}
+
+/* @you: filled, so it stands out from mentions of others */
+.mention.mentionMe,
+.mine .mention.mentionMe {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.mine .mention.mentionMe {
+  background: var(--accent-text);
+  color: var(--accent);
+}
+
 .time {
   align-self: flex-end;
   font-size: 0.68rem;

@@ -5,7 +5,7 @@ import { requireUser } from '../lib/auth.js'
 import { db } from '../lib/db.js'
 import { notifyChat } from '../lib/events.js'
 import { HttpError, json } from '../lib/http.js'
-import { pushMentions } from '../lib/push.js'
+import { pushMentions, pushMessage, pushReaction, type ChatContent } from '../lib/push.js'
 import { groupMembers, hands, messages, profiles, REACTIONS, reactions, user, type SharedHand, type SharedStats } from '../lib/schema.js'
 import { playerStats } from './stats.js'
 
@@ -212,7 +212,7 @@ export async function postMessage(request: Request): Promise<Response> {
   db().insert(messages).values({ id: crypto.randomUUID(), groupId, userId: me.id, texto, replyTo }).run()
   markRead(groupId, me.id)
   notifyChat(groupId)
-  pushMentions(me.id, groupId, texto)
+  pushMessage(me.id, groupId, { texto }, pushMentions(me.id, groupId, texto))
   return json({ ok: true }, 201)
 }
 
@@ -271,13 +271,14 @@ export async function share(request: Request): Promise<Response> {
   for (const groupId of chats) {
     markRead(groupId, me.id)
     notifyChat(groupId)
+    pushMessage(me.id, groupId, 'mano' in content ? { mano: true } : { estadisticas: true })
   }
   return json({ chats: chats.map((g) => g ?? GLOBAL) })
 }
 
 function findMessage(messageId: string, userId: string) {
   const message = db()
-    .select({ groupId: messages.groupId, userId: messages.userId })
+    .select({ groupId: messages.groupId, userId: messages.userId, texto: messages.texto, mano: sql<boolean>`${messages.mano} is not null`.mapWith(Boolean) })
     .from(messages)
     .where(eq(messages.id, messageId))
     .get()
@@ -300,11 +301,21 @@ export async function postReaction(request: Request): Promise<Response> {
       .where(and(eq(reactions.messageId, messageId), eq(reactions.userId, me.id)))
       .run()
   } else {
+    const before = db()
+      .select({ emoji: reactions.emoji })
+      .from(reactions)
+      .where(and(eq(reactions.messageId, messageId), eq(reactions.userId, me.id)))
+      .get()
     db()
       .insert(reactions)
       .values({ messageId, userId: me.id, emoji })
       .onConflictDoUpdate({ target: [reactions.messageId, reactions.userId], set: { emoji, createdAt: new Date() } })
       .run()
+    // Not again for tapping the same one.
+    if (before?.emoji !== emoji) {
+      const content: ChatContent = message.texto !== null ? { texto: message.texto } : message.mano ? { mano: true } : { estadisticas: true }
+      pushReaction(me.id, message.userId, messageId, emoji, content)
+    }
   }
   notifyChat(message.groupId)
   return json({ ok: true })

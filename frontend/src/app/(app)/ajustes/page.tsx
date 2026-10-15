@@ -10,7 +10,7 @@ import { currentLanguage, LANGUAGES, type Language } from '@/i18n'
 import { authClient } from '@/lib/auth-client'
 import { AvatarPicker } from '@/profile/AvatarPicker'
 import { usePhotoPicker } from '@/profile/usePhotoPicker'
-import { forgetDevice, PUSH_KINDS, usePush, usePushPrefs, useUpdatePushPrefs } from '@/push/usePush'
+import { forgetDevice, PUSH_KINDS, usePush, usePushPrefs, useTestPush, useUpdatePushPrefs } from '@/push/usePush'
 import { isValidName, NAME_MAX, useProfile, useUpdateProfile } from '@/profile/useProfile'
 import { setSoundsOn, useSoundsOn } from '@/sound/sounds'
 import { ChevronLeftIcon, ChevronRightIcon } from '@/ui/icons'
@@ -29,6 +29,7 @@ export default function SettingsPage() {
   const push = usePush()
   const { data: pushPrefs } = usePushPrefs()
   const updatePushPrefs = useUpdatePushPrefs()
+  const testPush = useTestPush()
   // The (app) layout only renders this once the profile is loaded.
   const [name, setName] = useState(profile?.nombre ?? '')
   const [editing, setEditing] = useState(false)
@@ -206,6 +207,26 @@ export default function SettingsPage() {
               {push.problem.kind === 'dismissed' ? t('settings.pushDismissed') : t('settings.pushError')}
               {push.problem.detail && <small> ({push.problem.detail})</small>}
             </p>
+          )}
+          {push.state === 'on' && (
+            <div className={styles.listRow}>
+              <span className={styles.listText}>
+                {t('settings.pushTest')}
+                {testPush.data && (
+                  <small className={styles.wrap}>
+                    {testPush.data.devices === 0
+                      ? t('settings.pushTestNone')
+                      : testPush.data.failed.length > 0
+                        ? t('settings.pushTestFailed', { reason: testPush.data.failed.join(', ') })
+                        : t('settings.pushTestSent', { count: testPush.data.devices })}
+                  </small>
+                )}
+                {testPush.isError && <small className={`${styles.wrap} error-text`}>{t('common.error')}</small>}
+              </span>
+              <button className="btn btn-ghost" type="button" disabled={testPush.isPending} onClick={() => testPush.mutate()}>
+                {t('settings.pushTestSend')}
+              </button>
+            </div>
           )}
           {pushPrefs &&
             PUSH_KINDS.map((kind) => (

@@ -1,7 +1,7 @@
 // Minimal service worker: makes the app installable, keeps the icons
 // offline and shows push notifications. Pages and /api always go to the network
 // so a deploy shows up on the next open (the client also reloads itself when /version changes).
-const CACHE_NAME = 'bwf-shell-v5'
+const CACHE_NAME = 'bwf-shell-v6'
 const APP_SHELL = [
   '/manifest.webmanifest',
   '/icon.svg?v=4',
@@ -41,7 +41,7 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(caches.match(request).then((cached) => cached ?? fetch(request)))
 })
 
-// A notification from the backend (lib/push.ts): { title, body, url, tag }.
+// A notification from the backend (lib/push.ts): { title, body, url, tag, quiet }.
 self.addEventListener('push', (event) => {
   let data = {}
   try {
@@ -49,14 +49,23 @@ self.addEventListener('push', (event) => {
   } catch {
     data = { body: event.data ? event.data.text() : '' }
   }
-  event.waitUntil(
+  const show = () =>
     self.registration.showNotification(data.title || 'Blackjack with Friends', {
       body: data.body || '',
       tag: data.tag,
+      // A newer one replacing another (same chat) still buzzes.
+      renotify: !!data.tag,
       icon: '/pwa-192x192.png?v=4',
       badge: '/pwa-64x64.png',
       data: { url: data.url || '/' },
-    }),
+    })
+  event.waitUntil(
+    // Chat ones aren't needed while the app is open in front: the chat updates live.
+    data.quiet
+      ? self.clients
+          .matchAll({ type: 'window', includeUncontrolled: true })
+          .then((windows) => (windows.some((client) => client.visibilityState === 'visible' && client.focused) ? undefined : show()))
+      : show(),
   )
 })
 

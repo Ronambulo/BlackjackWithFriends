@@ -51,7 +51,7 @@ import { deleteMessage, getChat, getUnread, postMessage, postReaction, share } f
 import { getLeague, postPay } from '../routes/league.js'
 import { getFriendsRanking, getGlobalRanking } from '../routes/ranking.js'
 import { getTable, postPlay } from '../routes/play.js'
-import { getPushKey, getPushPrefs, patchPushPrefs, postSubscribe, postUnsubscribe } from '../routes/push.js'
+import { getPushKey, getPushPrefs, patchPushPrefs, postPushTest, postSubscribe, postUnsubscribe } from '../routes/push.js'
 import { getProfile, patchProfile, postAvatar } from '../routes/profile.js'
 import { getCeremony, getGroupSeasons, postCeremonySeen } from '../routes/season.js'
 import { getStats } from '../routes/stats.js'
@@ -118,6 +118,7 @@ const routes: Routes = {
   '/api/push/subscribe': { POST: postSubscribe },
   '/api/push/unsubscribe': { POST: postUnsubscribe },
   '/api/push/prefs': { GET: getPushPrefs, PATCH: patchPushPrefs },
+  '/api/push/test': { POST: postPushTest },
   '/api/play': {
     GET: getTable,
     POST: live(race(postPlay)),
