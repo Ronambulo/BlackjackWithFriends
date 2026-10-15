@@ -139,7 +139,7 @@ function nextStep(kind: string, max: number): number {
   return step
 }
 
-export type Sound = 'chip' | 'card' | 'flip' | 'double' | 'split' | 'win' | 'blackjack' | 'lose' | 'push'
+export type Sound = 'chip' | 'card' | 'flip' | 'double' | 'split' | 'win' | 'blackjack' | 'lose' | 'push' | 'achievement'
 
 export function play(sound: Sound) {
   if (!audio()) return
@@ -153,6 +153,10 @@ export function play(sound: Sound) {
       break
     case 'flip':
       hit('flip', { rate: 1.15, volume: 0.9 })
+      break
+    case 'achievement':
+      // The blackjack sting, a fifth up: brighter, and not mistaken for the hand's result.
+      hit('blackjack', { rate: semitones(7), volume: 0.8, detune: false })
       break
     default:
       // Stings and one-off gestures: as recorded, no detune that would put them out of tune.

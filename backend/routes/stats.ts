@@ -4,6 +4,7 @@ import { db } from '../lib/db.js'
 import { json } from '../lib/http.js'
 import { leagueClock } from '../lib/league.js'
 import { hands } from '../lib/schema.js'
+import { seasonRecord } from '../lib/season.js'
 
 // How many of the last hands the profile draws as bars.
 const RECENT = 30
@@ -64,5 +65,6 @@ export async function getStats(request: Request): Promise<Response> {
     week: summarise(played.filter((hand) => hand.at >= weekBegin)),
     total: summarise(played),
     recent: played.slice(-RECENT).map((hand) => hand.net),
+    seasons: seasonRecord(user.id),
   })
 }

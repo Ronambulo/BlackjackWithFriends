@@ -12,6 +12,7 @@ import {
   type RoundState,
 } from '@bwf/engine'
 import { and, desc, eq, gte, ne, sql } from 'drizzle-orm'
+import { ACHIEVEMENTS, syncAchievements, type AchievementId } from '../lib/achievements.js'
 import { requireUser } from '../lib/auth.js'
 import { db, sqliteCode } from '../lib/db.js'
 import { HttpError, json } from '../lib/http.js'
@@ -33,8 +34,9 @@ function handJson(row: Pick<HandRow, 'id' | 'version'>, state: RoundState, chips
   return { id: row.id, version: row.version, ...toPublicView(state, chips) }
 }
 
-function tableJson(chips: number, hand: ReturnType<typeof handJson> | null) {
-  return { chips, minBet: MIN_BET, maxBet: MAX_BET, hand }
+function tableJson(chips: number, hand: ReturnType<typeof handJson> | null, unlocked: AchievementId[] = []) {
+  // With their rewards, for the notice at the table.
+  return { chips, minBet: MIN_BET, maxBet: MAX_BET, hand, unlocked: ACHIEVEMENTS.filter((a) => unlocked.includes(a.id)) }
 }
 
 // GET /api/play: the player's chips and the hand left half-played, if any.
@@ -82,9 +84,9 @@ function bet(userId: string, amount: unknown): Response {
   // One transaction: make sure the profile exists and is in this week, then take
   // the bet and save the hand. The chips only move if they cover the bet; if
   // another hand is still open (unique index), the whole thing is undone.
-  let chips
+  let result
   try {
-    chips = db().transaction((tx) => {
+    result = db().transaction((tx) => {
       rollover(tx, userId)
       const profile = tx
         .update(profiles)
@@ -104,14 +106,14 @@ function bet(userId: string, amount: unknown): Response {
           neto: state.settlement?.net ?? null,
         })
         .run()
-      return profile.chips
+      return { chips: profile.chips, unlocked: state.settlement ? syncAchievements(tx, userId) : [] }
     })
   } catch (err) {
     if (sqliteCode(err) === 'SQLITE_CONSTRAINT_UNIQUE') throw new HttpError(409, 'Ya tienes una mano en juego')
     throw err
   }
-  if (chips === null) throw new HttpError(400, 'No tienes fichas suficientes')
-  return json(tableJson(chips, handJson({ id, version: 0 }, state, chips)))
+  if (result === null) throw new HttpError(400, 'No tienes fichas suficientes')
+  return json(tableJson(result.chips, handJson({ id, version: 0 }, state, result.chips), result.unlocked))
 }
 
 function act(userId: string, action: Action, handId: unknown, version: unknown): Response {
@@ -148,7 +150,8 @@ function act(userId: string, action: Action, handId: unknown, version: unknown):
         .where(eq(profiles.id, userId))
         .returning({ chips: profiles.saldo })
         .get()
-      return { id: hand.id, version: hand.version + 1, next, chips: updated?.chips ?? chips + delta }
+      const unlocked = next.settlement ? syncAchievements(tx, userId) : []
+      return { id: hand.id, version: hand.version + 1, next, chips: updated?.chips ?? chips + delta, unlocked }
     })
   } catch (err) {
     if (sqliteCode(err) === 'SQLITE_CONSTRAINT_CHECK') throw new HttpError(400, 'No tienes fichas suficientes')
@@ -156,5 +159,5 @@ function act(userId: string, action: Action, handId: unknown, version: unknown):
   }
 
   const view = handJson(result, result.next, result.chips)
-  return json(tableJson(result.chips, view))
+  return json(tableJson(result.chips, view, result.unlocked))
 }

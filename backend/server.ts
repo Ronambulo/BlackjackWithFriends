@@ -22,6 +22,12 @@ migrate()
 // A copy of the database a day, in backups/ next to it (lib/backup.ts).
 const { scheduleBackups } = await import('./lib/backup.js')
 scheduleBackups()
+// Closes the week on Monday 00:00 in Madrid: podiums, prizes and the ceremony (lib/season.ts).
+const { scheduleSeasons } = await import('./lib/season.js')
+scheduleSeasons()
+// Achievements earned before they existed, or while the server was off (lib/achievements.ts).
+const { syncAllAchievements } = await import('./lib/achievements.js')
+syncAllAchievements()
 console.log(`Base de datos en ${databasePath()}`)
 
 async function toRequest(req: IncomingMessage, url: URL): Promise<Request> {

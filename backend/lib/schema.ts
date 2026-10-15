@@ -291,4 +291,99 @@ export const economyRules = sqliteTable(
   ],
 )
 
+// ── Weekly seasons ──────────────────────────────────────────────────────────
+// Written once, when a week closes (lib/season.ts), and never changed after.
+
+/** A closed week, by its Monday ('YYYY-MM-DD', Madrid). */
+export const seasons = sqliteTable('seasons', {
+  semana: text('semana').primaryKey(),
+  createdAt: createdAt(),
+})
+
+/** What a closed week's numbers were for one player, worked out from their hands. */
+export interface SeasonStats {
+  hands: number
+  wins: number
+  pushes: number
+  losses: number
+  blackjacks: number
+  net: number
+  bestWin: number
+  /** The most staked in one round, doubles and splits included. */
+  biggestBet: number
+  /** Losses in a row, at most. */
+  worstStreak: number
+  insurances: number
+}
+
+/** Each player who played a closed week, once: final balance, numbers and the coins they got. */
+export const seasonResults = sqliteTable(
+  'season_results',
+  {
+    semana: text('semana')
+      .notNull()
+      .references(() => seasons.semana, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    saldoFinal: integer('saldo_final').notNull(),
+    estadisticas: text('estadisticas', { mode: 'json' }).$type<SeasonStats>().notNull(),
+    // The prize of their best place, plus the one for having played.
+    monedas: integer('monedas').notNull(),
+    // Best place among the groups that gave prizes; null if none did.
+    mejorPuesto: integer('mejor_puesto'),
+    // Whether they've watched that week's ceremony.
+    vista: integer('vista', { mode: 'boolean' }).notNull().default(false),
+  },
+  (t) => [primaryKey({ columns: [t.semana, t.userId] }), index('season_results_user_id_idx').on(t.userId)],
+)
+
+export const JOKE_PRIZES = ['blackjacks', 'biggestBet', 'worstStreak', 'hands', 'insurances'] as const
+export type JokePrize = (typeof JOKE_PRIZES)[number]
+
+/** A group's frozen ranking when a week closed: only the members who played that week. */
+export const seasonStandings = sqliteTable(
+  'season_standings',
+  {
+    semana: text('semana')
+      .notNull()
+      .references(() => seasons.semana, { onDelete: 'cascade' }),
+    groupId: text('group_id')
+      .notNull()
+      .references(() => groups.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    posicion: integer('posicion').notNull(),
+    saldoFinal: integer('saldo_final').notNull(),
+    // Whether the group gave prizes that week (2 or more players).
+    conPremios: integer('con_premios', { mode: 'boolean' }).notNull(),
+    trofeo: integer('trofeo', { mode: 'boolean' }).notNull().default(false),
+    // The joke prizes this player took in this group.
+    premios: text('premios', { mode: 'json' }).$type<JokePrize[]>().notNull().default([]),
+  },
+  (t) => [
+    primaryKey({ columns: [t.semana, t.groupId, t.userId] }),
+    index('season_standings_group_idx').on(t.groupId, t.semana),
+    index('season_standings_user_idx').on(t.userId),
+  ],
+)
+
+// ── Achievements ────────────────────────────────────────────────────────────
+
+/** Each achievement a player has unlocked, once (lib/achievements.ts); the reward was paid then. */
+export const achievements = sqliteTable(
+  'achievements',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    logro: text('logro').notNull(),
+    // Whether the player has been shown it (the toast at the table).
+    visto: integer('visto', { mode: 'boolean' }).notNull().default(false),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.logro] })],
+)
+
 export const authSchema = { user, session, account, verification, rateLimit }

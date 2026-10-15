@@ -11,7 +11,8 @@ import { economyRules, pays, profiles } from './schema.js'
 //   Someone who starts mid-week gets the same as someone who started on Monday
 //   and didn't play: the starting balance plus every day's pay up to today.
 // - There's no cron for any of this: each profile catches up the first time it's
-//   used in a new day or week (rollover below).
+//   used in a new day or week (rollover below). Closing the week (podiums and
+//   prizes) happens before any of that, in lib/season.ts.
 
 // The rules before any admin changes them. Changes go in economy_rules and
 // start on a Monday, so a week never changes its rules halfway through.
@@ -66,7 +67,7 @@ export function addDays(date: string, days: number): string {
 }
 
 /** The instant Madrid's clock reads `date` 00:00. */
-function madridMidnight(date: string): Date {
+export function madridMidnight(date: string): Date {
   const guess = Date.parse(`${date}T00:00:00Z`)
   const parts = Object.fromEntries(wallFormat.formatToParts(guess).map((p) => [p.type, Number(p.value)]))
   const wall = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second)

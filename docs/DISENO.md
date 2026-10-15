@@ -54,7 +54,8 @@ Separarlas es clave: gastar en la tienda **nunca** te baja en el ranking.
 - 1º: **100** 🪙 + trofeo · 2º: **60** 🪙 · 3º: **30** 🪙 · Haber jugado al menos 1 día: **10** 🪙.
 - **Solo cobras por tu mejor puesto**: si estás en varios grupos, recibes el premio del grupo donde mejor has quedado, no la suma. El de haber jugado se cobra una vez.
 - **Un grupo solo reparte premios si tiene al menos 2 personas** que hayan jugado esa semana 🔧 (que hayan jugado, para que un amigo que nunca entra no cuente). Así no sirve de nada crear grupos vacíos para ser 1º. La ceremonia y los premios de broma se ven igual en cualquier grupo.
-- Premios de broma (solo para presumir, sin monedas): más blackjacks, apuesta más loca, peor racha, más manos jugadas, "rey del seguro"...
+- Premios de broma (solo para presumir, sin monedas): más blackjacks, apuesta más loca, peor racha, más manos jugadas, "rey del seguro". Se dan en cualquier grupo; en empate se los llevan todos los empatados, salvo si empata el grupo entero (entonces no hay premio).
+- Cuentan las manos de liga cerradas entre el lunes y el domingo. Los empates comparten puesto (1, 2, 2, 4).
 
 ### Baraja del día
 - Todos los jugadores juegan **las mismas cartas** ese día (una sola semilla para todos), así que tu partida cuenta en todos tus grupos.
@@ -66,6 +67,7 @@ Separarlas es clave: gastar en la tienda **nunca** te baja en el ranking.
 ### Retos y logros
 - **Retos diarios**: 3 al día, iguales para todos los jugadores (p. ej. "gana 3 manos seguidas", "haz un split ganador", "gana con 5 cartas"). Cada uno da 🪙 **monedas** (no fichas) para gastar en estilos: son un logro personal, así que no cuentan para la liga ni mueven el ranking. La cantidad se ajusta en la beta.
 - **Logros** permanentes con insignia en el perfil y algunos con cosmético o monedas de premio (p. ej. "Primer blackjack", "Gana una semana", "10 semanas en el podio", "Sobrevive con 1 ficha").
+- ✅ **Logros hechos** (adelantados a la fase 8): 13, con su catálogo y recompensa en `backend/lib/achievements.ts`, tabla `achievements`. Se calculan con lo que ya hay en la base de datos (manos, grupos, semanas cerradas), así que son **retroactivos**: se comprueban tras cada mano terminada, al unirse alguien a un grupo, al cerrar la semana y para todos al arrancar el servidor. Las monedas se pagan al desbloquear. "Kamikaze" y "Superviviente" necesitan el saldo de cada mano, que solo se puede reconstruir dentro de la semana en curso (las pagas de semanas pasadas se borran), así que no cuentan semanas anteriores. Los cosméticos quedan desbloqueados pero aún no se pueden equipar (fase 10, estilos).
 
 ---
 
@@ -181,8 +183,7 @@ El mazo de cada mano se guarda en el servidor y **nunca se envía al cliente**. 
 
 | Cuándo | Qué |
 |---|---|
-| Cada hora | Comprueba si en Madrid ya es lunes 00:00 para cerrar las semanas. Se ejecuta cada hora para no depender del cambio de horario. |
-| Cierre de semana | Congela la clasificación de cada grupo, calcula podios y premios de broma, da a cada jugador las monedas de su mejor puesto y los trofeos, archiva las estadísticas, reinicia los saldos y crea la nueva temporada (una para todos). |
+| Lunes 00:00 Madrid | Cierra la semana (`lib/season.ts`): congela la clasificación de cada grupo, calcula podios y premios de broma, da a cada jugador las monedas de su mejor puesto más las de haber jugado y los trofeos, y archiva las estadísticas. Un temporizador de la API apunta al lunes siguiente; además, cada petición a la API comprueba primero si queda alguna semana sin cerrar (por si el servidor estaba apagado a esa hora), así que nadie llega a ver la semana nueva sin que la anterior esté cerrada. Los saldos se reinician al vuelo, como siempre. Al cerrar, la API avisa por el canal en vivo y las apps abiertas recargan todo y muestran la ceremonia. |
 | Diario 00:00 Madrid | Genera la semilla de la Baraja del día y los 3 retos diarios (los mismos para todos). |
 | Domingo 21:00 | Push: "Quedan 3 horas para el cierre de la liga". |
 
@@ -200,7 +201,6 @@ erDiagram
   seasons ||--o{ season_standings : "puesto en cada grupo"
   groups ||--o{ season_standings : ""
   profiles ||--o{ hands : "juega"
-  seasons ||--o{ hands : "en"
   groups ||--o{ feed_events : "actividad"
   feed_events ||--o{ reactions : ""
   groups ||--o{ messages : "chat"
@@ -237,28 +237,30 @@ erDiagram
     text rol "admin | miembro"
   }
   seasons {
-    uuid id PK
-    date semana_inicio
-    text estado "activa | cerrada"
+    date semana PK "lunes de la semana cerrada; solo existen las cerradas"
   }
   season_results {
-    uuid season_id PK
+    date semana PK
     uuid user_id PK
     bigint saldo_final
     jsonb estadisticas
-    int monedas_ganadas "las de su mejor puesto"
+    int monedas "las de su mejor puesto + las de haber jugado"
+    int mejor_puesto "en un grupo con premios; null si ninguno"
+    bool vista "ya vio la ceremonia"
   }
   season_standings {
-    uuid season_id PK
+    date semana PK
     uuid group_id PK
     uuid user_id PK
     int posicion
-    jsonb premios "trofeo y premios de broma de ese grupo"
+    bigint saldo_final
+    bool con_premios "al menos 2 jugaron"
+    bool trofeo
+    jsonb premios "premios de broma de ese grupo"
   }
   hands {
     uuid id PK
     uuid user_id
-    uuid season_id
     text modo "prueba | liga | baraja_del_dia"
     bigint apuesta
     jsonb ronda "estado completo con el mazo, solo servidor"
@@ -276,7 +278,7 @@ erDiagram
 
 Notas:
 - **Manos**: `ronda` guarda el estado entero del motor (mazo incluido) y nunca sale tal cual del servidor; al cliente solo le llega la vista pública. `version` evita que dos acciones a la vez se apliquen sobre la misma mano, y un índice único impide tener más de una mano abierta por jugador y modo. Se juega siempre con el saldo de la liga (`profiles.saldo`).
-- **Saldo único**: el saldo y la paga viven en `profiles`, no en el grupo. El cambio de semana y de día se aplica **al vuelo**: cada petición que lee o toca el saldo comprueba `semana` y `dia`, y si son viejos devuelve el saldo a 1.000 o guarda el saldo de inicio del día. La paga no se ingresa sola: se acumula día a día y se cobra con un botón (pagas pendientes = hoy − `ultima_paga`, o desde el día antes del lunes si aún no ha cobrado ninguna esta semana). Las temporadas (`seasons`, `season_standings`, `season_results`) llegan en la fase 5.
+- **Saldo único**: el saldo y la paga viven en `profiles`, no en el grupo. El cambio de semana y de día se aplica **al vuelo**: cada petición que lee o toca el saldo comprueba `semana` y `dia`, y si son viejos devuelve el saldo a 1.000 o guarda el saldo de inicio del día. La paga no se ingresa sola: se acumula día a día y se cobra con un botón (pagas pendientes = hoy − `ultima_paga`, o desde el día antes del lunes si aún no ha cobrado ninguna esta semana). Por eso la semana se cierra **antes** de que nadie use la nueva: mientras un perfil tenga `semana` vieja, su saldo es el final de esa semana.
 - **Grupos**: el admin está en `group_members.rol`, no en `groups`, así que puede haber traspaso sin tocar el grupo: si el admin se va, pasa a serlo el miembro más antiguo, y un grupo que se queda vacío se borra. Como mucho 10 grupos por jugador y 50 miembros por grupo. La clasificación usa el ranking de competición (1, 2, 2, 4). La clasificación de un grupo es una consulta de los saldos de sus miembros; al cerrar la semana se congela en `season_standings`, y `season_results` guarda lo de cada jugador una sola vez (saldo final y monedas de su mejor puesto).
 - **Solo el backend toca la base de datos**: la app nunca se conecta a ella. Cada ruta de la API comprueba la sesión y que eres miembro del grupo, así que solo ves los datos de tus grupos. Los saldos, manos y monedas **solo** los cambia el backend.
 - El campo `cosmetics.origen` deja la puerta abierta a añadir más adelante un origen "compra" sin cambiar nada más. **No hay ninguna huella visible de esto en la app.**
@@ -330,9 +332,9 @@ sequenceDiagram
   participant P as Push
   participant J as Jugador
 
-  C->>DB: lunes 00:00 Madrid → cerrar temporada
+  C->>DB: lunes 00:00 Madrid → cerrar la semana
   DB->>DB: congelar clasificación, calcular premios,<br/>dar monedas y trofeos, archivar estadísticas
-  DB->>DB: nueva temporada, saldos al inicial
+  Note over DB: los saldos vuelven al inicial al vuelo,<br/>en la primera petición de cada jugador
   C->>P: "🏆 ¡Ana gana la semana! Mira el podio"
   J->>J: abre la app
   J->>J: ceremonia: podio animado → premios de broma<br/>→ tus monedas → "nueva semana"
@@ -550,10 +552,10 @@ Cada fase termina con algo usable y desplegado.
 | 3 | ✅ Mesa jugable | endpoint `POST /api/play` del backend, manos guardadas en BD y mesa con animaciones básicas, todavía con un saldo de prueba |
 | 4 | ✅ Grupos y liga | Saldo único de liga y paga diaria; crear grupo, unirse, ranking en vivo de cada grupo y admin |
 | 4b | ✅ Invitaciones | Pantalla "Invitar" con compartir, copiar y **QR**; **vista previa del enlace** con imagen generada (`next/og`); renovar el enlace |
-| 5 | Ciclo semanal | Cierre automático, ceremonia, estadísticas, trofeos y monedas |
+| 5 | ✅ Ciclo semanal | Cierre automático, ceremonia, estadísticas, trofeos y monedas |
 | 6 | Social | Feed, reacciones y chat; compartir manos y estadísticas en el chat, a una persona o a un grupo |
 | 7 | Notificaciones push | Suscripción, preferencias y envíos |
-| 8 | Retos y logros | Retos diarios y logros con insignias; lo que se gana con ellos son monedas para estilos, nunca fichas |
+| 8 | Retos y logros | Retos diarios (los logros ya están hechos, ver §2); lo que se gana con ellos son monedas para estilos, nunca fichas |
 | 9 | Baraja del día | Semilla diaria, 10 manos, clasificación y compartir (con su vista previa `/r/…`) |
 | 10 | Estilos y tienda | Sistema de temas para la mesa, colección, tienda y selector; en Administración, los cosméticos más usados y comprados |
 | 11 | Juice y pulido | Más sonidos (los básicos de la mesa ya están), más animaciones, vibración, accesibilidad y rendimiento |

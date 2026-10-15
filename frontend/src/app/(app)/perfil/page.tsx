@@ -2,11 +2,13 @@
 
 import Link from 'next/link'
 import { useTranslation } from 'react-i18next'
+import { Achievements } from '@/achievements/Achievements'
 import { useIsAdmin } from '@/admin/useAdmin'
 import { useUser } from '@/auth/session-context'
 import { AvatarPicker } from '@/profile/AvatarPicker'
 import { StatsPanel } from '@/profile/StatsPanel'
 import { useProfile } from '@/profile/useProfile'
+import { Trophies } from '@/season/Trophies'
 import { ChevronRightIcon, GearIcon, SlidersIcon } from '@/ui/icons'
 import styles from '../pages.module.css'
 
@@ -37,10 +39,9 @@ export default function ProfilePage() {
 
       <StatsPanel />
 
-      <section className={styles.group}>
-        <h2 className="label">{t('profile.trophies')}</h2>
-        <p className="muted">{t('profile.noTrophies')}</p>
-      </section>
+      <Trophies />
+
+      <Achievements />
 
       <div className={styles.list}>
         <button className={styles.listRow} type="button" disabled>

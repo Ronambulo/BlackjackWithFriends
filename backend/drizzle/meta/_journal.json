@@ -29,6 +29,20 @@
       "when": 1792023715173,
       "tag": "0003_admin_tools",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1792049065680,
+      "tag": "0004_seasons",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1792050119537,
+      "tag": "0005_achievements",
+      "breakpoints": true
     }
   ]
 }

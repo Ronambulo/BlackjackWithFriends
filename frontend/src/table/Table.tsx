@@ -1,8 +1,10 @@
 'use client'
 
 import type { Action, Card, HandValue, Outcome } from '@bwf/engine'
-import { useEffect, useId, useState, type CSSProperties, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useState, type CSSProperties, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { UnlockToast } from '@/achievements/UnlockToast'
+import type { UnlockedAchievement } from '@/achievements/useAchievements'
 import { currentLanguage } from '@/i18n'
 import { useClaimPay, useLeague } from '@/league/useLeague'
 import { ApiError } from '@/lib/api'
@@ -204,6 +206,17 @@ export function Table() {
     if (resultSound) playSound(resultSound)
   }, [resultSound, hand?.id])
 
+  // Achievements the hand unlocked, announced once the cards have shown it; they
+  // outlive the hand, so going on to the next bet doesn't cut them short.
+  const [toasts, setToasts] = useState<(UnlockedAchievement & { key: string })[]>([])
+  const [announced, setAnnounced] = useState<string | null>(null)
+  if (resultSound && hand && table?.unlocked?.length && announced !== hand.id) {
+    setAnnounced(hand.id)
+    const handId = hand.id
+    setToasts((queue) => [...queue, ...(table.unlocked ?? []).map((a) => ({ ...a, key: `${handId}-${a.id}` }))])
+  }
+  const nextToast = useCallback(() => setToasts((queue) => queue.slice(1)), [])
+
   if (isPending) return <div className={styles.loading} aria-busy="true" />
   if (isError || !table) {
     return (
@@ -243,6 +256,7 @@ export function Table() {
   const showResult = Boolean(settled) && ready && pendingBet === null
   return (
     <div className={styles.table}>
+      {toasts[0] && <UnlockToast key={toasts[0].key} achievement={toasts[0]} onDone={nextToast} />}
       <section className={styles.felt}>
         <div className={styles.feltTop}>
           <div className={styles.shoe} aria-hidden="true" />

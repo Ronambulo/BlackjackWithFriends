@@ -1,4 +1,5 @@
 import { and, asc, count, eq, gte, inArray, sql, type SQL } from 'drizzle-orm'
+import { syncGroupAdmins } from '../lib/achievements.js'
 import { requireUser } from '../lib/auth.js'
 import { db, sqliteCode, type Tx } from '../lib/db.js'
 import { HttpError, json } from '../lib/http.js'
@@ -326,6 +327,7 @@ export async function joinGroup(request: Request): Promise<Response> {
       throw new HttpError(409, 'El grupo está lleno o ya estás en demasiados grupos')
     }
     tx.insert(groupMembers).values({ groupId: group.id, userId: me.id }).run()
+    syncGroupAdmins(tx, group.id)
     return group.id
   })
   return json({ id })

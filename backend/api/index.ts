@@ -6,8 +6,9 @@ import { announcement, isOn } from '../lib/settings.js'
 import { auth, requireUser } from '../lib/auth.js'
 import { sql } from 'drizzle-orm'
 import { db } from '../lib/db.js'
-import { eventStream, groupmates, notifyGroups } from '../lib/events.js'
+import { eventStream, groupmates, notifyAll, notifyGroups } from '../lib/events.js'
 import { HttpError, json } from '../lib/http.js'
+import { closePastWeeks } from '../lib/season.js'
 import { serveMedia } from '../lib/storage.js'
 import {
   createGroup,
@@ -43,10 +44,12 @@ import {
   listUsers,
   unbanIp,
 } from '../routes/admin.js'
+import { getAchievements, postAchievementsSeen } from '../routes/achievements.js'
 import { getLeague, postPay } from '../routes/league.js'
 import { getFriendsRanking, getGlobalRanking } from '../routes/ranking.js'
 import { getTable, postPlay } from '../routes/play.js'
 import { getProfile, patchProfile, postAvatar } from '../routes/profile.js'
+import { getCeremony, getGroupSeasons, postCeremonySeen } from '../routes/season.js'
 import { getStats } from '../routes/stats.js'
 
 type Route = (request: Request) => Promise<Response> | Response
@@ -96,6 +99,8 @@ const routes: Routes = {
   },
   '/api/profile/avatar': { POST: live(postAvatar) },
   '/api/profile/stats': { GET: getStats },
+  '/api/achievements': { GET: getAchievements },
+  '/api/achievements/seen': { POST: postAchievementsSeen },
   '/api/play': {
     GET: getTable,
     POST: live(postPlay),
@@ -108,6 +113,9 @@ const routes: Routes = {
   '/api/groups/join': { POST: live(joinGroup) },
   '/api/group': { GET: getGroup, PATCH: live(patchGroup) },
   '/api/group/history': { GET: getGroupHistory },
+  '/api/group/seasons': { GET: getGroupSeasons },
+  '/api/ceremony': { GET: getCeremony },
+  '/api/ceremony/seen': { POST: postCeremonySeen },
   '/api/group/leave': { POST: live(leaveGroup) },
   '/api/group/renew': { POST: live(renewCode) },
   '/api/group/kick': { POST: live(kickMember) },
@@ -156,6 +164,8 @@ async function route(request: Request): Promise<Response> {
   if (!methods) throw new HttpError(404, 'No existe')
   const fn = methods[request.method]
   if (!fn) throw new HttpError(405, 'Método no permitido')
+  // A week that ended while the server was off closes before anyone's balance resets.
+  if (closePastWeeks()) notifyAll()
   return fn(request)
 }
 

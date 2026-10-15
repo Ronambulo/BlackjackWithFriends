@@ -7,7 +7,8 @@ import { useUser } from '@/auth/session-context'
 /**
  * Listens to the API's live events (GET /api/events) and refetches only what changed:
  * when someone in your groups plays, joins, leaves or renames something, the rankings
- * and the group menu update in place. The page itself never reloads.
+ * and the group menu update in place. When the week closes, everything does.
+ * The page itself never reloads.
  */
 export function useLiveUpdates() {
   const user = useUser()
@@ -22,10 +23,13 @@ export function useLiveUpdates() {
       void queryClient.invalidateQueries({ queryKey: ['group', user.id] })
     }
 
+    const refreshAll = () => void queryClient.invalidateQueries()
+
     const connect = () => {
       if (source) return
       source = new EventSource('/api/events')
       source.addEventListener('groups', refreshGroups)
+      source.addEventListener('week', refreshAll)
       // Back after a drop: whatever happened meanwhile was missed.
       source.addEventListener('open', () => {
         if (opened) refreshGroups()

@@ -9,6 +9,7 @@ import { currentLanguage } from '@/i18n'
 import { InstallBanner } from '@/install/InstallBanner'
 import { formatNumber } from '@/lib/format'
 import type { Profile } from '@/profile/useProfile'
+import { CeremonyGate } from '@/season/Ceremony'
 import { GroupPicker } from '@/groups/GroupPicker'
 import { joinPath, pendingInvite } from '@/groups/pendingInvite'
 import { useLiveUpdates } from '@/groups/useLiveUpdates'
@@ -71,6 +72,8 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
 
       {/* Not over the table's controls. */}
       {!felted && <InstallBanner />}
+      {/* Never in the middle of a hand: it waits until they leave the table. */}
+      <CeremonyGate paused={felted} />
 
       <nav className={styles.tabbar} aria-label="Menú">
         {TABS.map(({ href, key, Icon }) => {
