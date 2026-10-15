@@ -1,0 +1,119 @@
+/* The notice at the table when an achievement unlocks */
+
+.toast {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 72px);
+  left: 50%;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(360px, calc(100vw - 32px));
+  padding: 10px 14px 10px 10px;
+  border: 1px solid rgb(242 193 78 / 0.45);
+  border-radius: 18px;
+  background: linear-gradient(160deg, #2a2412, var(--layer-2) 60%);
+  box-shadow:
+    0 12px 32px rgb(0 0 0 / 0.5),
+    0 0 24px rgb(242 193 78 / 0.18);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  animation: drop 3.8s 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+@keyframes drop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -24px) scale(0.92);
+  }
+  10%,
+  88% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -12px) scale(0.97);
+  }
+}
+
+.medal {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #f7d77a, var(--accent) 55%, #c99a2e);
+  box-shadow: 0 0 0 3px rgb(242 193 78 / 0.2);
+  color: #3a2a05;
+  animation: shine 0.9s 0.75s ease-out both;
+}
+
+@keyframes shine {
+  0% {
+    transform: scale(0.4) rotate(-30deg);
+  }
+  60% {
+    transform: scale(1.15) rotate(6deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+
+.text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.text small {
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.text strong {
+  overflow: hidden;
+  font-size: 1.05rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reward {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  max-width: 110px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgb(242 193 78 / 0.14);
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.coin {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: inset 0 0 0 2px #c99a2e;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast,
+  .medal {
+    animation: none;
+  }
+}

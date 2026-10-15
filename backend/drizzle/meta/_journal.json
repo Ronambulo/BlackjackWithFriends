@@ -29,6 +29,55 @@
       "when": 1792023715173,
       "tag": "0003_admin_tools",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1792049065680,
+      "tag": "0004_seasons",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1792050119537,
+      "tag": "0005_achievements",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1792051014061,
+      "tag": "0006_chat",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1792051252580,
+      "tag": "0007_chat_global",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1792051986952,
+      "tag": "0008_chat_replies",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1792053018052,
+      "tag": "0009_chat_stats",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1792053844186,
+      "tag": "0010_challenges_push",
+      "breakpoints": true
     }
   ]
 }

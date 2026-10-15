@@ -2,8 +2,8 @@
 // `npm run db:generate -w @bwf/backend` to create a migration in drizzle/;
 // the server applies pending migrations when it starts.
 import { sql } from 'drizzle-orm'
-import type { RoundState } from '@bwf/engine'
-import { check, index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import type { Card, Outcome, RoundState } from '@bwf/engine'
+import { check, index, integer, primaryKey, sqliteTable, text, uniqueIndex, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
 
 // Timestamps are milliseconds since 1970; Drizzle turns them into Dates.
 const timestamp = (name: string) => integer(name, { mode: 'timestamp_ms' })
@@ -98,6 +98,10 @@ export const rateLimit = sqliteTable('rate_limits', {
 export const LANGUAGES = ['es', 'en'] as const
 export type Language = (typeof LANGUAGES)[number]
 
+export const PUSH_KINDS = ['pay', 'overtaken', 'mention', 'closing', 'ceremony', 'review'] as const
+export type PushKind = (typeof PUSH_KINDS)[number]
+export type PushPrefs = Partial<Record<PushKind, boolean>>
+
 /** One per user, created the first time they open the app. */
 export const profiles = sqliteTable(
   'profiles',
@@ -124,6 +128,10 @@ export const profiles = sqliteTable(
     // The balance at the start of `dia`, for the day's change in the ranking.
     saldoInicioDia: integer('saldo_inicio_dia').notNull().default(1000),
     dia: text('dia').notNull(),
+    // Up to when they've read the global chat; null: never opened it.
+    chatLeido: timestamp('chat_leido'),
+    // Push notifications switched off, by kind; a kind not here is on (lib/push.ts).
+    avisos: text('avisos', { mode: 'json' }).$type<PushPrefs>().notNull().default({}),
     createdAt: createdAt(),
   },
   (t) => [
@@ -214,6 +222,8 @@ export const groupMembers = sqliteTable(
       .references(() => user.id, { onDelete: 'cascade' }),
     // The creator is the admin; if they leave, the longest-standing member takes over.
     rol: text('rol', { enum: GROUP_ROLES }).notNull().default('miembro'),
+    // Up to when they've read the group's chat; null: nothing read since joining.
+    chatLeido: timestamp('chat_leido'),
     createdAt: createdAt(),
   },
   (t) => [
@@ -289,6 +299,208 @@ export const economyRules = sqliteTable(
     check('economy_rules_saldo', sql`${t.saldoInicial} between 1 and 1000000`),
     check('economy_rules_paga', sql`${t.pagaDiaria} between 0 and 1000000`),
   ],
+)
+
+// ── Weekly seasons ──────────────────────────────────────────────────────────
+// Written once, when a week closes (lib/season.ts), and never changed after.
+
+/** A closed week, by its Monday ('YYYY-MM-DD', Madrid). */
+export const seasons = sqliteTable('seasons', {
+  semana: text('semana').primaryKey(),
+  createdAt: createdAt(),
+})
+
+/** What a closed week's numbers were for one player, worked out from their hands. */
+export interface SeasonStats {
+  hands: number
+  wins: number
+  pushes: number
+  losses: number
+  blackjacks: number
+  net: number
+  bestWin: number
+  /** The most staked in one round, doubles and splits included. */
+  biggestBet: number
+  /** Losses in a row, at most. */
+  worstStreak: number
+  insurances: number
+}
+
+/** Each player who played a closed week, once: final balance, numbers and the coins they got. */
+export const seasonResults = sqliteTable(
+  'season_results',
+  {
+    semana: text('semana')
+      .notNull()
+      .references(() => seasons.semana, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    saldoFinal: integer('saldo_final').notNull(),
+    estadisticas: text('estadisticas', { mode: 'json' }).$type<SeasonStats>().notNull(),
+    // The prize of their best place, plus the one for having played.
+    monedas: integer('monedas').notNull(),
+    // Best place among the groups that gave prizes; null if none did.
+    mejorPuesto: integer('mejor_puesto'),
+    // Whether they've watched that week's ceremony.
+    vista: integer('vista', { mode: 'boolean' }).notNull().default(false),
+  },
+  (t) => [primaryKey({ columns: [t.semana, t.userId] }), index('season_results_user_id_idx').on(t.userId)],
+)
+
+export const JOKE_PRIZES = ['blackjacks', 'biggestBet', 'worstStreak', 'hands', 'insurances'] as const
+export type JokePrize = (typeof JOKE_PRIZES)[number]
+
+/** A group's frozen ranking when a week closed: only the members who played that week. */
+export const seasonStandings = sqliteTable(
+  'season_standings',
+  {
+    semana: text('semana')
+      .notNull()
+      .references(() => seasons.semana, { onDelete: 'cascade' }),
+    groupId: text('group_id')
+      .notNull()
+      .references(() => groups.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    posicion: integer('posicion').notNull(),
+    saldoFinal: integer('saldo_final').notNull(),
+    // Whether the group gave prizes that week (2 or more players).
+    conPremios: integer('con_premios', { mode: 'boolean' }).notNull(),
+    trofeo: integer('trofeo', { mode: 'boolean' }).notNull().default(false),
+    // The joke prizes this player took in this group.
+    premios: text('premios', { mode: 'json' }).$type<JokePrize[]>().notNull().default([]),
+  },
+  (t) => [
+    primaryKey({ columns: [t.semana, t.groupId, t.userId] }),
+    index('season_standings_group_idx').on(t.groupId, t.semana),
+    index('season_standings_user_idx').on(t.userId),
+  ],
+)
+
+// ── Achievements ────────────────────────────────────────────────────────────
+
+/** Each achievement a player has unlocked, once (lib/achievements.ts); the reward was paid then. */
+export const achievements = sqliteTable(
+  'achievements',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    logro: text('logro').notNull(),
+    // Whether the player has been shown it (the toast at the table).
+    visto: integer('visto', { mode: 'boolean' }).notNull().default(false),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.logro] })],
+)
+
+// ── Daily challenges ────────────────────────────────────────────────────────
+
+/** Each daily challenge a player has completed, once (lib/challenges.ts); the coins were paid then. */
+export const challengeCompletions = sqliteTable(
+  'challenge_completions',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    // 'YYYY-MM-DD', Madrid
+    dia: text('dia').notNull(),
+    reto: text('reto').notNull(),
+    monedas: integer('monedas').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.dia, t.reto] }), index('challenge_completions_dia_idx').on(t.dia)],
+)
+
+// ── Push notifications ──────────────────────────────────────────────────────
+
+/** A device the player let send them notifications (lib/push.ts). */
+export const pushSubscriptions = sqliteTable(
+  'push_subscriptions',
+  {
+    endpoint: text('endpoint').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    p256dh: text('p256dh').notNull(),
+    auth: text('auth').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('push_subscriptions_user_idx').on(t.userId)],
+)
+
+// ── Chat ────────────────────────────────────────────────────────────────────
+
+/** A finished hand as it's shown in the chat: no shoe, nothing hidden. */
+export interface SharedHand {
+  dealer: Card[]
+  dealerTotal: number
+  dealerBlackjack: boolean
+  hands: { cards: Card[]; bet: number; total: number; outcome: Outcome }[]
+  insurance: number
+  net: number
+}
+
+/** A player's numbers, as published from their profile: this week's or all-time. */
+export interface SharedStats {
+  range: 'week' | 'total'
+  hands: number
+  wins: number
+  pushes: number
+  losses: number
+  blackjacks: number
+  bestWin: number
+  bestStreak: number
+  net: number
+  wagered: number
+}
+
+/** A chat's message: text, or a hand or stats someone chose to publish (routes/chat.ts). */
+export const messages = sqliteTable(
+  'messages',
+  {
+    id: text('id').primaryKey(),
+    // null: the global chat, open to every player.
+    groupId: text('group_id').references(() => groups.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    texto: text('texto'),
+    mano: text('mano', { mode: 'json' }).$type<SharedHand>(),
+    estadisticas: text('estadisticas', { mode: 'json' }).$type<SharedStats>(),
+    handId: text('hand_id').references(() => hands.id, { onDelete: 'set null' }),
+    // The message this one answers; it stays a reply (to nothing) if that one goes.
+    replyTo: text('reply_to').references((): AnySQLiteColumn => messages.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index('messages_group_idx').on(t.groupId, t.createdAt),
+    index('messages_created_idx').on(t.createdAt),
+    // A hand goes to each chat once.
+    uniqueIndex('messages_hand_idx').on(t.groupId, t.handId).where(sql`${t.handId} is not null`),
+    uniqueIndex('messages_hand_global_idx').on(t.handId).where(sql`${t.handId} is not null and ${t.groupId} is null`),
+    check('messages_content', sql`${t.texto} is not null or ${t.mano} is not null or ${t.estadisticas} is not null`),
+  ],
+)
+
+export const REACTIONS = ['🔥', '😂', '💀', '👏', '😱'] as const
+
+/** One reaction per player and message; picking another replaces it. */
+export const reactions = sqliteTable(
+  'reactions',
+  {
+    messageId: text('message_id')
+      .notNull()
+      .references(() => messages.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    emoji: text('emoji').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.messageId, t.userId] })],
 )
 
 export const authSchema = { user, session, account, verification, rateLimit }

@@ -9,9 +9,11 @@ import { currentLanguage } from '@/i18n'
 import { InstallBanner } from '@/install/InstallBanner'
 import { formatNumber } from '@/lib/format'
 import type { Profile } from '@/profile/useProfile'
+import { CeremonyGate } from '@/season/Ceremony'
 import { GroupPicker } from '@/groups/GroupPicker'
 import { joinPath, pendingInvite } from '@/groups/pendingInvite'
 import { useLiveUpdates } from '@/groups/useLiveUpdates'
+import { useUnread } from '@/social/useChat'
 import { CardsIcon, ChatIcon, GearIcon, GroupIcon, HomeIcon, UserIcon } from '@/ui/icons'
 import { AnnouncementBar } from './AnnouncementBar'
 import styles from './AppShell.module.css'
@@ -37,6 +39,8 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
   const router = useRouter()
   const admin = useIsAdmin()
   useLiveUpdates()
+  const { data: unread } = useUnread()
+  const unreadTotal = Object.values(unread ?? {}).reduce((sum, n) => sum + n, 0)
 
   // Signed up from a friend's link: now that they're in, back to that invite.
   useEffect(() => {
@@ -71,6 +75,8 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
 
       {/* Not over the table's controls. */}
       {!felted && <InstallBanner />}
+      {/* Never in the middle of a hand: it waits until they leave the table. */}
+      <CeremonyGate paused={felted} />
 
       <nav className={styles.tabbar} aria-label="Menú">
         {TABS.map(({ href, key, Icon }) => {
@@ -93,6 +99,11 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
               ) : (
                 <span className={styles.tabIcon}>
                   <Icon />
+                  {key === 'social' && unreadTotal > 0 && (
+                    <span className={styles.badge} aria-label={t('social.unread', { count: unreadTotal })}>
+                      {unreadTotal > 99 ? '99+' : unreadTotal}
+                    </span>
+                  )}
                 </span>
               )}
               <span className={styles.tabLabel}>{t(`tabs.${key}`)}</span>

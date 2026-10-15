@@ -10,6 +10,7 @@ import { currentLanguage, LANGUAGES, type Language } from '@/i18n'
 import { authClient } from '@/lib/auth-client'
 import { AvatarPicker } from '@/profile/AvatarPicker'
 import { usePhotoPicker } from '@/profile/usePhotoPicker'
+import { forgetDevice, PUSH_KINDS, usePush, usePushPrefs, useUpdatePushPrefs } from '@/push/usePush'
 import { isValidName, NAME_MAX, useProfile, useUpdateProfile } from '@/profile/useProfile'
 import { setSoundsOn, useSoundsOn } from '@/sound/sounds'
 import { ChevronLeftIcon, ChevronRightIcon } from '@/ui/icons'
@@ -25,6 +26,9 @@ export default function SettingsPage() {
   const group = useCurrentGroup()
   const photo = usePhotoPicker()
   const soundsOn = useSoundsOn()
+  const push = usePush()
+  const { data: pushPrefs } = usePushPrefs()
+  const updatePushPrefs = useUpdatePushPrefs()
   // The (app) layout only renders this once the profile is loaded.
   const [name, setName] = useState(profile?.nombre ?? '')
   const [editing, setEditing] = useState(false)
@@ -44,6 +48,7 @@ export default function SettingsPage() {
   }
 
   async function onSignOut() {
+    await forgetDevice()
     await authClient.signOut()
     queryClient.clear()
   }
@@ -173,6 +178,52 @@ export default function SettingsPage() {
               <ChevronRightIcon className={styles.chevron} width={18} height={18} />
             </Link>
           )}
+        </div>
+      </section>
+
+      <section className={styles.group}>
+        <h2 className="label">{t('settings.notifications')}</h2>
+        <div className={styles.list}>
+          <div className={styles.listRow}>
+            <span className={styles.listText} id="push">
+              {t('settings.push')}
+              {push.state !== 'loading' && <small className={styles.wrap}>{t(`settings.pushState.${push.state}`)}</small>}
+            </span>
+            {(push.state === 'on' || push.state === 'off') && (
+              <button
+                className="switch"
+                type="button"
+                role="switch"
+                aria-checked={push.state === 'on'}
+                aria-labelledby="push"
+                disabled={push.busy}
+                onClick={() => void push.toggle()}
+              />
+            )}
+          </div>
+          {push.problem && (
+            <p className={`error-text ${styles.listRow}`} role="alert">
+              {push.problem.kind === 'dismissed' ? t('settings.pushDismissed') : t('settings.pushError')}
+              {push.problem.detail && <small> ({push.problem.detail})</small>}
+            </p>
+          )}
+          {pushPrefs &&
+            PUSH_KINDS.map((kind) => (
+              <div key={kind} className={styles.listRow}>
+                <span className={styles.listText} id={`push-${kind}`}>
+                  {t(`settings.pushKinds.${kind}.name`)}
+                  <small className={styles.wrap}>{t(`settings.pushKinds.${kind}.hint`)}</small>
+                </span>
+                <button
+                  className="switch"
+                  type="button"
+                  role="switch"
+                  aria-checked={pushPrefs[kind]}
+                  aria-labelledby={`push-${kind}`}
+                  onClick={() => updatePushPrefs.mutate({ [kind]: !pushPrefs[kind] })}
+                />
+              </div>
+            ))}
         </div>
       </section>
 

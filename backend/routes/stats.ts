@@ -4,6 +4,7 @@ import { db } from '../lib/db.js'
 import { json } from '../lib/http.js'
 import { leagueClock } from '../lib/league.js'
 import { hands } from '../lib/schema.js'
+import { seasonRecord } from '../lib/season.js'
 
 // How many of the last hands the profile draws as bars.
 const RECENT = 30
@@ -41,9 +42,8 @@ function summarise(played: Played[]) {
   return { hands: played.length, wins, pushes, losses, blackjacks, bestWin, net, wagered, streak: run, bestStreak }
 }
 
-// GET /api/profile/stats: the player's numbers this week and since they started.
-export async function getStats(request: Request): Promise<Response> {
-  const user = await requireUser(request)
+/** The player's numbers this week and since they started, plus their last hands. */
+export function playerStats(userId: string) {
   const played: Played[] = db()
     .select({
       at: hands.createdAt,
@@ -55,14 +55,20 @@ export async function getStats(request: Request): Promise<Response> {
       )`,
     })
     .from(hands)
-    .where(and(eq(hands.userId, user.id), eq(hands.fase, 'settled')))
+    .where(and(eq(hands.userId, userId), eq(hands.fase, 'settled')))
     .orderBy(asc(hands.createdAt))
     .all()
 
   const { weekBegin } = leagueClock()
-  return json({
+  return {
     week: summarise(played.filter((hand) => hand.at >= weekBegin)),
     total: summarise(played),
     recent: played.slice(-RECENT).map((hand) => hand.net),
-  })
+  }
+}
+
+// GET /api/profile/stats: the player's numbers this week and since they started.
+export async function getStats(request: Request): Promise<Response> {
+  const user = await requireUser(request)
+  return json({ ...playerStats(user.id), seasons: seasonRecord(user.id) })
 }

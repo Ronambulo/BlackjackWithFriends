@@ -2,7 +2,15 @@
 
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useAdminLeague, useAdminSettings, useSetAnnouncement } from '@/admin/useAdmin'
+import {
+  useAdminChallenges,
+  useAdminLeague,
+  useAdminSettings,
+  usePickChallenges,
+  useSetAnnouncement,
+} from '@/admin/useAdmin'
+import type { ChallengeId } from '@/challenges/useChallenges'
+import { currentLanguage } from '@/i18n'
 import { date, number } from '@/admin/format'
 import { MegaphoneIcon } from '@/ui/icons'
 import styles from './admin.module.css'
@@ -104,6 +112,92 @@ function Announcement() {
   )
 }
 
+const TIERS = ['easy', 'medium', 'hard'] as const
+
+/** Today's challenges with how many players did them, and a pick for tomorrow's. */
+function Challenges() {
+  const { t } = useTranslation()
+  const { data } = useAdminChallenges()
+  const pick = usePickChallenges()
+  // The admin's edit, until it's saved; else what tomorrow has now.
+  const [draft, setDraft] = useState<ChallengeId[] | null>(null)
+
+  if (!data) return <section className={`card ${styles.placeholder}`} aria-busy="true" />
+
+  const text = (c: { id: ChallengeId; target: number }) =>
+    t(`challenges.items.${c.id}`, { count: c.target, amount: number(c.target) })
+  const ids = draft ?? data.tomorrow.ids
+  const changed = ids.some((id, i) => id !== data.tomorrow.ids[i])
+  // A day never has two of a kind: what the other tiers took is off.
+  const familyOf = (id: ChallengeId) => data.catalogue.find((c) => c.id === id)?.family
+  const taken = (i: number) => new Set(ids.filter((_, j) => j !== i).map(familyOf))
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    pick.mutate(ids, { onSuccess: () => setDraft(null) })
+  }
+
+  return (
+    <form className={`card ${styles.block}`} onSubmit={submit}>
+      <div className={styles.sectionHead}>
+        <h2 className="label">{t('admin.challengesTitle')}</h2>
+        <span className={styles.dim}>{data.today.custom ? t('admin.challengesCustom') : t('admin.challengesAuto')}</span>
+      </div>
+      <ol className={styles.top}>
+        {data.today.challenges.map((c) => (
+          <li key={c.id}>
+            <span className={styles.userName}>
+              <b className={styles.ellipsis}>{text(c)}</b>
+              <small className={styles.ellipsis}>
+                {t(`challenges.tiers.${c.tier}`)} · {t('challenges.reward', { count: c.coins })}
+              </small>
+            </span>
+            <b>{t('admin.challengesCompleted', { count: c.completed, n: number(c.completed) })}</b>
+          </li>
+        ))}
+      </ol>
+
+      <h3 className="label">
+        {t('admin.challengesTomorrow', {
+          date: new Intl.DateTimeFormat(currentLanguage(), { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(
+            new Date(`${data.tomorrow.day}T12:00:00Z`),
+          ),
+        })}
+        {data.tomorrow.custom ? ` · ${t('admin.challengesCustom')}` : ''}
+      </h3>
+      {TIERS.map((tier, i) => (
+        <label key={tier} className={styles.formField}>
+          {t(`challenges.tiers.${tier}`)}
+          <select
+            className={styles.fieldInput}
+            value={ids[i] ?? ''}
+            onChange={(event) => setDraft(ids.map((id, j) => (j === i ? (event.target.value as ChallengeId) : id)))}
+          >
+            {data.catalogue
+              .filter((c) => c.tier === tier)
+              .map((c) => (
+                <option key={c.id} value={c.id} disabled={taken(i).has(c.family)}>
+                  {text(c)}
+                </option>
+              ))}
+          </select>
+        </label>
+      ))}
+      {pick.isError && <p className="error-text">{pick.error.message}</p>}
+      <div className={styles.formActions}>
+        {data.tomorrow.custom && (
+          <button className="btn btn-ghost" type="button" disabled={pick.isPending} onClick={() => pick.mutate(null, { onSuccess: () => setDraft(null) })}>
+            {t('admin.challengesReset')}
+          </button>
+        )}
+        <button className="btn btn-primary" type="submit" disabled={!changed || pick.isPending}>
+          {t('admin.challengesSave')}
+        </button>
+      </div>
+    </form>
+  )
+}
+
 export function LeagueTab() {
   const { t } = useTranslation()
   const { data, isError, refetch } = useAdminLeague()
@@ -167,6 +261,8 @@ export function LeagueTab() {
         </ol>
       </section>
 
+      <Challenges />
+
       <Announcement />
 
       <section className={`card ${styles.block} ${styles.full}`}>
@@ -175,12 +271,10 @@ export function LeagueTab() {
           <span className={styles.dim}>{t('admin.comingSoonHint')}</span>
         </div>
         <div className={styles.soonGrid}>
-          {(['challenges', 'shop'] as const).map((key) => (
-            <article key={key} className={styles.soon}>
-              <b>{t(`admin.soon.${key}.title`)}</b>
-              <span className={styles.dim}>{t(`admin.soon.${key}.text`)}</span>
-            </article>
-          ))}
+          <article className={styles.soon}>
+            <b>{t('admin.soon.shop.title')}</b>
+            <span className={styles.dim}>{t('admin.soon.shop.text')}</span>
+          </article>
         </div>
       </section>
     </>

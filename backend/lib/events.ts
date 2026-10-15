@@ -5,7 +5,7 @@ import { eq, sql } from 'drizzle-orm'
 import { db } from './db.js'
 import { groupMembers } from './schema.js'
 
-type Listener = () => void
+type Listener = (event: string, data?: object) => void
 
 const listeners = new Map<string, Set<Listener>>()
 
@@ -33,7 +33,26 @@ export function groupmates(userId: string): string[] {
 
 /** Tells these players' open apps that their groups changed. */
 export function notifyGroups(userIds: Iterable<string>) {
-  for (const userId of userIds) listeners.get(userId)?.forEach((listener) => listener())
+  for (const userId of userIds) listeners.get(userId)?.forEach((listener) => listener('groups'))
+}
+
+/** Tells a chat's readers that it changed (a message, a reaction, a deletion): a group's members, or everyone for the global chat (null). */
+export function notifyChat(groupId: string | null) {
+  if (groupId === null) {
+    for (const set of listeners.values()) set.forEach((listener) => listener('chat', { groupId: 'global' }))
+    return
+  }
+  const members = db()
+    .select({ userId: groupMembers.userId })
+    .from(groupMembers)
+    .where(eq(groupMembers.groupId, groupId))
+    .all()
+  for (const { userId } of members) listeners.get(userId)?.forEach((listener) => listener('chat', { groupId }))
+}
+
+/** Tells every open app that the week closed: rankings, coins and the ceremony all change. */
+export function notifyAll() {
+  for (const set of listeners.values()) set.forEach((listener) => listener('week'))
 }
 
 const encoder = new TextEncoder()
@@ -46,7 +65,9 @@ export function eventStream(userId: string): Response {
       const write = (text: string) => controller.enqueue(encoder.encode(text))
       // Reconnect quickly if the connection drops.
       write('retry: 3000\n\n')
-      const unsubscribe = subscribe(userId, () => write('event: groups\ndata: {}\n\n'))
+      const unsubscribe = subscribe(userId, (event, data = {}) =>
+        write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
+      )
       // Proxies (Cloudflare drops idle connections after 100 s) must see traffic.
       const ping = setInterval(() => write(': ping\n\n'), 25_000)
       close = () => {

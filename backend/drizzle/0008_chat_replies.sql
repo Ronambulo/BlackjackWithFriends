@@ -1,0 +1,1 @@
+ALTER TABLE `messages` ADD `reply_to` text REFERENCES messages(id) ON DELETE set null;

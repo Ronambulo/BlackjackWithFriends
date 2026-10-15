@@ -1,14 +1,16 @@
 'use client'
 
 import type { Action, Card, HandValue, Outcome } from '@bwf/engine'
-import { useEffect, useId, useState, type CSSProperties, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useState, type CSSProperties, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { UnlockToast, type Notice } from '@/achievements/UnlockToast'
 import { currentLanguage } from '@/i18n'
 import { useClaimPay, useLeague } from '@/league/useLeague'
 import { ApiError } from '@/lib/api'
 import { formatNumber } from '@/lib/format'
+import { ShareSheet } from '@/social/ShareSheet'
 import { play as playSound, preloadSounds, type Sound } from '@/sound/sounds'
-import { MinusIcon, PlusIcon, SplitIcon } from '@/ui/icons'
+import { CheckIcon, MinusIcon, PlusIcon, ShareIcon, SplitIcon } from '@/ui/icons'
 import { PlayingCard } from './PlayingCard'
 import { useClearFinishedHand, useClearFinishedHandOnLeave, usePlay, useTable, type HandView } from './useTable'
 import styles from './Table.module.css'
@@ -204,6 +206,21 @@ export function Table() {
     if (resultSound) playSound(resultSound)
   }, [resultSound, hand?.id])
 
+  // Achievements the hand unlocked and challenges it completed, announced once the
+  // cards have shown it; they outlive the hand, so going on to the next bet doesn't cut them short.
+  const [toasts, setToasts] = useState<(Notice & { key: string })[]>([])
+  const [announced, setAnnounced] = useState<string | null>(null)
+  if (resultSound && hand && (table?.unlocked?.length || table?.challenges?.length) && announced !== hand.id) {
+    setAnnounced(hand.id)
+    const handId = hand.id
+    const notices: Notice[] = [
+      ...(table.unlocked ?? []).map((a) => ({ kind: 'achievement' as const, ...a })),
+      ...(table.challenges ?? []).map((c) => ({ kind: 'challenge' as const, ...c })),
+    ]
+    setToasts((queue) => [...queue, ...notices.map((n) => ({ ...n, key: `${handId}-${n.kind}-${n.id}` }))])
+  }
+  const nextToast = useCallback(() => setToasts((queue) => queue.slice(1)), [])
+
   if (isPending) return <div className={styles.loading} aria-busy="true" />
   if (isError || !table) {
     return (
@@ -243,6 +260,7 @@ export function Table() {
   const showResult = Boolean(settled) && ready && pendingBet === null
   return (
     <div className={styles.table}>
+      {toasts[0] && <UnlockToast key={toasts[0].key} notice={toasts[0]} onDone={nextToast} />}
       <section className={styles.felt}>
         <div className={styles.feltTop}>
           <div className={styles.shoe} aria-hidden="true" />
@@ -383,6 +401,7 @@ export function Table() {
               <button className={styles.wood} disabled={busy} onClick={clearHand}>
                 {t('play.changeBet')}
               </button>
+              <PublishButton key={hand!.id} handId={hand!.id} />
               <button className={styles.gold} disabled={busy || !canRepeat} onClick={() => deal(lastBet)}>
                 {t('play.again', { amount: fmt(lastBet) })}
               </button>
@@ -391,6 +410,37 @@ export function Table() {
         )}
       </section>
     </div>
+  )
+}
+
+/** Hands are never published on their own: this offers it once the hand is over. */
+function PublishButton({ handId }: { handId: string }) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const [done, setDone] = useState(false)
+  return (
+    <>
+      <button
+        type="button"
+        className={`${styles.wood} ${styles.publish}`}
+        disabled={done}
+        aria-label={t(done ? 'social.published' : 'social.publish')}
+        title={t(done ? 'social.published' : 'social.publish')}
+        onClick={() => setOpen(true)}
+      >
+        {done ? <CheckIcon width={20} height={20} strokeWidth={2.6} /> : <ShareIcon width={20} height={20} />}
+      </button>
+      {open && (
+        <ShareSheet
+          what={{ handId }}
+          onClose={() => setOpen(false)}
+          onShared={() => {
+            setOpen(false)
+            setDone(true)
+          }}
+        />
+      )}
+    </>
   )
 }
 

@@ -1,0 +1,809 @@
+/* The Social page fills the screen, so the composer sits at the bottom even with few messages */
+:global(main):has(> .screen) {
+  display: flex;
+  flex-direction: column;
+}
+
+.screen {
+  flex: 1 0 auto;
+}
+
+.chat {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ---------- Messages ---------- */
+
+.messages {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 3px;
+}
+
+.hint {
+  margin: 24px 0;
+  text-align: center;
+}
+
+.message {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 86%;
+}
+
+.message.head {
+  margin-top: 10px;
+}
+
+.mine {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.avatar {
+  flex: none;
+  width: 30px;
+}
+
+.message.head .avatar {
+  /* level with the bubble, under the name */
+  padding-top: 18px;
+}
+
+.body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mine .body {
+  align-items: flex-end;
+}
+
+.author {
+  padding-left: 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 100%;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 18px 18px 18px 6px;
+  background: var(--layer-2);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  /* Horizontal drags are the swipe to reply */
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  /* The long press is ours, not the browser's */
+  -webkit-touch-callout: none;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+/* Sinks while held, until the menu opens */
+.bubble.pressing {
+  transform: scale(0.95);
+  transition-duration: 0.45s;
+}
+
+.mine .bubble {
+  border-radius: 18px 18px 6px 18px;
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.mine .handBubble {
+  background: var(--layer-2);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+.text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.time {
+  align-self: flex-end;
+  font-size: 0.68rem;
+  opacity: 0.65;
+}
+
+.shared {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+/* ---------- A published hand ---------- */
+
+.handCard {
+  --card-w: 34px;
+  --overlap: -0.35;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+  padding: 10px;
+  margin: 4px 0;
+  border-radius: 12px;
+  background: var(--felt);
+}
+
+.handRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.handLabel {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.75rem;
+  color: rgb(255 255 255 / 0.75);
+}
+
+.handLabel b {
+  font-size: 1rem;
+  color: #fff;
+}
+
+.miniCards {
+  display: flex;
+  padding-right: 4px;
+}
+
+.handFoot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 6px;
+  border-top: 1px solid rgb(255 255 255 / 0.15);
+  font-size: 0.8rem;
+}
+
+.handFoot :global(.muted) {
+  color: rgb(255 255 255 / 0.7);
+}
+
+.handNet {
+  font-size: 1.1rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.win {
+  color: var(--success);
+}
+
+.lose {
+  color: var(--danger);
+}
+
+.push {
+  color: #fff;
+}
+
+/* ---------- Published stats ---------- */
+
+.statsCard {
+  display: flex;
+  flex-direction: column;
+  min-width: 230px;
+  margin: 4px 0;
+  padding: 12px;
+  border-radius: 12px;
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgb(242 193 78 / 0.12), transparent 60%),
+    var(--layer-1);
+}
+
+.statsRange {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.statsNet {
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.statsCard .push {
+  color: var(--text);
+}
+
+.statsWagered {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.statsBar {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  margin: 10px 0 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--layer-3);
+}
+
+.statsWin {
+  background: var(--success);
+}
+
+.statsPush {
+  background: var(--text-dim);
+}
+
+.statsLoss {
+  background: var(--danger);
+}
+
+.statsLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  list-style: none;
+}
+
+.statsLegend li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.statsLegend b {
+  color: var(--text);
+}
+
+.statsDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.statsTiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 10px 0 0;
+}
+
+.statsTiles div {
+  display: flex;
+  flex-direction: column;
+  padding: 7px 9px;
+  border-radius: 9px;
+  background: var(--layer-2);
+}
+
+.statsTiles dd {
+  order: -1;
+  margin: 0;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.statsTiles dt {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+}
+
+/* ---------- Reactions, the menu and replies ---------- */
+
+/* Dims the chat while a message's menu is open; the message rises above it */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  background: rgb(0 0 0 / 0.55);
+  backdrop-filter: blur(2px);
+  animation: fade 0.18s ease-out;
+}
+
+.message.open {
+  position: relative;
+  z-index: 6;
+}
+
+.open .bubble {
+  transform: scale(1.03);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.45);
+}
+
+.swipe {
+  position: relative;
+  max-width: 100%;
+  transition: transform 0.25s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.mine .swipe {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.swipeHint {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 10px);
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-top: -15px;
+  border-radius: 50%;
+  background: var(--layer-2);
+  color: var(--text);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Your own messages are pulled the other way */
+.mine .swipeHint {
+  right: auto;
+  left: calc(100% + 10px);
+}
+
+.picker {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 1;
+  display: flex;
+  gap: 2px;
+  padding: 5px;
+  border-radius: 999px;
+  background: var(--layer-3);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.4);
+  transform-origin: bottom left;
+  animation: rise 0.22s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.mine .picker {
+  right: 0;
+  left: auto;
+  transform-origin: bottom right;
+}
+
+.pick {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  font-size: 1.5rem;
+  /* The emoji's own line box would push it off the ring */
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.3, 1.6, 0.5, 1);
+  animation: emojiIn 0.32s cubic-bezier(0.3, 1.7, 0.5, 1) both;
+  animation-delay: calc(var(--i) * 35ms);
+}
+
+.pick:hover {
+  transform: translateY(-4px) scale(1.25);
+}
+
+.pick:active {
+  transform: scale(1.4);
+}
+
+.pickMine {
+  background: var(--layer-1);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* The picked emoji flying off the bubble */
+.burst {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 7;
+  font-size: 2.4rem;
+  pointer-events: none;
+  animation: burst 0.7s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
+}
+
+/* Under the bubble, overlapping its edge like in WhatsApp */
+.reactions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: -8px 8px 0;
+}
+
+.reaction {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 26px;
+  padding: 0 7px;
+  border: 2px solid var(--bg);
+  border-radius: 999px;
+  background: var(--layer-2);
+  color: var(--text);
+  font-size: 0.9rem;
+  cursor: pointer;
+  animation: emojiIn 0.3s cubic-bezier(0.3, 1.7, 0.5, 1);
+  transition: transform 0.12s ease;
+}
+
+.reaction:active {
+  transform: scale(0.9);
+}
+
+.reaction b {
+  font-size: 0.75rem;
+  animation: emojiIn 0.3s cubic-bezier(0.3, 1.7, 0.5, 1);
+}
+
+.reactionMine {
+  background: color-mix(in srgb, var(--accent) 22%, var(--layer-2));
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  padding: 6px;
+  border-radius: 16px;
+  background: var(--layer-3);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.4);
+  transform-origin: top left;
+  animation: rise 0.2s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.mine .menu {
+  right: 0;
+  left: auto;
+  transform-origin: top right;
+}
+
+.menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu button:hover {
+  background: var(--layer-2);
+}
+
+.menu .menuDanger {
+  color: var(--danger);
+}
+
+.quote {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  margin: 0 -4px 4px;
+  padding: 5px 10px;
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  background: rgb(0 0 0 / 0.18);
+  font-size: 0.82rem;
+}
+
+.mine .quote {
+  border-left-color: var(--accent-text);
+}
+
+.quoteLink {
+  cursor: pointer;
+}
+
+.quoteName {
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+
+.mine .quoteName {
+  color: inherit;
+}
+
+.quoteText {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+  opacity: 0.85;
+}
+
+/* A quoted message after jumping to it */
+.flash .bubble {
+  animation: flash 1.2s ease-out;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.85);
+  }
+}
+
+@keyframes emojiIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.3);
+  }
+}
+
+@keyframes burst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 0) scale(0.4);
+  }
+  25% {
+    opacity: 1;
+    transform: translate(-50%, -28px) scale(1.3);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -70px) scale(1);
+  }
+}
+
+@keyframes flash {
+  0%,
+  40% {
+    box-shadow: 0 0 0 3px var(--accent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pick,
+  .reaction,
+  .reaction b,
+  .picker,
+  .menu,
+  .burst {
+    animation: none;
+  }
+}
+
+/* ---------- Composer ---------- */
+
+/* Stuck to the bottom of the scroller, over the page's bottom padding. */
+.composer {
+  position: sticky;
+  bottom: -32px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  margin: 4px 0 -32px;
+  padding: 10px 0 32px;
+  background: linear-gradient(to bottom, transparent, var(--bg) 14px);
+}
+
+.composerRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.field {
+  flex: 1;
+  min-height: 44px;
+  max-height: 120px;
+  padding: 11px 16px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--layer-1);
+  color: var(--text);
+  font: inherit;
+  line-height: 1.3;
+  resize: none;
+  /* Grows with the text; past the max it still scrolls, without a bar */
+  scrollbar-width: none;
+}
+
+.field::-webkit-scrollbar {
+  display: none;
+}
+
+.field:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.send {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-text);
+  cursor: pointer;
+}
+
+.send:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.sendError {
+  margin: 0;
+}
+
+.replying {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 12px;
+  border-radius: 16px;
+  background: var(--layer-1);
+  animation: rise 0.18s ease-out;
+}
+
+.replying .quote {
+  flex: 1;
+  margin: 0;
+}
+
+.replyingIcon {
+  flex: none;
+  color: var(--accent);
+}
+
+.replyingClose {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+@media (min-width: 900px) {
+  .composer {
+    bottom: -48px;
+    margin-bottom: -48px;
+    padding-bottom: 48px;
+  }
+}
+
+/* ---------- Social page ---------- */
+
+/* The title scrolls away; the tabs stay at the top, over the page's top padding. */
+.tabsBar {
+  position: sticky;
+  top: -12px;
+  z-index: 3;
+}
+
+/* Once the title has scrolled away, a strip of the page's own background (the body's glow,
+   placed where it sits on screen) runs edge to edge behind the tabs, from the top of the
+   scroller to a fade below them. At the top it'd cover the glow, so it isn't there yet. */
+.tabsBar::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: -12px;
+  bottom: -14px;
+  left: calc(50% - 50vw);
+  width: 100vw;
+  background:
+    radial-gradient(120% 60% at 50% -10%, var(--bg-glow), transparent 70%),
+    var(--bg);
+  background-size: 100vw var(--app-height);
+  background-position: 0 calc(-1 * (var(--topbar-height) + env(safe-area-inset-top)));
+  mask-image: linear-gradient(black calc(100% - 14px), transparent);
+  pointer-events: none;
+  opacity: 0;
+  animation: stuck linear both;
+  animation-timeline: scroll(nearest);
+  animation-range: 30px 64px;
+}
+
+@keyframes stuck {
+  to {
+    opacity: 1;
+  }
+}
+
+.tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.tabName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  flex: none;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--danger-solid);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 18px;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.empty svg {
+  color: var(--accent);
+}

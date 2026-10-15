@@ -16,6 +16,10 @@
   --tilt: 3deg;
 }
 
+.still {
+  animation: none;
+}
+
 /* From the shoe, top right of the felt */
 @keyframes deal {
   from {

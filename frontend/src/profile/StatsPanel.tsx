@@ -6,7 +6,8 @@ import { useTranslation } from 'react-i18next'
 import { useUser } from '@/auth/session-context'
 import { currentLanguage } from '@/i18n'
 import { formatNumber } from '@/lib/format'
-import { CardsIcon, CheckIcon, ShareIcon } from '@/ui/icons'
+import { ShareSheet } from '@/social/ShareSheet'
+import { CardsIcon, ChatIcon, CheckIcon, ShareIcon } from '@/ui/icons'
 import { storyImage } from './storyImage'
 import { useProfile } from './useProfile'
 import { useStats, type Stats } from './useStats'
@@ -91,8 +92,7 @@ function Recent({ nets }: { nets: number[] }) {
 
 /**
  * Makes an Instagram-story image with the numbers and sends it anywhere the phone
- * can with the system's share sheet, or saves it where there's none. Sharing in
- * the app's own chat comes later.
+ * can with the system's share sheet, or saves it where there's none.
  */
 function ShareStats({ stats, range }: { stats: Stats; range: Range }) {
   const { t } = useTranslation()
@@ -162,6 +162,38 @@ function ShareStats({ stats, range }: { stats: Stats; range: Range }) {
   )
 }
 
+/** Publishes the numbers in view in the app's own chats; the server works them out again. */
+function ShareToChat({ range }: { range: Range }) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const [done, setDone] = useState(false)
+  const label = t(done ? 'stats.toChatDone' : 'stats.toChat')
+  return (
+    <>
+      <button
+        className={`${styles.toChat} ${done ? styles.toChatDone : ''}`}
+        type="button"
+        aria-label={label}
+        title={label}
+        onClick={() => setOpen(true)}
+      >
+        {done ? <CheckIcon width={17} height={17} strokeWidth={2.6} /> : <ChatIcon width={17} height={17} />}
+      </button>
+      {open && (
+        <ShareSheet
+          what={{ stats: range }}
+          onClose={() => setOpen(false)}
+          onShared={() => {
+            setOpen(false)
+            setDone(true)
+            setTimeout(() => setDone(false), 2500)
+          }}
+        />
+      )}
+    </>
+  )
+}
+
 export function StatsPanel() {
   const { t } = useTranslation()
   const { data, isError, refetch } = useStats()
@@ -194,7 +226,10 @@ export function StatsPanel() {
     )
   }
 
-  const stats = data[range]
+  // Until there are hands from an earlier week, both ranges are the same numbers.
+  const pastWeeks = data.total.hands > data.week.hands
+  const shown = pastWeeks ? range : 'week'
+  const stats = data[shown]
   const tiles = [
     { label: t('stats.hands'), value: formatNumber(stats.hands, language) },
     { label: t('stats.blackjacks'), value: formatNumber(stats.blackjacks, language) },
@@ -204,18 +239,25 @@ export function StatsPanel() {
 
   return (
     <section className={styles.panel} aria-label={t('profile.stats')}>
-      <div className="segmented" role="group" aria-label={t('profile.stats')}>
-        {(['week', 'total'] as const).map((key) => (
-          <button key={key} type="button" aria-pressed={range === key} onClick={() => setRange(key)}>
-            {t(`stats.${key}`)}
-          </button>
-        ))}
-      </div>
+      {pastWeeks && (
+        <div className="segmented" role="group" aria-label={t('profile.stats')}>
+          {(['week', 'total'] as const).map((key) => (
+            <button key={key} type="button" aria-pressed={range === key} onClick={() => setRange(key)}>
+              {t(`stats.${key}`)}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className={`card ${styles.summary}`}>
         <div className={styles.summaryHead}>
           <span className="label">{t('stats.result')}</span>
-          {stats.hands > 0 && <ShareStats stats={stats} range={range} />}
+          {stats.hands > 0 && (
+            <div className={styles.shareButtons}>
+              <ShareToChat range={shown} />
+              <ShareStats stats={stats} range={shown} />
+            </div>
+          )}
         </div>
         <p className={`${styles.net} ${stats.net > 0 ? styles.up : stats.net < 0 ? styles.down : ''}`}>{signed(stats.net)}</p>
         <p className="muted">

@@ -7,7 +7,9 @@ import { useUser } from '@/auth/session-context'
 /**
  * Listens to the API's live events (GET /api/events) and refetches only what changed:
  * when someone in your groups plays, joins, leaves or renames something, the rankings
- * and the group menu update in place. The page itself never reloads.
+ * and the group menu update in place. A new chat message, reaction or deletion
+ * refetches that chat (a group's or the global one) and the unread counts. When the week closes, everything does.
+ * The page itself never reloads.
  */
 export function useLiveUpdates() {
   const user = useUser()
@@ -22,13 +24,27 @@ export function useLiveUpdates() {
       void queryClient.invalidateQueries({ queryKey: ['group', user.id] })
     }
 
+    const refreshChat = (event: MessageEvent<string>) => {
+      const { groupId } = JSON.parse(event.data) as { groupId: string }
+      void queryClient.invalidateQueries({ queryKey: ['chat', user.id, groupId] })
+      void queryClient.invalidateQueries({ queryKey: ['chatUnread', user.id] })
+    }
+
+    const refreshAll = () => void queryClient.invalidateQueries()
+
     const connect = () => {
       if (source) return
       source = new EventSource('/api/events')
       source.addEventListener('groups', refreshGroups)
+      source.addEventListener('chat', refreshChat)
+      source.addEventListener('week', refreshAll)
       // Back after a drop: whatever happened meanwhile was missed.
       source.addEventListener('open', () => {
-        if (opened) refreshGroups()
+        if (opened) {
+          refreshGroups()
+          void queryClient.invalidateQueries({ queryKey: ['chat', user.id] })
+          void queryClient.invalidateQueries({ queryKey: ['chatUnread', user.id] })
+        }
         opened = true
       })
     }

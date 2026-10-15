@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useUser } from '@/auth/session-context'
 import { api } from '@/lib/api'
+import type { SeasonRecord } from '@/season/useSeason'
 
 /** Totals over some settled hands; a split round counts as one hand. */
 export interface Stats {
@@ -27,6 +28,8 @@ export interface PlayerStats {
   total: Stats
   /** What each of the last hands won or lost, oldest first. */
   recent: number[]
+  /** Closed weeks: podiums, trophies and coins. */
+  seasons: SeasonRecord
 }
 
 export function useStats() {

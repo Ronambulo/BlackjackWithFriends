@@ -3,7 +3,9 @@
 import type { Action, PublicRoundView } from '@bwf/engine'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
+import { useRefreshAchievements, type UnlockedAchievement } from '@/achievements/useAchievements'
 import { useUser } from '@/auth/session-context'
+import { challengesKey, type CompletedChallenge } from '@/challenges/useChallenges'
 import type { League } from '@/league/useLeague'
 import { ApiError, api } from '@/lib/api'
 
@@ -17,6 +19,10 @@ export interface TableState {
   maxBet: number
   /** The hand being played, or the one that just finished (POST only). */
   hand: HandView | null
+  /** Achievements that hand unlocked, with their rewards (POST only). */
+  unlocked?: UnlockedAchievement[]
+  /** The day's challenges that hand completed (POST only). */
+  challenges?: CompletedChallenge[]
 }
 
 export type PlayRequest = { action: 'bet'; bet: number } | { action: Action; handId: string; version: number }
@@ -34,6 +40,7 @@ export function useTable() {
 export function usePlay() {
   const user = useUser()
   const queryClient = useQueryClient()
+  const refreshAchievements = useRefreshAchievements()
   const key = ['table', user.id]
   return useMutation({
     mutationFn: (request: PlayRequest) => api<TableState>('/play', { method: 'POST', body: request }),
@@ -47,7 +54,9 @@ export function usePlay() {
         void queryClient.invalidateQueries({ queryKey: ['groups', user.id] })
         void queryClient.invalidateQueries({ queryKey: ['group', user.id] })
         void queryClient.invalidateQueries({ queryKey: ['stats', user.id] })
+        void queryClient.invalidateQueries({ queryKey: challengesKey(user.id) })
       }
+      if (table.unlocked?.length || table.challenges?.length) refreshAchievements()
     },
     onError: (err) => {
       // The hand moved on (another tab, a double tap): show what the server has.

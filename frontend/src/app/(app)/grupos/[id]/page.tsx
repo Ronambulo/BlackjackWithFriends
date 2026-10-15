@@ -13,6 +13,7 @@ import { currentLanguage } from '@/i18n'
 import { useCountdown } from '@/league/useCountdown'
 import { useLeague } from '@/league/useLeague'
 import { formatNumber } from '@/lib/format'
+import { GroupHistory } from '@/season/GroupHistory'
 import { ConfirmSheet, SheetIcon } from '@/ui/ConfirmSheet'
 import { ChevronLeftIcon, LeaveIcon, ShareIcon, TimerIcon } from '@/ui/icons'
 import { PullToRefresh } from '@/ui/PullToRefresh'
@@ -94,6 +95,8 @@ export default function GroupPage() {
                 </p>
               </div>
             )}
+
+            <GroupHistory groupId={data.id} />
 
             <MembersCard group={data} />
             {/* Keyed so a rename elsewhere starts the form afresh. */}

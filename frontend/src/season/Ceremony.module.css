@@ -1,0 +1,383 @@
+/* The week's ceremony, over the whole app */
+
+.overlay {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: calc(env(safe-area-inset-top) + 64px) 20px calc(env(safe-area-inset-bottom) + 56px);
+  background:
+    radial-gradient(120% 70% at 50% 35%, rgb(15 92 53 / 0.85), transparent 70%),
+    var(--bg);
+  color: var(--text);
+  text-align: center;
+  cursor: pointer;
+  animation: fade 300ms ease-out;
+  user-select: none;
+}
+
+.skip {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 14px);
+  right: 16px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 440px;
+  animation: rise 400ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.kicker {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.big {
+  margin: 0;
+  color: var(--accent);
+  font-family: var(--font-felt), Georgia, serif;
+  font-size: 3rem;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.text {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 1.05rem;
+  line-height: 1.45;
+}
+
+.start {
+  min-width: 200px;
+  margin-top: 12px;
+}
+
+.tap {
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom) + 20px);
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+/* ---------- Drumroll: three chips bouncing faster ---------- */
+
+.drum {
+  display: flex;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.drum span {
+  width: 34px;
+  height: 34px;
+  border: 5px dashed rgb(255 255 255 / 0.85);
+  border-radius: 50%;
+  background: var(--danger-solid);
+  animation: bounce 2.4s ease-in infinite;
+}
+
+.drum span:nth-child(2) {
+  background: var(--accent);
+  animation-delay: 80ms;
+}
+
+.drum span:nth-child(3) {
+  background: #2f6fd6;
+  animation-delay: 160ms;
+}
+
+/* ---------- Podium ---------- */
+
+.podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 10px;
+  width: 100%;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.who {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  opacity: 0;
+  transform: translateY(24px) scale(0.6);
+  transition:
+    opacity 300ms ease-out,
+    transform 500ms cubic-bezier(0.2, 0.9, 0.3, 1.4);
+}
+
+.shown .who {
+  opacity: 1;
+  transform: none;
+}
+
+.crown {
+  color: var(--medal);
+}
+
+.avatar {
+  box-shadow:
+    0 0 0 3px var(--bg),
+    0 0 0 5px var(--medal);
+}
+
+.name {
+  overflow: hidden;
+  max-width: 100%;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.balance {
+  color: var(--medal);
+  font-size: 0.85rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.block {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  border-radius: 14px 14px 4px 4px;
+  background: var(--layer-2);
+  color: var(--medal);
+  font-family: var(--font-felt), Georgia, serif;
+  font-style: italic;
+  font-weight: 600;
+}
+
+.block1 {
+  height: 140px;
+  background: var(--felt-card);
+  font-size: 2.6rem;
+}
+
+.block2 {
+  height: 100px;
+  font-size: 2.2rem;
+}
+
+.block3 {
+  height: 74px;
+  font-size: 1.9rem;
+}
+
+/* ---------- Joke prizes ---------- */
+
+.jokes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.joke {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--layer-1);
+  text-align: left;
+  animation: rise 400ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+.mine {
+  border-color: var(--accent);
+  background: rgb(242 193 78 / 0.1);
+}
+
+.jokeTitle {
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.jokeWho {
+  grid-row: 2;
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jokeValue {
+  grid-row: span 2;
+  align-self: center;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+/* ---------- Coins ---------- */
+
+.coins {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--accent);
+  font-size: 2.4rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  animation: pop 600ms cubic-bezier(0.2, 0.9, 0.3, 1.6) both;
+}
+
+.coin {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: inset 0 0 0 7px #c99a2e;
+  animation: flip 1.2s ease-in-out 2;
+}
+
+/* ---------- Confetti ---------- */
+
+.confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.confetti span {
+  position: absolute;
+  top: -20px;
+  left: var(--x);
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--color);
+  animation: fall var(--time) cubic-bezier(0.3, 0.6, 0.6, 1) var(--delay) both;
+}
+
+@keyframes fall {
+  to {
+    transform: translate(var(--drift), calc(var(--app-height) + 40px)) rotate(var(--spin));
+    opacity: 0.8;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+@keyframes flip {
+  50% {
+    transform: rotateY(180deg);
+  }
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateY(-14px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .stage,
+  .joke,
+  .coins,
+  .coin,
+  .tap,
+  .drum span {
+    animation: none;
+  }
+
+  .who {
+    transition: none;
+  }
+
+  .confetti {
+    display: none;
+  }
+}

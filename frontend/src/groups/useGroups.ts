@@ -30,6 +30,8 @@ export interface GroupSummary {
   rank: number
   rankChange: number
   top: RankedMember[]
+  /** Others' chat messages since the player last read it. */
+  unread: number
 }
 
 /** GET /api/group?id=: the whole live ranking. */

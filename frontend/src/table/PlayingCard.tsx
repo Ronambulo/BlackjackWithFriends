@@ -8,14 +8,29 @@ const SUIT_SYMBOL: Record<Suit, string> = { S: '♠︎', H: '♥︎', D: '♦︎
 /**
  * A card that flies in from the shoe when it mounts (after `delay` seconds).
  * With `card` null it shows its back. With `flipAt`, it lands face down and
- * turns over at that moment (the dealer's hole card).
+ * turns over at that moment (the dealer's hole card). `still` just lies there (a hand shown in the chat).
  */
-export function PlayingCard({ card, delay = 0, flipAt }: { card: Card | null; delay?: number; flipAt?: number }) {
+export function PlayingCard({
+  card,
+  delay = 0,
+  flipAt,
+  still = false,
+}: {
+  card: Card | null
+  delay?: number
+  flipAt?: number
+  still?: boolean
+}) {
   const red = card?.suit === 'H' || card?.suit === 'D'
   const style = { '--deal-delay': `${delay}s`, '--flip-delay': `${flipAt ?? 0}s` } as CSSProperties
   const turn = !card ? styles.faceDown : flipAt !== undefined ? styles.flip : ''
   return (
-    <div className={styles.slot} style={style} role="img" aria-label={card ? `${card.rank}${SUIT_SYMBOL[card.suit]}` : '?'}>
+    <div
+      className={`${styles.slot} ${still ? styles.still : ''}`}
+      style={style}
+      role="img"
+      aria-label={card ? `${card.rank}${SUIT_SYMBOL[card.suit]}` : '?'}
+    >
       <div className={`${styles.inner} ${turn}`}>
         <div className={`${styles.face} ${red ? styles.red : ''}`} aria-hidden="true">
           {card && (

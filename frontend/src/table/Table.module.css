@@ -572,6 +572,21 @@
   cursor: pointer;
 }
 
+/* Square icon button between "Change bet" and "Again" */
+.publish {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 50px;
+  padding: 0;
+}
+
+.publish:disabled {
+  color: var(--success);
+  opacity: 1;
+  cursor: default;
+}
+
 /* Keeps the rail the same height whether or not surrender is offered */
 .textButton[hidden] {
   display: block;
