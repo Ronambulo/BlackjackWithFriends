@@ -250,6 +250,15 @@ export const en: Messages = {
     streak_other: '{{count}} wins in a row',
     empty: 'Play your first hand and you’ll see how it’s going here.',
     play: 'Play',
+    share: 'Share',
+    saved: 'Image saved',
+    story: {
+      week: 'My week',
+      total: 'All time',
+      chips_one: 'chips in {{count}} hand',
+      chips_other: 'chips in {{count}} hands',
+      dare: 'Think you can beat me?',
+    },
   },
   settings: {
     title: 'Settings',

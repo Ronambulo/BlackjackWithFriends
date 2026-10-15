@@ -249,6 +249,15 @@ export const es = {
     streak_other: '{{count}} ganadas seguidas',
     empty: 'Juega tu primera mano y aquí verás cómo te va.',
     play: 'Jugar',
+    share: 'Compartir',
+    saved: 'Imagen guardada',
+    story: {
+      week: 'Mi semana',
+      total: 'Mi histórico',
+      chips_one: 'fichas en {{count}} mano',
+      chips_other: 'fichas en {{count}} manos',
+      dare: '¿Te atreves?',
+    },
   },
   settings: {
     title: 'Ajustes',
