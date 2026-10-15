@@ -33,7 +33,7 @@ export async function getAdminChallenges(request: Request): Promise<Response> {
       challenges: challengesFor(today).map((c) => ({ id: c.id, tier: c.tier, target: c.target, coins: c.coins, completed: counts[c.id] ?? 0 })),
     },
     tomorrow: { day: tomorrow, custom: isCustomDay(tomorrow), ids: challengesFor(tomorrow).map((c) => c.id) },
-    catalogue: CHALLENGES.map((c) => ({ id: c.id, tier: c.tier, target: c.target, coins: c.coins })),
+    catalogue: CHALLENGES.map((c) => ({ id: c.id, tier: c.tier, family: c.family, target: c.target, coins: c.coins })),
   })
 }
 

@@ -20,11 +20,29 @@ interface DayHand {
   hands: PlayerHand[]
   results: HandResult[]
   dealer: Card[]
+  insurancePayout: number
 }
+
+/** What a challenge is about: a day never has two of the same kind. */
+export type Family =
+  | 'volume'
+  | 'wins'
+  | 'streak'
+  | 'blackjack'
+  | 'dealer'
+  | 'double'
+  | 'split'
+  | 'push'
+  | 'bet'
+  | 'profit'
+  | 'cards'
+  | 'comeback'
+  | 'insurance'
 
 interface Challenge {
   id: string
   tier: Tier
+  family: Family
   target: number
   coins: number
   progress: (day: DayHand[]) => number
@@ -32,6 +50,11 @@ interface Challenge {
 
 const won = (r: HandResult | undefined) => r?.outcome === 'win' || r?.outcome === 'blackjack'
 const count = (day: DayHand[], test: (hand: DayHand) => boolean) => day.filter(test).length
+/** Hands (a split counts each) that pass the test. */
+const handCount = (day: DayHand[], test: (p: PlayerHand, r: HandResult | undefined) => boolean) =>
+  day.reduce((sum, h) => sum + h.hands.filter((p, i) => test(p, h.results[i])).length, 0)
+const profit = (day: DayHand[]) => day.reduce((sum, h) => sum + h.net, 0)
+const blackjacks = (day: DayHand[]) => count(day, (h) => h.results.some((r) => r.outcome === 'blackjack'))
 
 /** Wins in a row today, at most; a push doesn't break it. */
 function bestRun(day: DayHand[]) {
@@ -44,51 +67,104 @@ function bestRun(day: DayHand[]) {
   return best
 }
 
+/** Wins right after losing three in a row (pushes don't count either way). */
+function comebacks(day: DayHand[]) {
+  let losses = 0
+  let found = 0
+  for (const hand of day) {
+    if (hand.net < 0) losses++
+    else if (hand.net > 0) {
+      if (losses >= 3) found++
+      losses = 0
+    }
+  }
+  return found
+}
+
 const COINS: Record<Tier, number> = { easy: 10, medium: 20, hard: 40 }
 
-const rows: [string, Tier, number, Challenge['progress']][] = [    ['play10', 'easy', 10, (day) => day.length],
-  ['win5', 'easy', 5, (day) => count(day, (h) => h.net > 0)],
-  ['blackjack1', 'easy', 1, (day) => count(day, (h) => h.results.some((r) => r.outcome === 'blackjack'))],
-  ['dealerBust3', 'easy', 3, (day) => count(day, (h) => handValue(h.dealer).total > 21)],
-  ['play30', 'medium', 30, (day) => day.length],
-  ['streak3', 'medium', 3, bestRun],
-  ['doubleWin', 'medium', 1, (day) => count(day, (h) => h.hands.some((p, i) => p.doubled && won(h.results[i])))],
-  ['blackjack3', 'medium', 3, (day) => count(day, (h) => h.results.some((r) => r.outcome === 'blackjack'))],
-  ['profit500', 'medium', 500, (day) => day.reduce((sum, h) => sum + h.net, 0)],
-  ['streak5', 'hard', 5, bestRun],
-  ['splitWin', 'hard', 1, (day) => count(day, (h) => h.hands.length >= 2 && h.results.every(won))],
-  ['bigWin', 'hard', 1, (day) => count(day, (h) => h.apuesta >= 250 && h.net > 0)],
-  ['fiveCards', 'hard', 1, (day) => count(day, (h) => h.hands.some((p, i) => p.cards.length >= 5 && won(h.results[i])))],
-  ['profit2000', 'hard', 2000, (day) => day.reduce((sum, h) => sum + h.net, 0)],
+const rows: [string, Tier, Family, number, Challenge['progress']][] = [
+  ['play10', 'easy', 'volume', 10, (day) => day.length],
+  ['win5', 'easy', 'wins', 5, (day) => count(day, (h) => h.net > 0)],
+  ['blackjack1', 'easy', 'blackjack', 1, blackjacks],
+  ['dealerBust3', 'easy', 'dealer', 3, (day) => count(day, (h) => handValue(h.dealer).total > 21)],
+  ['doubles2', 'easy', 'double', 2, (day) => handCount(day, (p) => p.doubled)],
+  ['split1', 'easy', 'split', 1, (day) => count(day, (h) => h.hands.length >= 2)],
+  ['push2', 'easy', 'push', 2, (day) => handCount(day, (_p, r) => r?.outcome === 'push')],
+  ['bet100x5', 'easy', 'bet', 5, (day) => count(day, (h) => h.apuesta >= 100)],
+  ['play30', 'medium', 'volume', 30, (day) => day.length],
+  ['win10', 'medium', 'wins', 10, (day) => count(day, (h) => h.net > 0)],
+  ['streak3', 'medium', 'streak', 3, bestRun],
+  ['doubleWin', 'medium', 'double', 1, (day) => handCount(day, (p, r) => p.doubled && won(r))],
+  ['blackjack3', 'medium', 'blackjack', 3, blackjacks],
+  ['profit500', 'medium', 'profit', 500, profit],
+  ['win21', 'medium', 'cards', 1, (day) => handCount(day, (p, r) => p.cards.length >= 3 && handValue(p.cards).total === 21 && won(r))],
+  ['beat20', 'medium', 'dealer', 1, (day) => count(day, (h) => handValue(h.dealer).total === 20 && h.results.some((r) => r.outcome === 'win'))],
+  ['comeback', 'medium', 'comeback', 1, comebacks],
+  ['play60', 'hard', 'volume', 60, (day) => day.length],
+  ['streak5', 'hard', 'streak', 5, bestRun],
+  ['splitWin', 'hard', 'split', 1, (day) => count(day, (h) => h.hands.length >= 2 && h.results.every(won))],
+  ['bigWin', 'hard', 'bet', 1, (day) => count(day, (h) => h.apuesta >= 250 && h.net > 0)],
+  ['fiveCards', 'hard', 'cards', 1, (day) => handCount(day, (p, r) => p.cards.length >= 5 && won(r))],
+  ['profit2000', 'hard', 'profit', 2000, profit],
+  ['doubleWin3', 'hard', 'double', 3, (day) => handCount(day, (p, r) => p.doubled && won(r))],
+  ['insuranceWin', 'hard', 'insurance', 1, (day) => count(day, (h) => h.insurancePayout > 0)],
 ]
 
-export const CHALLENGES: readonly Challenge[] = rows.map(([id, tier, target, progress]) => ({
+export const CHALLENGES: readonly Challenge[] = rows.map(([id, tier, family, target, progress]) => ({
   id,
   tier,
+  family,
   target,
   coins: COINS[tier],
   progress,
 }))
 const byId = new Map(CHALLENGES.map((c) => [c.id, c]))
 
-/** A small stable hash of a string (FNV-1a), so a date always picks the same ones. */
+/** A small stable hash of a string (FNV-1a, well mixed), so a date always picks the same ones. */
 function hash(text: string) {
   let h = 0x811c9dc5
   for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193)
-  return h >>> 0
+  // Mixed once more (murmur3's finaliser): dates a day apart otherwise pick alike.
+  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b)
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35)
+  return (h ^ (h >>> 16)) >>> 0
 }
 
 const settingKey = (day: string) => `challenges.${day}`
 
+/** What the admins picked for a day, if they did. */
+function adminPick(day: string) {
+  const chosen = getSetting<string[]>(settingKey(day))?.map((id) => byId.get(id)).filter((c): c is Challenge => !!c)
+  return chosen?.length === TIERS.length ? chosen : null
+}
+
+/**
+ * One per tier from the date. Each tier's challenges come shuffled into a round
+ * that goes one a day, so none is back until all the others had their turn; one
+ * of a kind the day already has gives its place to the next.
+ */
+function byDate(day: string) {
+  const n = Math.round(Date.parse(`${day}T00:00:00Z`) / 86_400_000)
+  const picked: Challenge[] = []
+  for (const tier of TIERS) {
+    const all = CHALLENGES.filter((c) => c.tier === tier)
+    const round = Math.floor(n / all.length)
+    const order = [...all].sort((a, b) => hash(`${round}:${a.id}`) - hash(`${round}:${b.id}`))
+    for (let k = 0; k < order.length; k++) {
+      const c = order[(n + k) % order.length]
+      if (!picked.some((p) => p.family === c.family)) {
+        picked.push(c)
+        break
+      }
+    }
+  }
+  return picked
+}
+
 /** The day's three, easy to hard: the admins' pick if there is one, else by the date. */
 export function challengesFor(day: string): Challenge[] {
-  const picked = getSetting<string[]>(settingKey(day))
-  const chosen = picked?.map((id) => byId.get(id)).filter((c): c is Challenge => !!c)
-  if (chosen?.length === TIERS.length) return chosen
-  return TIERS.map((tier) => {
-    const options = CHALLENGES.filter((c) => c.tier === tier)
-    return options[hash(`${day}:${tier}`) % options.length]
-  })
+  return adminPick(day) ?? byDate(day)
 }
 
 /** Whether the admins picked that day's challenges (else they come from the date). */
@@ -98,7 +174,11 @@ export function isCustomDay(day: string) {
 
 /** The admins' pick for a day: one id per tier, easy to hard; null goes back to the date's. */
 export function pickChallenges(day: string, ids: string[] | null) {
-  if (ids && !TIERS.every((tier, i) => byId.get(ids[i])?.tier === tier)) throw new Error('Retos no válidos')
+  const chosen = ids?.map((id) => byId.get(id))
+  const valid =
+    !chosen ||
+    (TIERS.every((tier, i) => chosen[i]?.tier === tier) && new Set(chosen.map((c) => c?.family)).size === TIERS.length)
+  if (!valid) throw new Error('Retos no válidos')
   setSetting(settingKey(day), ids)
 }
 
@@ -110,6 +190,7 @@ function dayHands(tx: Tx, userId: string, day: string): DayHand[] {
       apuesta: hands.apuesta,
       hands: sql<string>`json_extract(${hands.ronda}, '$.hands')`,
       results: sql<string>`json_extract(${hands.ronda}, '$.settlement.hands')`,
+      insurancePayout: sql<number>`coalesce(json_extract(${hands.ronda}, '$.settlement.insurancePayout'), 0)`,
       dealer: sql<string>`json_extract(${hands.ronda}, '$.dealer')`,
     })
     .from(hands)
@@ -123,6 +204,7 @@ function dayHands(tx: Tx, userId: string, day: string): DayHand[] {
       hands: JSON.parse(row.hands),
       results: JSON.parse(row.results),
       dealer: JSON.parse(row.dealer),
+      insurancePayout: row.insurancePayout,
     }))
 }
 

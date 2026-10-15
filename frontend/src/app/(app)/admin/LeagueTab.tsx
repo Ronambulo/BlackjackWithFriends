@@ -128,6 +128,9 @@ function Challenges() {
     t(`challenges.items.${c.id}`, { count: c.target, amount: number(c.target) })
   const ids = draft ?? data.tomorrow.ids
   const changed = ids.some((id, i) => id !== data.tomorrow.ids[i])
+  // A day never has two of a kind: what the other tiers took is off.
+  const familyOf = (id: ChallengeId) => data.catalogue.find((c) => c.id === id)?.family
+  const taken = (i: number) => new Set(ids.filter((_, j) => j !== i).map(familyOf))
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
@@ -173,7 +176,7 @@ function Challenges() {
             {data.catalogue
               .filter((c) => c.tier === tier)
               .map((c) => (
-                <option key={c.id} value={c.id}>
+                <option key={c.id} value={c.id} disabled={taken(i).has(c.family)}>
                   {text(c)}
                 </option>
               ))}

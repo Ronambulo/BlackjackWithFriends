@@ -306,7 +306,7 @@ export interface AdminChallenges {
     challenges: { id: ChallengeId; tier: Tier; target: number; coins: number; completed: number }[]
   }
   tomorrow: { day: string; custom: boolean; ids: ChallengeId[] }
-  catalogue: { id: ChallengeId; tier: Tier; target: number; coins: number }[]
+  catalogue: { id: ChallengeId; tier: Tier; family: string; target: number; coins: number }[]
 }
 
 export function useAdminChallenges() {

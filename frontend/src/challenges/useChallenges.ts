@@ -22,6 +22,17 @@ export type ChallengeId =
   | 'bigWin'
   | 'fiveCards'
   | 'profit2000'
+  | 'doubles2'
+  | 'split1'
+  | 'push2'
+  | 'bet100x5'
+  | 'win10'
+  | 'win21'
+  | 'beat20'
+  | 'comeback'
+  | 'play60'
+  | 'doubleWin3'
+  | 'insuranceWin'
 
 /** One of today's three (backend/lib/challenges.ts). */
 export interface Challenge {
