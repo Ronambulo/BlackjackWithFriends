@@ -65,8 +65,9 @@ export function subscribe(userId: string, sub: Subscription) {
     .from(pushSubscriptions)
     .where(eq(pushSubscriptions.userId, userId))
     .orderBy(sql`${pushSubscriptions.createdAt} desc`)
-    .offset(MAX_DEVICES)
     .all()
+    // Not .offset(): SQLite only takes one after a limit.
+    .slice(MAX_DEVICES)
   if (old.length) d.delete(pushSubscriptions).where(inArray(pushSubscriptions.endpoint, old.map((row) => row.endpoint))).run()
 }
 
