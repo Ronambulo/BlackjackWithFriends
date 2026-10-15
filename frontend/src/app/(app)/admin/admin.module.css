@@ -256,6 +256,19 @@
   gap: 8px;
 }
 
+.editNames {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: end;
+  gap: 8px;
+}
+
+@media (width < 520px) {
+  .editNames {
+    grid-template-columns: 1fr;
+  }
+}
+
 .userActions :global(.btn) {
   flex: 1;
 }
@@ -481,6 +494,12 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.headActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .sectionHead .dim {
@@ -1423,16 +1442,9 @@
   }
 
   .mark {
-    display: grid;
     width: 36px;
     height: 36px;
-    place-items: center;
     border-radius: 10px;
-    background: var(--felt);
-    color: var(--accent);
-    font-size: 1.125rem;
-    font-style: italic;
-    font-weight: 700;
   }
 
   .brandName {
@@ -1586,4 +1598,195 @@
     height: 200px;
     gap: 6px;
   }
+}
+
+/* Notices, push campaigns and polls */
+
+.tilesFlat {
+  border-radius: 12px;
+}
+
+.noticeRow {
+  flex-wrap: wrap;
+  align-items: flex-start !important;
+}
+
+.noticeRow .userName {
+  flex: 1 1 220px;
+  gap: 2px;
+  font-size: 0.875rem;
+}
+
+.noticeRow > .btn,
+.noticeRow > button {
+  margin-left: auto;
+}
+
+.noticeRow small {
+  color: var(--text-dim);
+}
+
+.wrapText {
+  overflow-wrap: anywhere;
+}
+
+.sev[data-level='off'] {
+  background: var(--layer-3);
+  color: var(--text-dim);
+}
+
+.pushPreview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 420px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--layer-3);
+  color: var(--text);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.pushPreview img {
+  flex: none;
+  border-radius: 8px;
+}
+
+.pushPreview span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.optionRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.templates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pollResults {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+}
+
+.pollResults li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 2fr 72px;
+  align-items: center;
+  gap: 10px;
+}
+
+.pollResults b {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pollResults li[data-top='true'] .meter span {
+  background: var(--success, #4ade80);
+}
+
+.checkRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 520px) {
+  .pollResults li {
+    grid-template-columns: 1fr 64px;
+  }
+
+  .pollResults li > .meter {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+/* Correcting someone's chips or coins by hand. */
+.adjust {
+  display: grid;
+  grid-template-columns: 9rem 1fr auto;
+  align-items: end;
+  gap: 8px;
+  margin: 10px 0 6px;
+}
+
+@media (width < 520px) {
+  .adjust {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bans .adjustRow {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 12px;
+}
+
+.adjustRow > b {
+  min-width: 7rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* What the players say went wrong. */
+.reports {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reports li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--layer-1);
+}
+
+.reports li[data-done='true'] {
+  opacity: 0.55;
+}
+
+.reportHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.reportText {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.reportActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.reportActions :global(.btn) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }

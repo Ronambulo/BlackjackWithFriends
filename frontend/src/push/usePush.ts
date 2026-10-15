@@ -4,8 +4,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useState } from 'react'
 import { useUser } from '@/auth/session-context'
 import { api } from '@/lib/api'
+import { deviceKind, platform, standalone } from './device'
 
-export const PUSH_KINDS = ['pay', 'overtaken', 'mention', 'message', 'reaction', 'closing', 'ceremony', 'review'] as const
+export const PUSH_KINDS = ['pay', 'overtaken', 'mention', 'message', 'reaction', 'closing', 'ceremony', 'review', 'news'] as const
 export type PushKind = (typeof PUSH_KINDS)[number]
 export type PushPrefs = Record<PushKind, boolean>
 
@@ -18,11 +19,7 @@ function supported() {
 
 /** iOS only lets a web app have notifications once it's on the home screen. */
 function iosBrowser() {
-  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-  const standalone =
-    window.matchMedia('(display-mode: standalone)').matches ||
-    (navigator as Navigator & { standalone?: boolean }).standalone === true
-  return ios && !standalone
+  return platform() === 'ios' && !standalone()
 }
 
 /** The VAPID key comes base64url-encoded; the browser wants the bytes. */
@@ -58,7 +55,7 @@ export function usePush() {
       else {
         const sub = await currentSubscription().catch(() => null)
         // Tell the backend again, in case it dropped it or another account used the device.
-        if (sub) void api('/push/subscribe', { method: 'POST', body: sub.toJSON() }).catch(() => {})
+        if (sub) void api('/push/subscribe', { method: 'POST', body: { ...sub.toJSON(), ...deviceKind() } }).catch(() => {})
         next = sub ? 'on' : 'off'
       }
       if (live) setState(next)
@@ -94,7 +91,7 @@ export function usePush() {
       const sub =
         (await reg.pushManager.getSubscription()) ??
         (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(key) }))
-      await api('/push/subscribe', { method: 'POST', body: sub.toJSON() })
+      await api('/push/subscribe', { method: 'POST', body: { ...sub.toJSON(), ...deviceKind() } })
       setState('on')
     } catch (error) {
       console.error('Push subscription failed', error)

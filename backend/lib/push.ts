@@ -1,10 +1,22 @@
-import { and, eq, inArray, isNull, lt, or, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm'
 import webpush from 'web-push'
 import { db } from './db.js'
 import { groupmates } from './events.js'
 import { addDays, currentBalance, leagueClock, madridAt, rulesFor } from './league.js'
 import { getSetting, setSetting } from './settings.js'
-import { groupMembers, groups, profiles, pushSubscriptions, user, type Language, type PushKind, type PushPrefs } from './schema.js'
+import {
+  groupMembers,
+  groups,
+  profiles,
+  pushCampaigns,
+  pushSubscriptions,
+  user,
+  type Audience,
+  type Language,
+  type Platform,
+  type PushKind,
+  type PushPrefs,
+} from './schema.js'
 
 // Push notifications (Web Push with VAPID keys): the server sends them to every
 // device the player switched them on in, for the kinds they haven't switched off.
@@ -50,14 +62,20 @@ export interface Subscription {
 // A player rarely has more devices than this; the oldest goes.
 const MAX_DEVICES = 10
 
-export function subscribe(userId: string, sub: Subscription) {
+/** What the device says it is, when it says. */
+export interface DeviceKind {
+  plataforma: Platform
+  pwa: boolean
+}
+
+export function subscribe(userId: string, sub: Subscription, kind?: DeviceKind) {
   const d = db()
   d.insert(pushSubscriptions)
-    .values({ endpoint: sub.endpoint, userId, p256dh: sub.keys.p256dh, auth: sub.keys.auth })
+    .values({ endpoint: sub.endpoint, userId, p256dh: sub.keys.p256dh, auth: sub.keys.auth, ...kind })
     // The same device signed in as someone else is now theirs.
     .onConflictDoUpdate({
       target: pushSubscriptions.endpoint,
-      set: { userId, p256dh: sub.keys.p256dh, auth: sub.keys.auth, createdAt: new Date() },
+      set: { userId, p256dh: sub.keys.p256dh, auth: sub.keys.auth, createdAt: new Date(), ...kind },
     })
     .run()
   const old = d
@@ -159,6 +177,74 @@ export async function testPush(userId: string, lang: Language) {
     )
   ).filter((why): why is string => why !== null)
   return { devices: devices.length, failed }
+}
+
+// ── Campaigns ───────────────────────────────────────────────────────────────
+
+/** Apple's push service only serves iPhones and iPads (Macs use it too, but rarely as an app). */
+const appleEndpoint = (endpoint: string) => endpoint.startsWith('https://web.push.apple.com/')
+
+/** Whether a subscribed device is in an audience. Ones that never said what they are only go to everyone, or by their push service. */
+export function inAudience(device: { endpoint: string; plataforma: Platform | null; pwa: boolean | null }, audience: Audience) {
+  const plataforma = device.plataforma ?? (appleEndpoint(device.endpoint) ? 'ios' : null)
+  // An iPhone only gets notifications from the home screen app.
+  const pwa = device.pwa ?? (plataforma === 'ios' ? true : null)
+  switch (audience) {
+    case 'all':
+    case 'push':
+      return true
+    case 'ios':
+    case 'android':
+    case 'desktop':
+      return plataforma === audience
+    case 'pwa':
+      return pwa === true
+    case 'browser':
+      return pwa === false
+    case 'noPush':
+      return false
+  }
+}
+
+/** The devices a campaign to this audience would reach now. */
+export function campaignDevices(audience: Audience) {
+  return db()
+    .select({
+      endpoint: pushSubscriptions.endpoint,
+      p256dh: pushSubscriptions.p256dh,
+      auth: pushSubscriptions.auth,
+      plataforma: pushSubscriptions.plataforma,
+      pwa: pushSubscriptions.pwa,
+      avisos: profiles.avisos,
+    })
+    .from(pushSubscriptions)
+    .innerJoin(profiles, eq(profiles.id, pushSubscriptions.userId))
+    .all()
+    .filter((row) => prefsOf(row.avisos, 'news') && inAudience(row, audience))
+}
+
+/** Sends the campaigns whose time has come, each once. */
+async function sendDueCampaigns() {
+  const d = db()
+  const due = d
+    .select()
+    .from(pushCampaigns)
+    .where(and(isNull(pushCampaigns.sentAt), lte(pushCampaigns.sendAt, new Date())))
+    .all()
+  for (const campaign of due) {
+    // Marked first, so a slow send isn't picked up again by the next tick.
+    d.update(pushCampaigns).set({ sentAt: new Date() }).where(eq(pushCampaigns.id, campaign.id)).run()
+    vapid()
+    const targets = campaignDevices(campaign.audiencia)
+    const message = { title: campaign.titulo, body: campaign.cuerpo, url: campaign.url, tag: `campaign-${campaign.id}` }
+    const failed = (await Promise.all(targets.map((device) => deliver(device, message)))).filter((why) => why !== null).length
+    d.update(pushCampaigns).set({ dispositivos: targets.length, fallidos: failed }).where(eq(pushCampaigns.id, campaign.id)).run()
+  }
+}
+
+/** Sends it now if it's due, without waiting for the minute's tick. */
+export function sendCampaignsNow() {
+  sendDueCampaigns().catch((err) => console.error('Campaña fallida', err))
 }
 
 // ── Texts ───────────────────────────────────────────────────────────────────
@@ -407,6 +493,7 @@ export function schedulePush() {
         setSetting('push.closing', c.weekStart)
         warnClosing()
       }
+      sendCampaignsNow()
     } catch (err) {
       console.error('Push programado fallido', err)
     }

@@ -9,6 +9,7 @@ import { TopList } from '@/groups/Ranking'
 import { useCurrentGroup, useGroups } from '@/groups/useGroups'
 import { useFriendsRanking } from '@/groups/useRankings'
 import { LeagueCard } from '@/league/LeagueCard'
+import { PollCard } from '@/polls/PollCard'
 import { useProfile } from '@/profile/useProfile'
 import { ShareIcon } from '@/ui/icons'
 import { PullToRefresh } from '@/ui/PullToRefresh'
@@ -36,6 +37,8 @@ export default function HomePage() {
         <h1 className={styles.heading}>{t('home.greeting', { name: profile?.nombre ?? '' })}</h1>
 
         <LeagueCard group={group} dayChange={mine?.dayChange} />
+
+        <PollCard />
 
         <ChallengesCard />
 

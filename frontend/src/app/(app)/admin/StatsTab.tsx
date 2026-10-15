@@ -320,6 +320,21 @@ export function StatsTab({ onSeeAll }: { onSeeAll: () => void }) {
           </ol>
         )}
       </section>
+
+      <section className={`card ${styles.block} ${styles.full}`}>
+        <div className={styles.sectionHead}>
+          <h2 className="label">{t('admin.export.title')}</h2>
+          <div className={styles.headActions}>
+            <a className="btn btn-secondary" href="/api/admin/export?what=players" download>
+              {t('admin.export.players')}
+            </a>
+            <a className="btn btn-secondary" href="/api/admin/export?what=days" download>
+              {t('admin.export.days')}
+            </a>
+          </div>
+        </div>
+        <p className={styles.dim}>{t('admin.export.hint')}</p>
+      </section>
     </>
   )
 }

@@ -4,15 +4,20 @@ import { useDeferredValue, useEffect, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { date, ago, duration, number } from '@/admin/format'
 import {
+  useAdjustUser,
   useAdminUsers,
   useBan,
   useBans,
   useDeleteUser,
+  useRenameUser,
   useUnban,
   useUserDetail,
+  type AdjustmentKind,
   type AdminUser,
+  type UserDetail,
 } from '@/admin/useAdmin'
 import { currentLanguage } from '@/i18n'
+import { ApiError } from '@/lib/api'
 import { formatNumber } from '@/lib/format'
 import { Avatar } from '@/ui/Avatar'
 import { ConfirmSheet } from '@/ui/ConfirmSheet'
@@ -87,6 +92,178 @@ function device(agent: string | null) {
   const browser = /Edg\//.test(agent) ? 'Edge' : /Firefox\//.test(agent) ? 'Firefox' : /Chrome\//.test(agent) ? 'Chrome' : /Safari\//.test(agent) ? 'Safari' : '?'
   const system = /Android/.test(agent) ? 'Android' : /iPhone|iPad/.test(agent) ? 'iOS' : /Windows/.test(agent) ? 'Windows' : /Mac OS/.test(agent) ? 'macOS' : /Linux/.test(agent) ? 'Linux' : '?'
   return `${browser} · ${system}`
+}
+
+/** The player's name and username, as an admin may put them right. */
+function EditNames({ user }: { user: AdminUser }) {
+  const { t } = useTranslation()
+  const rename = useRenameUser()
+  const [nombre, setNombre] = useState(user.nombre ?? '')
+  const [username, setUsername] = useState(user.username)
+  const nombreChanged = nombre.trim() !== (user.nombre ?? '')
+  const usernameChanged = username.trim().replace(/^@/, '') !== user.username
+  const valid = nombre.trim().length >= 2 && /^@?[a-zA-Z0-9_.]{3,20}$/.test(username.trim())
+
+  function onSubmit(event: FormEvent) {
+    event.preventDefault()
+    if (!valid || (!nombreChanged && !usernameChanged)) return
+    rename.mutate({
+      id: user.id,
+      ...(nombreChanged && { nombre: nombre.trim() }),
+      ...(usernameChanged && { username: username.trim().replace(/^@/, '') }),
+    })
+  }
+
+  const error =
+    rename.error instanceof ApiError && rename.error.status === 409
+      ? t('settings.usernameTaken')
+      : rename.error instanceof ApiError && rename.error.status === 403
+        ? t('settings.usernameLocked')
+        : t('common.error')
+
+  return (
+    <form className={styles.block} onSubmit={onSubmit}>
+      <h2 className="label">{t('admin.editNames')}</h2>
+      <div className={styles.editNames}>
+        <label className="field">
+          <span className="field-label">{t('settings.name')}</span>
+          <input className="input" maxLength={20} value={nombre} onChange={(e) => { setNombre(e.target.value); rename.reset() }} />
+        </label>
+        <label className="field">
+          <span className="field-label">{t('settings.username')}</span>
+          <input
+            className="input"
+            autoCapitalize="none"
+            spellCheck={false}
+            maxLength={21}
+            value={username}
+            onChange={(e) => { setUsername(e.target.value); rename.reset() }}
+          />
+        </label>
+        <button className="btn btn-secondary" type="submit" disabled={!valid || (!nombreChanged && !usernameChanged) || rename.isPending}>
+          {rename.isPending ? t('common.saving') : rename.isSuccess ? t('common.saved') : t('common.save')}
+        </button>
+      </div>
+      {rename.isError && <p className="error-text">{error}</p>}
+    </form>
+  )
+}
+
+/** Adds or takes away chips (this week) or coins by hand, with the reason written down. */
+function Adjust({ user, history }: { user: AdminUser; history: UserDetail['adjustments'] | undefined }) {
+  const { t } = useTranslation()
+  const adjust = useAdjustUser()
+  const [tipo, setTipo] = useState<AdjustmentKind>('saldo')
+  const [amount, setAmount] = useState('')
+  const [motivo, setMotivo] = useState('')
+  const cantidad = /^[-+]?\d{1,7}$/.test(amount.trim()) ? Number(amount.trim()) : 0
+  const current = tipo === 'saldo' ? user.balance : user.monedas
+  // The server refuses to leave anyone below zero; say so before trying.
+  const negative = current !== null && current + cantidad < 0
+  const valid = cantidad !== 0 && Math.abs(cantidad) <= 1_000_000 && !negative && motivo.trim().length >= 3
+
+  function onSubmit(event: FormEvent) {
+    event.preventDefault()
+    if (!valid) return
+    adjust.mutate(
+      { id: user.id, tipo, cantidad, motivo: motivo.trim() },
+      {
+        onSuccess: () => {
+          setAmount('')
+          setMotivo('')
+        },
+      },
+    )
+  }
+
+  const reset = () => adjust.reset()
+  const error =
+    adjust.error instanceof ApiError && adjust.error.status === 400 && adjust.error.message === 'Se quedaría en negativo'
+      ? t('admin.adjust.negative')
+      : t('common.error')
+
+  return (
+    <form className={styles.block} onSubmit={onSubmit}>
+      <h2 className="label">{t('admin.adjust.title')}</h2>
+      <div className={styles.chips}>
+        {(['saldo', 'monedas'] as const).map((kind) => (
+          <button
+            key={kind}
+            type="button"
+            aria-pressed={tipo === kind}
+            onClick={() => {
+              setTipo(kind)
+              reset()
+            }}
+          >
+            {t(`admin.adjust.${kind}`)}
+          </button>
+        ))}
+      </div>
+      <div className={styles.adjust}>
+        <label className="field">
+          <span className="field-label">{t('admin.adjust.amount')}</span>
+          <input
+            className="input"
+            inputMode="numeric"
+            placeholder="+500 / -200"
+            maxLength={9}
+            value={amount}
+            onChange={(e) => {
+              setAmount(e.target.value)
+              reset()
+            }}
+          />
+        </label>
+        <label className="field">
+          <span className="field-label">{t('admin.adjust.reason')}</span>
+          <input
+            className="input"
+            maxLength={200}
+            placeholder={t('admin.adjust.reasonHint')}
+            value={motivo}
+            onChange={(e) => {
+              setMotivo(e.target.value)
+              reset()
+            }}
+          />
+        </label>
+        <button className="btn btn-secondary" type="submit" disabled={!valid || adjust.isPending}>
+          {adjust.isPending ? t('common.saving') : adjust.isSuccess ? t('common.saved') : t('admin.adjust.apply')}
+        </button>
+      </div>
+      {negative ? (
+        <p className="error-text">{t('admin.adjust.negative')}</p>
+      ) : (
+        <p className={styles.dim}>
+          {current !== null && cantidad !== 0
+            ? t('admin.adjust.preview', { from: number(current), to: number(current + cantidad) })
+            : tipo === 'saldo'
+              ? t('admin.adjust.saldoHint')
+              : t('admin.adjust.monedasHint')}
+        </p>
+      )}
+      {adjust.isError && !negative && <p className="error-text">{error}</p>}
+      {!!history?.length && (
+        <ul className={styles.bans}>
+          {history.map((item) => (
+            <li key={item.id} className={styles.adjustRow}>
+              <b className={item.cantidad > 0 ? styles.up : styles.down}>
+                {item.cantidad > 0 ? '+' : ''}
+                {number(item.cantidad)} {t(`admin.adjust.unit.${item.tipo}`)}
+              </b>
+              <span className={styles.userName}>
+                <span>{item.motivo}</span>
+                <small className="muted">
+                  {date(item.createdAt)} · {item.por}
+                </small>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </form>
+  )
 }
 
 function Player({ user, onBack, onBan, onDelete }: { user: AdminUser; onBack?: () => void; onBan: () => void; onDelete: () => void }) {
@@ -192,6 +369,9 @@ function Player({ user, onBack, onBan, onDelete }: { user: AdminUser; onBack?: (
             </div>
           </>
         )}
+
+        <EditNames key={user.id} user={user} />
+        <Adjust key={`adjust:${user.id}`} user={user} history={data?.adjustments} />
 
         {!user.admin && (
           <div className={styles.block}>

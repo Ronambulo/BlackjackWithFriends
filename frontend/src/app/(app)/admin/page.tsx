@@ -1,10 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useUser } from '@/auth/session-context'
-import { useIsAdmin, useModeration } from '@/admin/useAdmin'
+import { useIsAdmin, useModeration, useReports } from '@/admin/useAdmin'
 import { EmptyState } from '@/ui/EmptyState'
 import { ChevronLeftIcon, GearIcon } from '@/ui/icons'
 import { PullToRefresh } from '@/ui/PullToRefresh'
@@ -13,11 +14,13 @@ import styles from './admin.module.css'
 import { EconomyTab } from './EconomyTab'
 import { LeagueTab } from './LeagueTab'
 import { ModerationTab } from './ModerationTab'
+import { NoticesTab } from './NoticesTab'
+import { PollsTab } from './PollsTab'
 import { StatsTab } from './StatsTab'
 import { SystemTab } from './SystemTab'
 import { UsersTab } from './UsersTab'
 
-const TABS = ['stats', 'users', 'moderation', 'economy', 'league', 'system'] as const
+const TABS = ['stats', 'users', 'moderation', 'economy', 'league', 'notices', 'polls', 'system'] as const
 type Tab = (typeof TABS)[number]
 
 const PANELS: Record<Tab, (go: (tab: Tab) => void) => React.ReactNode> = {
@@ -26,27 +29,49 @@ const PANELS: Record<Tab, (go: (tab: Tab) => void) => React.ReactNode> = {
   moderation: () => <ModerationTab />,
   economy: () => <EconomyTab />,
   league: () => <LeagueTab />,
+  notices: () => <NoticesTab />,
+  polls: () => <PollsTab />,
   system: () => <SystemTab />,
 }
 
 export default function AdminPage() {
+  return (
+    <Suspense>
+      <AskedTab />
+    </Suspense>
+  )
+}
+
+/** ?tab=system opens straight on that one (the maintenance strip links there), even from inside the panel. */
+function AskedTab() {
+  const asked = useSearchParams().get('tab')
+  const tab = TABS.includes(asked as Tab) ? (asked as Tab) : 'stats'
+  return <AdminPanel key={tab} initialTab={tab} />
+}
+
+function AdminPanel({ initialTab }: { initialTab: Tab }) {
   const { t } = useTranslation()
   const admin = useIsAdmin()
   const user = useUser()
-  const [tab, setTab] = useState<Tab>('stats')
+  const [tab, setTab] = useState(initialTab)
   const { data: moderation } = useModeration()
+  const { data: reports } = useReports()
 
   if (admin === undefined) return null
   if (!admin) return <EmptyState icon={<GearIcon />} title={t('admin.title')} text={t('admin.forbidden')} />
 
-  const badge = (moderation?.flags.length ?? 0) + (moderation?.reviews.length ?? 0)
+  const badges: Partial<Record<Tab, number>> = {
+    moderation: (moderation?.flags.length ?? 0) + (moderation?.reviews.length ?? 0),
+    system: reports?.filter((report) => !report.resuelto).length ?? 0,
+  }
 
   return (
     <PullToRefresh>
       <div className={styles.admin}>
         <nav className={styles.nav} aria-label={t('admin.title')}>
           <div className={styles.brand}>
-            <span className={styles.mark}>21</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className={styles.mark} src="/icon.svg" alt="" width={36} height={36} />
             <span className={styles.brandName}>
               <b>Blackjack</b>
               <small>{t('admin.title')}</small>
@@ -61,7 +86,7 @@ export default function AdminPage() {
               onClick={() => setTab(key)}
             >
               <span>{t(`admin.tab.${key}`)}</span>
-              {key === 'moderation' && badge > 0 && <span className={styles.badge}>{badge}</span>}
+              {(badges[key] ?? 0) > 0 && <span className={styles.badge}>{badges[key]}</span>}
             </button>
           ))}
           <div className={styles.navFoot}>

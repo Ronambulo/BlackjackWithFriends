@@ -5,112 +5,12 @@ import { useTranslation } from 'react-i18next'
 import {
   useAdminChallenges,
   useAdminLeague,
-  useAdminSettings,
   usePickChallenges,
-  useSetAnnouncement,
 } from '@/admin/useAdmin'
 import type { ChallengeId } from '@/challenges/useChallenges'
 import { currentLanguage } from '@/i18n'
 import { date, number } from '@/admin/format'
-import { MegaphoneIcon } from '@/ui/icons'
 import styles from './admin.module.css'
-
-/** ISO week number of the Monday `day` (YYYY-MM-DD). */
-function isoWeek(day: string) {
-  const monday = new Date(`${day}T12:00:00Z`)
-  const thursday = new Date(monday.getTime() + 3 * 86_400_000)
-  const firstThursday = new Date(Date.UTC(thursday.getUTCFullYear(), 0, 4))
-  return 1 + Math.round((thursday.getTime() - firstThursday.getTime()) / (7 * 86_400_000))
-}
-
-// How long a notice stays up, in hours (null: until an admin takes it down).
-const NOTICE_HOURS = [
-  ['day', 24],
-  ['week', 24 * 7],
-  ['none', null],
-] as const
-
-function Announcement() {
-  const { t } = useTranslation()
-  const { data } = useAdminSettings()
-  const publish = useSetAnnouncement()
-  const [text, setText] = useState('')
-  const [hours, setHours] = useState<number | null>(24)
-  const current = data?.announcement ?? null
-
-  const submit = (event: FormEvent) => {
-    event.preventDefault()
-    if (text.trim()) publish.mutate({ text: text.trim(), hours }, { onSuccess: () => setText('') })
-  }
-
-  return (
-    <form className={`card ${styles.block}`} onSubmit={submit}>
-      <h2 className="label">{t('admin.notice')}</h2>
-      {current && (
-        <div className={styles.noticeLive}>
-          <span className={styles.dim}>
-            {t('admin.noticeLive', {
-              by: current.by,
-              until: current.expiresAt ? date(current.expiresAt) : t('admin.noticeUntilRemoved'),
-            })}
-          </span>
-          <div className={styles.noticePreview}>
-            <MegaphoneIcon width={18} height={18} />
-            <span>{current.text}</span>
-          </div>
-          <button
-            className={`btn ${styles.softDanger}`}
-            type="button"
-            disabled={publish.isPending}
-            onClick={() => publish.mutate({ text: '' })}
-          >
-            {t('admin.noticeRemove')}
-          </button>
-        </div>
-      )}
-      <label className={styles.formField}>
-        {t('admin.noticeMessage')}
-        <textarea
-          className={`${styles.fieldInput} ${styles.textarea}`}
-          rows={3}
-          maxLength={280}
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          placeholder={t('admin.noticePlaceholder')}
-        />
-      </label>
-      <label className={styles.formField}>
-        {t('admin.noticeUntil')}
-        <select
-          className={styles.fieldInput}
-          value={hours ?? 'none'}
-          onChange={(event) => setHours(event.target.value === 'none' ? null : Number(event.target.value))}
-        >
-          {NOTICE_HOURS.map(([key, value]) => (
-            <option key={key} value={value ?? 'none'}>
-              {t(`admin.noticeFor.${key}`)}
-            </option>
-          ))}
-        </select>
-      </label>
-      {text.trim() && (
-        <div className={styles.formField}>
-          {t('admin.noticeLooks')}
-          <div className={styles.noticePreview}>
-            <MegaphoneIcon width={18} height={18} />
-            <span>{text.trim()}</span>
-          </div>
-        </div>
-      )}
-      {publish.isError && <p className="error-text">{publish.error.message}</p>}
-      <div className={styles.formActions}>
-        <button className="btn btn-primary" type="submit" disabled={!text.trim() || publish.isPending}>
-          {current ? t('admin.noticeReplace') : t('admin.noticePublish')}
-        </button>
-      </div>
-    </form>
-  )
-}
 
 const TIERS = ['easy', 'medium', 'hard'] as const
 
@@ -226,7 +126,7 @@ export function LeagueTab() {
       <section className={`${styles.season} ${styles.full}`}>
         <div className={styles.seasonText}>
           <span className={styles.seasonKicker}>{t('admin.season')}</span>
-          <span className={styles.seasonWeek}>{t('admin.weekN', { n: isoWeek(data.weekStart) })}</span>
+          <span className={styles.seasonWeek}>{t('admin.weekN', { n: data.weekNumber })}</span>
           <span>
             {t('admin.seasonGroups', { count: data.groups.length })} · {t('admin.seasonCloses', { date: date(data.weekEndsAt) })}
           </span>
@@ -262,8 +162,6 @@ export function LeagueTab() {
       </section>
 
       <Challenges />
-
-      <Announcement />
 
       <section className={`card ${styles.block} ${styles.full}`}>
         <div className={styles.sectionHead}>

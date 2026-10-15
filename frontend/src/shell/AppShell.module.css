@@ -360,3 +360,17 @@
     --icon-cutout: #062216;
   }
 }
+
+/* Maintenance is on: only admins see the app. */
+.maintenance {
+  display: block;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--danger-solid);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}

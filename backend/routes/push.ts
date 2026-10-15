@@ -2,8 +2,8 @@ import { eq } from 'drizzle-orm'
 import { requireUser } from '../lib/auth.js'
 import { db } from '../lib/db.js'
 import { HttpError, json } from '../lib/http.js'
-import { prefsOf, publicKey, subscribe, testPush, unsubscribe } from '../lib/push.js'
-import { profiles, PUSH_KINDS, type PushKind, type PushPrefs } from '../lib/schema.js'
+import { prefsOf, publicKey, subscribe, testPush, unsubscribe, type DeviceKind } from '../lib/push.js'
+import { PLATFORMS, profiles, PUSH_KINDS, type Platform, type PushKind, type PushPrefs } from '../lib/schema.js'
 
 async function readBody(request: Request): Promise<Record<string, unknown>> {
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
@@ -19,7 +19,13 @@ export async function getPushKey(request: Request): Promise<Response> {
   return json({ key: publicKey() })
 }
 
-// POST /api/push/subscribe { endpoint, keys: { p256dh, auth } }: this device gets the player's notifications.
+/** `plataforma` and `pwa` from a request, if both are there and make sense. */
+export function deviceKind(body: Record<string, unknown>): DeviceKind | undefined {
+  if (!PLATFORMS.includes(body.plataforma as Platform) || typeof body.pwa !== 'boolean') return undefined
+  return { plataforma: body.plataforma as Platform, pwa: body.pwa }
+}
+
+// POST /api/push/subscribe { endpoint, keys: { p256dh, auth }, plataforma?, pwa? }: this device gets the player's notifications.
 export async function postSubscribe(request: Request): Promise<Response> {
   const me = await requireUser(request)
   const body = await readBody(request)
@@ -27,7 +33,7 @@ export async function postSubscribe(request: Request): Promise<Response> {
   if (!text(body.endpoint, 1000) || !(body.endpoint as string).startsWith('https://') || !text(keys?.p256dh, 200) || !text(keys?.auth, 100)) {
     throw new HttpError(400, 'Suscripción no válida')
   }
-  subscribe(me.id, { endpoint: body.endpoint as string, keys: { p256dh: keys!.p256dh as string, auth: keys!.auth as string } })
+  subscribe(me.id, { endpoint: body.endpoint as string, keys: { p256dh: keys!.p256dh as string, auth: keys!.auth as string } }, deviceKind(body))
   return json({ ok: true }, 201)
 }
 

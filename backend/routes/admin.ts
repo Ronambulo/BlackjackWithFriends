@@ -1,16 +1,35 @@
 import { readdirSync, statSync } from 'node:fs'
+import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { and, count, desc, eq, inArray, or, sql } from 'drizzle-orm'
-import { activeBan, dropReview, forgetBans, isAdmin, logAction, requireAdmin } from '../lib/admin.js'
-import { createBackup, listBackups } from '../lib/backup.js'
+import { activeBan, dropReview, forgetBans, isAdmin, logAction, requireAdmin, setUsername } from '../lib/admin.js'
+import { forgetAuth } from '../lib/auth.js'
+import { backupDir, createBackup, listBackups, restoreBackup } from '../lib/backup.js'
 import { snapshot } from '../lib/metrics.js'
-import { announcement, FLAGS, flags, setSetting, type Announcement, type Flag } from '../lib/settings.js'
+import { FLAGS, flags, forgetSettings, getSetting, maintenance, setSetting, type Flag, type Maintenance } from '../lib/settings.js'
 import { databasePath, db } from '../lib/db.js'
-import { notifyGroups } from '../lib/events.js'
+import { notifyAll, notifyGroups } from '../lib/events.js'
 import { HttpError, json } from '../lib/http.js'
 import { pushReviewRejected } from '../lib/push.js'
-import { addDays, currentBalance, forgetRules, leagueClock, ruleChanges, rulesFor } from '../lib/league.js'
-import { adminLog, economyRules, groupMembers, groups, hands, ipBans, pays, profiles, reviews, session, user } from '../lib/schema.js'
+import { addDays, currentBalance, forgetRules, leagueClock, rollover, ruleChanges, rulesFor } from '../lib/league.js'
+import { forgetClosedWeeks } from '../lib/season.js'
+import {
+  ADJUSTMENT_KINDS,
+  adjustments,
+  adminLog,
+  economyRules,
+  groupMembers,
+  groups,
+  hands,
+  ipBans,
+  pays,
+  profiles,
+  reports,
+  reviews,
+  session,
+  user,
+  type AdjustmentKind,
+} from '../lib/schema.js'
 import { deleteObject, keyOf, mediaPath } from '../lib/storage.js'
 import { removeMember } from './groups.js'
 
@@ -535,8 +554,13 @@ export async function getAdminLeague(request: Request): Promise<Response> {
       }
     })
     .sort((a, b) => b.hands - a.hands)
+  // Week 1 is the one the first hand was played in.
+  const first = d.select({ at: sql<number | null>`min(${hands.createdAt})` }).from(hands).get()?.at
+  const firstWeek = first ? leagueClock(new Date(first)).weekStart : clock.weekStart
+  const weekNumber = 1 + Math.round((Date.parse(clock.weekStart) - Date.parse(firstWeek)) / (7 * DAY))
   return json({
     weekStart: clock.weekStart,
+    weekNumber,
     weekEndsAt: clock.weekEnd.getTime(),
     now: Date.now(),
     groups: rows,
@@ -640,7 +664,22 @@ export async function getUserDetail(request: Request): Promise<Response> {
     .limit(HANDS_LIMIT)
     .all()
   const banned = new Set(d.select({ ip: ipBans.ip }).from(ipBans).all().map((row) => row.ip))
+  const fixes = d
+    .select({
+      id: adjustments.id,
+      tipo: adjustments.tipo,
+      cantidad: adjustments.cantidad,
+      motivo: adjustments.motivo,
+      por: adjustments.por,
+      createdAt: sql<number>`${adjustments.createdAt}`,
+    })
+    .from(adjustments)
+    .where(eq(adjustments.userId, id))
+    .orderBy(desc(adjustments.id))
+    .limit(SESSIONS_LIMIT)
+    .all()
   return json({
+    adjustments: fixes,
     sessions: sessions.map((s) => ({ ...s, banned: Boolean(s.ip && banned.has(s.ip)) })),
     sharedWith,
     groups: theirGroups,
@@ -801,16 +840,7 @@ export async function decideReview(request: Request): Promise<Response> {
       if (key) deleteObject(key)
     }
     if (tipo === 'nombre' && profile?.nombre === row.valor) d.update(profiles).set({ nombre: username }).where(eq(profiles.id, id)).run()
-    const theirGroups = d.select({ id: groupMembers.groupId }).from(groupMembers).where(eq(groupMembers.userId, id)).all()
-    const mates = theirGroups.length
-      ? d
-          .selectDistinct({ userId: groupMembers.userId })
-          .from(groupMembers)
-          .where(inArray(groupMembers.groupId, theirGroups.map((group) => group.id)))
-          .all()
-          .map((mate) => mate.userId)
-      : []
-    notifyGroups([id, ...mates])
+    notifyGroups(withMates(id))
     // Only if it was still up: a change of their own since isn't news.
     if (tipo === 'foto' ? profile?.avatarUrl === row.valor : profile?.nombre === row.valor) pushReviewRejected(id, tipo)
   }
@@ -819,10 +849,53 @@ export async function decideReview(request: Request): Promise<Response> {
   return json({ ok: true })
 }
 
-// GET /api/admin/settings: the switches, the notice on top of the app and every change to the economy rules.
+/** The player and everyone in a group with them: who sees their name. */
+function withMates(id: string) {
+  const d = db()
+  const theirGroups = d.select({ id: groupMembers.groupId }).from(groupMembers).where(eq(groupMembers.userId, id)).all()
+  const mates = theirGroups.length
+    ? d
+        .selectDistinct({ userId: groupMembers.userId })
+        .from(groupMembers)
+        .where(inArray(groupMembers.groupId, theirGroups.map((group) => group.id)))
+        .all()
+        .map((mate) => mate.userId)
+    : []
+  return [id, ...mates]
+}
+
+// POST /api/admin/users/rename { id, nombre?, username? }: puts right a player's name or username.
+export async function renameUser(request: Request): Promise<Response> {
+  const me = await requireAdmin(request)
+  const body = await readBody(request)
+  const id = userId(body.id)
+  const d = db()
+  const before =
+    d.select({ n: sql<string>`coalesce(${user.displayUsername}, ${user.username}, ${user.name})` }).from(user).where(eq(user.id, id)).get()?.n
+  if (before === undefined) throw new HttpError(404, 'No existe')
+  if (body.nombre !== undefined) {
+    const nombre = typeof body.nombre === 'string' ? body.nombre.trim() : ''
+    if (nombre.length < 2 || nombre.length > 20) throw new HttpError(400, 'Nombre no válido')
+    const current = d.select({ nombre: profiles.nombre }).from(profiles).where(eq(profiles.id, id)).get()
+    if (current && current.nombre !== nombre) {
+      d.update(profiles).set({ nombre }).where(eq(profiles.id, id)).run()
+      // An admin's choice needs no second look.
+      dropReview(id, 'nombre')
+      logAction(me, 'rename', `@${before}`, nombre)
+    }
+  }
+  if (body.username !== undefined) {
+    const { old, username } = setUsername(id, typeof body.username === 'string' ? body.username : '')
+    if (old !== username.toLowerCase()) logAction(me, 'rename_username', `@${before}`, `@${username}`)
+  }
+  notifyGroups(withMates(id))
+  return json({ ok: true })
+}
+
+// GET /api/admin/settings: the switches and every change to the economy rules.
 export async function getAdminSettings(request: Request): Promise<Response> {
   await requireAdmin(request)
-  return json({ flags: flags(), defaults: FLAGS, announcement: announcement(), rules: ruleChanges() })
+  return json({ flags: flags(), defaults: FLAGS, rules: ruleChanges(), maintenance: maintenance() })
 }
 
 // POST /api/admin/flags { flag, on }
@@ -837,23 +910,6 @@ export async function postFlag(request: Request): Promise<Response> {
   setSetting(`flag.${flag}`, body.on === FLAGS[flag] ? null : body.on)
   logAction(me, body.on ? 'flag_on' : 'flag_off', flag)
   return json(flags())
-}
-
-// POST /api/admin/announcement { text, hours? }, or { text: '' } to take it down.
-export async function postAnnouncement(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
-  const body = await readBody(request)
-  const text = typeof body.text === 'string' ? body.text.trim().slice(0, 280) : ''
-  if (!text) {
-    setSetting('announcement', null)
-    logAction(me, 'announcement_off')
-    return json(null)
-  }
-  const hours = typeof body.hours === 'number' && body.hours > 0 ? Math.min(body.hours, 24 * 30) : null
-  const value: Announcement = { text, expiresAt: hours ? Date.now() + hours * HOUR : null, createdAt: Date.now(), by: me.name }
-  setSetting('announcement', value)
-  logAction(me, 'announcement', null, text)
-  return json(value)
 }
 
 function chips(value: unknown, min: number): number {
@@ -888,6 +944,22 @@ export async function postBackup(request: Request): Promise<Response> {
   return json(listBackups())
 }
 
+// GET /api/admin/backups/download?name=…: one of the copies; without a name, a new one taken now.
+export async function downloadBackup(request: Request): Promise<Response> {
+  const me = await requireAdmin(request)
+  const asked = new URL(request.url).searchParams.get('name')
+  const name = asked ?? (await createBackup())
+  if (!listBackups().some((backup) => backup.name === name)) throw new HttpError(404, 'No existe')
+  logAction(me, 'download', name)
+  return new Response(await readFile(join(backupDir(), name)), {
+    headers: {
+      'content-type': 'application/vnd.sqlite3',
+      'content-disposition': `attachment; filename="${name}"`,
+      'cache-control': 'no-store',
+    },
+  })
+}
+
 // GET /api/admin/log: what the admins did, newest first.
 export async function getAdminLog(request: Request): Promise<Response> {
   await requireAdmin(request)
@@ -906,4 +978,243 @@ export async function getAdminLog(request: Request): Promise<Response> {
       .limit(100)
       .all(),
   )
+}
+
+// POST /api/admin/backups/restore { name }: puts that copy back as the database. One of how
+// things are now is taken first. Whoever signed in after the copy was made has to sign in again.
+export async function postRestore(request: Request): Promise<Response> {
+  const me = await requireAdmin(request)
+  const name = (await readBody(request)).name
+  if (typeof name !== 'string') throw new HttpError(400, 'Copia no válida')
+  // The push keys may be newer than the copy: devices signed up with them must keep working.
+  const vapid = getSetting('push.vapid')
+  const before = await restoreBackup(name)
+  if (!before) throw new HttpError(404, 'No existe')
+  // What's kept in memory belongs to the database that's gone.
+  forgetAuth()
+  forgetSettings()
+  forgetBans()
+  forgetRules()
+  forgetClosedWeeks()
+  if (vapid && !getSetting('push.vapid')) setSetting('push.vapid', vapid)
+  logAction(me, 'restore', name, before)
+  // Every open app reads everything again.
+  notifyAll()
+  return json({ ok: true, before })
+}
+
+const ADJUST_MAX = 1_000_000
+
+// POST /api/admin/users/adjust { id, tipo, cantidad, motivo }: adds (or takes away) chips this week, or coins.
+// The day's change in the ranking moves with it, so it doesn't look like a win.
+export async function adjustUser(request: Request): Promise<Response> {
+  const me = await requireAdmin(request)
+  const body = await readBody(request)
+  const id = userId(body.id)
+  if (!ADJUSTMENT_KINDS.includes(body.tipo as AdjustmentKind)) throw new HttpError(400, 'Tipo no válido')
+  const tipo = body.tipo as AdjustmentKind
+  const cantidad = body.cantidad
+  if (typeof cantidad !== 'number' || !Number.isInteger(cantidad) || cantidad === 0 || Math.abs(cantidad) > ADJUST_MAX) {
+    throw new HttpError(400, 'Cantidad no válida')
+  }
+  const motivo = typeof body.motivo === 'string' ? body.motivo.trim() : ''
+  if (motivo.length < 3 || motivo.length > 200) throw new HttpError(400, 'Falta el motivo')
+  const d = db()
+  const target = d
+    .select({ n: sql<string>`coalesce(${user.displayUsername}, ${user.username}, ${user.name})` })
+    .from(user)
+    .where(eq(user.id, id))
+    .get()
+  if (!target) throw new HttpError(404, 'No existe')
+  d.transaction((tx) => {
+    rollover(tx, id)
+    const row = tx.select({ saldo: profiles.saldo, monedas: profiles.monedas }).from(profiles).where(eq(profiles.id, id)).get()!
+    if (row[tipo] + cantidad < 0) throw new HttpError(400, 'Se quedaría en negativo')
+    if (tipo === 'saldo') {
+      tx.update(profiles)
+        .set({ saldo: sql`${profiles.saldo} + ${cantidad}`, saldoInicioDia: sql`max(0, ${profiles.saldoInicioDia} + ${cantidad})` })
+        .where(eq(profiles.id, id))
+        .run()
+    } else {
+      tx.update(profiles)
+        .set({ monedas: sql`${profiles.monedas} + ${cantidad}` })
+        .where(eq(profiles.id, id))
+        .run()
+    }
+    tx.insert(adjustments).values({ userId: id, tipo, cantidad, motivo, por: me.name }).run()
+  })
+  logAction(me, `adjust_${tipo}`, `@${target.n}`, `${cantidad > 0 ? '+' : ''}${cantidad} · ${motivo}`)
+  notifyGroups(withMates(id))
+  return json({ ok: true })
+}
+
+// POST /api/admin/maintenance { on, message? }: closes the app to players (admins still get in).
+export async function postMaintenance(request: Request): Promise<Response> {
+  const me = await requireAdmin(request)
+  const body = await readBody(request)
+  if (typeof body.on !== 'boolean') throw new HttpError(400, 'Cuerpo no válido')
+  const message = typeof body.message === 'string' ? body.message.trim().slice(0, 200) || null : null
+  const value: Maintenance | null = body.on ? { message, since: maintenance()?.since ?? Date.now(), by: me.name } : null
+  setSetting('maintenance', value)
+  logAction(me, body.on ? 'maintenance_on' : 'maintenance_off', null, message)
+  // Open apps check again and show (or leave) the maintenance screen.
+  notifyAll()
+  return json({ maintenance: value })
+}
+
+const REPORTS_LIMIT = 100
+
+// GET /api/admin/reports: what the players say went wrong, newest first.
+export async function getReports(request: Request): Promise<Response> {
+  await requireAdmin(request)
+  const rows = db()
+    .select({
+      id: reports.id,
+      userId: reports.userId,
+      username: sql<string>`coalesce(${user.displayUsername}, ${user.username}, ${user.name})`,
+      texto: reports.texto,
+      ruta: reports.ruta,
+      dispositivo: reports.dispositivo,
+      resuelto: reports.resuelto,
+      createdAt: sql<number>`${reports.createdAt}`,
+    })
+    .from(reports)
+    .innerJoin(user, eq(user.id, reports.userId))
+    .orderBy(desc(reports.id))
+    .limit(REPORTS_LIMIT)
+    .all()
+  return json(rows)
+}
+
+function reportId(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isInteger(value)) throw new HttpError(400, 'Aviso no válido')
+  return value
+}
+
+// POST /api/admin/reports/resolve { id, ok }
+export async function resolveReport(request: Request): Promise<Response> {
+  const me = await requireAdmin(request)
+  const body = await readBody(request)
+  const id = reportId(body.id)
+  const done = body.ok !== false
+  db().update(reports).set({ resuelto: done }).where(eq(reports.id, id)).run()
+  logAction(me, done ? 'report_done' : 'report_open', `#${id}`)
+  return json({ ok: true })
+}
+
+// POST /api/admin/reports/delete { id }
+export async function deleteReport(request: Request): Promise<Response> {
+  const me = await requireAdmin(request)
+  const id = reportId((await readBody(request)).id)
+  db().delete(reports).where(eq(reports.id, id)).run()
+  logAction(me, 'report_delete', `#${id}`)
+  return json({ ok: true })
+}
+
+// CSV for a spreadsheet: semicolons and a BOM, which is what Excel in Spanish opens straight away.
+function csv(name: string, header: string[], rows: (string | number | null)[][]): Response {
+  const cell = (value: string | number | null) => {
+    if (value === null) return ''
+    const text = String(value)
+    return /[";\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
+  }
+  const body = '﻿' + [header, ...rows].map((row) => row.map(cell).join(';')).join('\r\n') + '\r\n'
+  return new Response(body, {
+    headers: {
+      'content-type': 'text/csv; charset=utf-8',
+      'content-disposition': `attachment; filename="${name}-${dayFormat.format(new Date())}.csv"`,
+      'cache-control': 'no-store',
+    },
+  })
+}
+
+/** 'YYYY-MM-DD HH:MM' in Madrid. */
+const stampFormat = new Intl.DateTimeFormat('sv-SE', { timeZone: ZONE, dateStyle: 'short', timeStyle: 'short' })
+const stamp = (ms: number | null) => (ms === null ? null : stampFormat.format(ms))
+
+// GET /api/admin/export?what=players|days: the players, or every day the app has been played, as CSV.
+export async function getExport(request: Request): Promise<Response> {
+  const me = await requireAdmin(request)
+  const what = new URL(request.url).searchParams.get('what')
+  const d = db()
+  if (what === 'players') {
+    const clock = leagueClock()
+    const rows = d
+      .select({
+        id: user.id,
+        username: sql<string>`coalesce(${user.displayUsername}, ${user.username}, ${user.name})`,
+        nombre: profiles.nombre,
+        createdAt: sql<number>`${user.createdAt}`,
+        lastSeen: sql<number | null>`(select max(s.updated_at) from sessions s where s.user_id = ${user.id})`,
+        balance: sql<number | null>`case when ${profiles.id} is null then null else ${currentBalance(clock)} end`,
+        monedas: profiles.monedas,
+        hands: sql<number>`(select count(*) from hands h where h.user_id = ${user.id})`,
+        wagered: sql<number>`(select coalesce(sum(h.apuesta), 0) from hands h where h.user_id = ${user.id})`,
+        net: sql<number>`(select coalesce(sum(h.neto), 0) from hands h where h.user_id = ${user.id})`,
+        groups: sql<number>`(select count(*) from group_members m where m.user_id = ${user.id})`,
+      })
+      .from(user)
+      .leftJoin(profiles, eq(profiles.id, user.id))
+      .orderBy(user.createdAt)
+      .all()
+    logAction(me, 'export', 'players')
+    return csv(
+      'jugadores',
+      ['usuario', 'nombre', 'alta', 'ultima_conexion', 'saldo', 'monedas', 'manos', 'apostado', 'neto', 'grupos', 'admin'],
+      rows.map((row) => [
+        row.username,
+        row.nombre,
+        stamp(row.createdAt),
+        stamp(row.lastSeen),
+        row.balance,
+        row.monedas,
+        row.hands,
+        row.wagered,
+        row.net,
+        row.groups,
+        isAdmin(row.id) ? 'si' : 'no',
+      ]),
+    )
+  }
+  if (what === 'days') {
+    interface Day {
+      players: Set<string>
+      hands: number
+      wagered: number
+      net: number
+      signups: number
+      paid: number
+    }
+    const days = new Map<string, Day>()
+    const day = (ms: number) => {
+      const key = dayFormat.format(ms)
+      let entry = days.get(key)
+      if (!entry) days.set(key, (entry = { players: new Set(), hands: 0, wagered: 0, net: 0, signups: 0, paid: 0 }))
+      return entry
+    }
+    const handRows = d
+      .select({ at: sql<number>`${hands.createdAt}`, userId: hands.userId, bet: hands.apuesta, net: hands.neto })
+      .from(hands)
+      .all()
+    for (const hand of handRows) {
+      const entry = day(hand.at)
+      entry.players.add(hand.userId)
+      entry.hands++
+      entry.wagered += hand.bet
+      entry.net += hand.net ?? 0
+    }
+    for (const row of d.select({ at: sql<number>`${user.createdAt}` }).from(user).all()) day(row.at).signups++
+    for (const row of d.select({ at: sql<number>`${pays.createdAt}`, cantidad: pays.cantidad }).from(pays).all()) {
+      day(row.at).paid += row.cantidad
+    }
+    logAction(me, 'export', 'days')
+    return csv(
+      'dias',
+      ['dia', 'jugadores', 'manos', 'apostado', 'neto_jugadores', 'casa', 'altas', 'pagas'],
+      [...days.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, entry]) => [key, entry.players.size, entry.hands, entry.wagered, entry.net, -entry.net, entry.signups, entry.paid]),
+    )
+  }
+  throw new HttpError(400, 'Exportación no válida')
 }
