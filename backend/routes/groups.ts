@@ -1,5 +1,6 @@
 import { and, asc, count, eq, gte, inArray, sql, type SQL } from 'drizzle-orm'
 import { syncGroupAdmins } from '../lib/achievements.js'
+import { unreadCounts } from './chat.js'
 import { requireUser } from '../lib/auth.js'
 import { db, sqliteCode, type Tx } from '../lib/db.js'
 import { HttpError, json } from '../lib/http.js'
@@ -125,7 +126,7 @@ function myGroupIds(userId: string) {
 
 // ── Reading ─────────────────────────────────────────────────────────────────
 
-// GET /api/groups: the player's groups with their place in each.
+// GET /api/groups: the player's groups with their place in each and their unread chat.
 export async function listGroups(request: Request): Promise<Response> {
   const me = await requireUser(request)
   const { mine, members } = db().transaction((tx) => {
@@ -139,6 +140,7 @@ export async function listGroups(request: Request): Promise<Response> {
       .all()
     return { mine, members: selectMembers(tx, myGroupIds(me.id)) }
   })
+  const unread = unreadCounts(me.id)
   return json(
     mine.map((group) => {
       const ranking = rank(members.filter((m) => m.groupId === group.id))
@@ -151,6 +153,7 @@ export async function listGroups(request: Request): Promise<Response> {
         rank: self?.rank ?? ranking.length,
         rankChange: self?.rankChange ?? 0,
         top: ranking.slice(0, 3),
+        unread: unread.get(group.id) ?? 0,
       }
     }),
   )

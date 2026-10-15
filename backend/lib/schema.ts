@@ -2,8 +2,8 @@
 // `npm run db:generate -w @bwf/backend` to create a migration in drizzle/;
 // the server applies pending migrations when it starts.
 import { sql } from 'drizzle-orm'
-import type { RoundState } from '@bwf/engine'
-import { check, index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import type { Card, Outcome, RoundState } from '@bwf/engine'
+import { check, index, integer, primaryKey, sqliteTable, text, uniqueIndex, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
 
 // Timestamps are milliseconds since 1970; Drizzle turns them into Dates.
 const timestamp = (name: string) => integer(name, { mode: 'timestamp_ms' })
@@ -124,6 +124,8 @@ export const profiles = sqliteTable(
     // The balance at the start of `dia`, for the day's change in the ranking.
     saldoInicioDia: integer('saldo_inicio_dia').notNull().default(1000),
     dia: text('dia').notNull(),
+    // Up to when they've read the global chat; null: never opened it.
+    chatLeido: timestamp('chat_leido'),
     createdAt: createdAt(),
   },
   (t) => [
@@ -214,6 +216,8 @@ export const groupMembers = sqliteTable(
       .references(() => user.id, { onDelete: 'cascade' }),
     // The creator is the admin; if they leave, the longest-standing member takes over.
     rol: text('rol', { enum: GROUP_ROLES }).notNull().default('miembro'),
+    // Up to when they've read the group's chat; null: nothing read since joining.
+    chatLeido: timestamp('chat_leido'),
     createdAt: createdAt(),
   },
   (t) => [
@@ -384,6 +388,63 @@ export const achievements = sqliteTable(
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.logro] })],
+)
+
+// ── Chat ────────────────────────────────────────────────────────────────────
+
+/** A finished hand as it's shown in the chat: no shoe, nothing hidden. */
+export interface SharedHand {
+  dealer: Card[]
+  dealerTotal: number
+  dealerBlackjack: boolean
+  hands: { cards: Card[]; bet: number; total: number; outcome: Outcome }[]
+  insurance: number
+  net: number
+}
+
+/** A group's chat: text, or a hand someone chose to publish (routes/chat.ts). */
+export const messages = sqliteTable(
+  'messages',
+  {
+    id: text('id').primaryKey(),
+    // null: the global chat, open to every player.
+    groupId: text('group_id').references(() => groups.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    texto: text('texto'),
+    mano: text('mano', { mode: 'json' }).$type<SharedHand>(),
+    handId: text('hand_id').references(() => hands.id, { onDelete: 'set null' }),
+    // The message this one answers; it stays a reply (to nothing) if that one goes.
+    replyTo: text('reply_to').references((): AnySQLiteColumn => messages.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index('messages_group_idx').on(t.groupId, t.createdAt),
+    index('messages_created_idx').on(t.createdAt),
+    // A hand goes to each chat once.
+    uniqueIndex('messages_hand_idx').on(t.groupId, t.handId).where(sql`${t.handId} is not null`),
+    uniqueIndex('messages_hand_global_idx').on(t.handId).where(sql`${t.handId} is not null and ${t.groupId} is null`),
+    check('messages_content', sql`${t.texto} is not null or ${t.mano} is not null`),
+  ],
+)
+
+export const REACTIONS = ['🔥', '😂', '💀', '👏', '😱'] as const
+
+/** One reaction per player and message; picking another replaces it. */
+export const reactions = sqliteTable(
+  'reactions',
+  {
+    messageId: text('message_id')
+      .notNull()
+      .references(() => messages.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    emoji: text('emoji').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.messageId, t.userId] })],
 )
 
 export const authSchema = { user, session, account, verification, rateLimit }

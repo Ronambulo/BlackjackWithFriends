@@ -418,7 +418,12 @@ Al apostar, se toca sobre fichas de 5 / 10 / 25 / 100 / 500 / 1.000, cada valor 
 
 **Inicio**: además del saldo y la paga, el ranking de la semana de tus amigos (todos los que comparten algún grupo contigo, `GET /api/ranking/friends`): el top 5, tu fila si vas más abajo y un botón para ver a todos.
 
-**Social**: por ahora, el **ranking global** de la semana (`GET /api/ranking/global`, top 100 más tu puesto). Más adelante, dos subpestañas: **Feed** (con reacciones) y **Chat** del grupo.
+**Social**: el **chat global** y el de cada grupo (se elige con el selector de arriba; una insignia en la pestaña cuenta los mensajes sin leer) y el **ranking global** de la semana (`GET /api/ranking/global`, top 100 más tu puesto). Más adelante, el **Feed** con reacciones.
+- Solo se ven los mensajes de los **últimos 7 días** (tabla `messages`, `GET/POST /api/chat/:chat`, con `global` o el id del grupo). Llegan al momento por el mismo canal de eventos (SSE) que la clasificación del grupo, y cada 30 s se vuelve a pedir por si acaso.
+- **Mantener pulsado** un mensaje, como en iOS, lo levanta, oscurece el resto y abre la barra de reacciones (🔥 😂 💀 👏 😱, una por persona y mensaje) y el menú con **Responder** y **Borrar**.
+- **Responder**, como en WhatsApp: también arrastrando la burbuja hacia un lado (a la derecha, o a la izquierda si es tuya). La respuesta cita el mensaje (`reply_to`), y tocar la cita lleva hasta él.
+- Cada uno borra sus mensajes; el admin del grupo (o un admin de la app en el global) puede borrar cualquiera.
+- **Publicar mano**: las manos no se publican solas. Al acabar una, el botón con el icono de compartir (entre "Cambiar apuesta" y "Otra mano") deja elegir en qué chats se publica.
 
 **Perfil**:
 - Estadísticas de esta semana o de siempre: resultado, reparto de manos ganadas / empatadas / perdidas, neto global, manos jugadas, blackjacks, mayor ganancia, mejor racha y una gráfica de las últimas 30 manos. Se calculan a partir de las manos guardadas (`GET /api/profile/stats`). Más adelante, semanas ganadas.
@@ -468,12 +473,12 @@ Al apostar, se toca sobre fichas de 5 / 10 / 25 / 100 / 500 / 1.000, cada valor 
 | Grupos | El creador es admin. Se entra por enlace de invitación (renovable). Puedes estar en varios grupos; tu saldo es el mismo en todos y cada grupo es una clasificación. |
 | Feed | Eventos automáticos destacables: blackjack con apuesta alta, ganancia o pérdida grande, adelantamiento en el ranking, ruina, reto o logro completado, resultado de la Baraja del día. |
 | Reacciones | 🔥 😂 💀 👏 😱 en cada evento del feed. |
-| Chat | Texto y emojis; se refresca cada pocos segundos mientras está abierto. Se pueden citar eventos del feed. |
+| Chat | Global y por grupo, de los últimos 7 días; texto y emojis, reacciones, respuestas citando un mensaje y actualización al momento (SSE). Más adelante, citar eventos del feed. |
 | Push | Paga lista (si no has cobrado a las 🔧 18:00), te han adelantado, mención en el chat, quedan 3 h de liga y ceremonia lista. Cada tipo se activa o desactiva por separado. |
 | Compartir fuera | Estadísticas del perfil como historia de Instagram (ya disponible), resultado de la Baraja del día y podio semanal como texto o imagen para WhatsApp. |
-| Compartir en el chat | Mandar una mano jugada o tus estadísticas a una persona o a un grupo, como mensaje del chat. |
+| Compartir en el chat | Publicar una mano jugada en los chats que elijas (ya disponible). Más adelante, las estadísticas y los mensajes a una persona. |
 
-Moderación mínima: el admin puede expulsar miembros y cualquiera puede borrar sus propios mensajes.
+Moderación mínima: el admin puede expulsar miembros y borrar mensajes del chat de su grupo, y cualquiera puede borrar sus propios mensajes.
 
 ### Invitar: enlace con vista previa y QR
 
@@ -553,7 +558,7 @@ Cada fase termina con algo usable y desplegado.
 | 4 | ✅ Grupos y liga | Saldo único de liga y paga diaria; crear grupo, unirse, ranking en vivo de cada grupo y admin |
 | 4b | ✅ Invitaciones | Pantalla "Invitar" con compartir, copiar y **QR**; **vista previa del enlace** con imagen generada (`next/og`); renovar el enlace |
 | 5 | ✅ Ciclo semanal | Cierre automático, ceremonia, estadísticas, trofeos y monedas |
-| 6 | Social | Feed, reacciones y chat; compartir manos y estadísticas en el chat, a una persona o a un grupo |
+| 6 | 🟡 Social | ✅ Chat global y por grupo con reacciones, respuestas y publicar manos. Falta: feed, mensajes a una persona y compartir estadísticas en el chat |
 | 7 | Notificaciones push | Suscripción, preferencias y envíos |
 | 8 | Retos y logros | Retos diarios (los logros ya están hechos, ver §2); lo que se gana con ellos son monedas para estilos, nunca fichas |
 | 9 | Baraja del día | Semilla diaria, 10 manos, clasificación y compartir (con su vista previa `/r/…`) |

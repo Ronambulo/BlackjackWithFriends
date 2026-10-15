@@ -9,8 +9,9 @@ import { currentLanguage } from '@/i18n'
 import { useClaimPay, useLeague } from '@/league/useLeague'
 import { ApiError } from '@/lib/api'
 import { formatNumber } from '@/lib/format'
+import { ShareSheet } from '@/social/ShareSheet'
 import { play as playSound, preloadSounds, type Sound } from '@/sound/sounds'
-import { MinusIcon, PlusIcon, SplitIcon } from '@/ui/icons'
+import { CheckIcon, MinusIcon, PlusIcon, ShareIcon, SplitIcon } from '@/ui/icons'
 import { PlayingCard } from './PlayingCard'
 import { useClearFinishedHand, useClearFinishedHandOnLeave, usePlay, useTable, type HandView } from './useTable'
 import styles from './Table.module.css'
@@ -397,6 +398,7 @@ export function Table() {
               <button className={styles.wood} disabled={busy} onClick={clearHand}>
                 {t('play.changeBet')}
               </button>
+              <PublishButton key={hand!.id} handId={hand!.id} />
               <button className={styles.gold} disabled={busy || !canRepeat} onClick={() => deal(lastBet)}>
                 {t('play.again', { amount: fmt(lastBet) })}
               </button>
@@ -405,6 +407,37 @@ export function Table() {
         )}
       </section>
     </div>
+  )
+}
+
+/** Hands are never published on their own: this offers it once the hand is over. */
+function PublishButton({ handId }: { handId: string }) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const [done, setDone] = useState(false)
+  return (
+    <>
+      <button
+        type="button"
+        className={`${styles.wood} ${styles.publish}`}
+        disabled={done}
+        aria-label={t(done ? 'social.published' : 'social.publish')}
+        title={t(done ? 'social.published' : 'social.publish')}
+        onClick={() => setOpen(true)}
+      >
+        {done ? <CheckIcon width={20} height={20} strokeWidth={2.6} /> : <ShareIcon width={20} height={20} />}
+      </button>
+      {open && (
+        <ShareSheet
+          handId={handId}
+          onClose={() => setOpen(false)}
+          onShared={() => {
+            setOpen(false)
+            setDone(true)
+          }}
+        />
+      )}
+    </>
   )
 }
 

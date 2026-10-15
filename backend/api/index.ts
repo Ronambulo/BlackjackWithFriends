@@ -45,6 +45,7 @@ import {
   unbanIp,
 } from '../routes/admin.js'
 import { getAchievements, postAchievementsSeen } from '../routes/achievements.js'
+import { deleteMessage, getChat, getUnread, postMessage, postReaction, shareHand } from '../routes/chat.js'
 import { getLeague, postPay } from '../routes/league.js'
 import { getFriendsRanking, getGlobalRanking } from '../routes/ranking.js'
 import { getTable, postPlay } from '../routes/play.js'
@@ -119,6 +120,11 @@ const routes: Routes = {
   '/api/group/leave': { POST: live(leaveGroup) },
   '/api/group/renew': { POST: live(renewCode) },
   '/api/group/kick': { POST: live(kickMember) },
+  '/api/chat': { GET: getChat, POST: postMessage },
+  '/api/chat/share': { POST: shareHand },
+  '/api/chat/unread': { GET: getUnread },
+  '/api/chat/react': { POST: postReaction },
+  '/api/chat/delete': { POST: deleteMessage },
   '/api/invite': { GET: getInvite },
   '/api/invite/preview': { GET: getInvitePreview },
   // The app's own admins (ADMIN_USERNAMES); a 404 for everyone else.

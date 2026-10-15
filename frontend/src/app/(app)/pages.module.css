@@ -468,13 +468,3 @@ button.listRow:disabled {
   line-height: 1;
 }
 
-.chatSoon {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.chatSoon svg {
-  flex: none;
-  color: var(--accent);
-}
