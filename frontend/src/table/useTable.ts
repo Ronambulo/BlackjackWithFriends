@@ -2,6 +2,7 @@
 
 import type { Action, PublicRoundView } from '@bwf/engine'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { useUser } from '@/auth/session-context'
 import type { League } from '@/league/useLeague'
 import { ApiError, api } from '@/lib/api'
@@ -61,4 +62,18 @@ export function useClearFinishedHand() {
   const queryClient = useQueryClient()
   return () =>
     queryClient.setQueryData<TableState>(['table', user.id], (table) => (table ? { ...table, hand: null } : table))
+}
+
+/** Leaving the table with a finished hand on it counts as "change bet": it's gone when you come back. */
+export function useClearFinishedHandOnLeave() {
+  const user = useUser()
+  const queryClient = useQueryClient()
+  useEffect(
+    () => () => {
+      queryClient.setQueryData<TableState>(['table', user.id], (table) =>
+        table?.hand?.phase === 'settled' ? { ...table, hand: null } : table,
+      )
+    },
+    [queryClient, user.id],
+  )
 }

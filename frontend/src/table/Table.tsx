@@ -7,12 +7,15 @@ import { currentLanguage } from '@/i18n'
 import { useClaimPay, useLeague } from '@/league/useLeague'
 import { ApiError } from '@/lib/api'
 import { formatNumber } from '@/lib/format'
+import { play as playSound, preloadSounds, type Sound } from '@/sound/sounds'
 import { MinusIcon, PlusIcon, SplitIcon } from '@/ui/icons'
 import { PlayingCard } from './PlayingCard'
-import { useClearFinishedHand, usePlay, useTable, type HandView } from './useTable'
+import { useClearFinishedHand, useClearFinishedHandOnLeave, usePlay, useTable, type HandView } from './useTable'
 import styles from './Table.module.css'
 
-const CHIP_VALUES = [10, 50, 100, 500, 1000] as const
+// What you bet with; 1s only show up in a stack, for amounts that aren't a multiple of 5.
+const CHIP_VALUES = [5, 10, 25, 100, 500, 1000] as const
+const STACK_VALUES = [1, ...CHIP_VALUES] as const
 const LAST_BET_KEY = 'lastBet'
 
 // ── Deal timing ─────────────────────────────────────────────────────────────
@@ -89,6 +92,13 @@ function useDealTiming(hand: HandView | null) {
     return () => clearTimeout(id)
   }, [schedule])
 
+  // Each card makes its sound as it leaves the shoe, and the hole card as it turns.
+  useEffect(() => {
+    const timers = [...schedule.delays.values()].map((at) => setTimeout(() => playSound('card'), at * 1000))
+    if (schedule.flipAt !== null) timers.push(setTimeout(() => playSound('flip'), schedule.flipAt * 1000))
+    return () => timers.forEach(clearTimeout)
+  }, [schedule])
+
   const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   return { schedule, ready: reducedMotion || schedule.done === 0 || finished === schedule }
 }
@@ -121,22 +131,24 @@ function signed(n: number, lang: ReturnType<typeof currentLanguage>): string {
   return `${n > 0 ? '+' : '−'}${formatNumber(Math.abs(n), lang)}`
 }
 
-type ChipValue = (typeof CHIP_VALUES)[number]
+type ChipValue = (typeof STACK_VALUES)[number]
 
-/** Chip colours: the face, the darker edge seen on a stack, and the number. */
-const CHIP_COLORS: Record<ChipValue, { face: string; edge: string; text: string }> = {
-  10: { face: '#3a73d8', edge: '#2a59ad', text: '#fff' },
-  50: { face: '#d23f4c', edge: '#a52f3a', text: '#fff' },
-  100: { face: '#1b9a59', edge: '#11693c', text: '#fff' },
-  500: { face: '#7b47c9', edge: '#522d8c', text: '#fff' },
-  1000: { face: '#26272c', edge: '#0d0e10', text: '#f2c14e' },
+/** Casino colours: the face, the darker edge seen on a stack, the number and the stripes. */
+const CHIP_COLORS: Record<ChipValue, { face: string; edge: string; text: string; stripe: string }> = {
+  1: { face: '#f1ede4', edge: '#a9a291', text: '#1c130d', stripe: '#3a73d8' },
+  5: { face: '#d23f4c', edge: '#8f2731', text: '#fff', stripe: '#fff' },
+  10: { face: '#2f62c9', edge: '#1e4a92', text: '#fff', stripe: '#fff' },
+  25: { face: '#1b9a59', edge: '#11693c', text: '#fff', stripe: '#fff' },
+  100: { face: '#222327', edge: '#050506', text: '#fff', stripe: '#fff' },
+  500: { face: '#7b47c9', edge: '#522d8c', text: '#fff', stripe: '#fff' },
+  1000: { face: '#f0a42a', edge: '#b26f12', text: '#1c130d', stripe: '#fff' },
 }
 
 /** The fewest chips that make up an amount, largest first. */
 function chipsFor(amount: number): ChipValue[] {
   const chips: ChipValue[] = []
   let rest = amount
-  for (const value of [...CHIP_VALUES].reverse()) {
+  for (const value of [...STACK_VALUES].reverse()) {
     while (rest >= value) {
       chips.push(value)
       rest -= value
@@ -166,6 +178,7 @@ export function Table() {
   const { data: table, isPending, isError, refetch } = useTable()
   const play = usePlay()
   const clearHand = useClearFinishedHand()
+  useClearFinishedHandOnLeave()
   const { data: league } = useLeague()
   const claimPay = useClaimPay()
   // While a new hand is on its way the bet already sits on the felt, so the tap
@@ -181,6 +194,15 @@ export function Table() {
 
   const [bet, setBet] = useState(0)
   const [lastBet, setLastBet] = useState(readLastBet)
+
+  // The recordings are tiny: fetch them as soon as the table opens.
+  useEffect(preloadSounds, [])
+
+  // How the hand went, once the cards have shown it.
+  const resultSound = hand?.phase === 'settled' && ready && pendingBet === null ? soundFor(hand) : null
+  useEffect(() => {
+    if (resultSound) playSound(resultSound)
+  }, [resultSound, hand?.id])
 
   if (isPending) return <div className={styles.loading} aria-busy="true" />
   if (isError || !table) {
@@ -204,16 +226,21 @@ export function Table() {
     play.mutate({ action: 'bet', bet: amount })
   }
   const act = (action: Action) => {
-    if (hand) play.mutate({ action, handId: hand.id, version: hand.version })
+    if (!hand) return
+    if (action === 'double' || action === 'split') playSound(action)
+    play.mutate({ action, handId: hand.id, version: hand.version })
   }
   // The most you can put down: the table's limit, or everything you have if it's less.
   const limit = Math.min(table.maxBet, table.chips)
-  const addToBet = (value: number) => setBet((b) => Math.min(b + value, limit))
+  const addToBet = (value: number) => {
+    playSound('chip')
+    setBet((b) => Math.min(b + value, limit))
+  }
 
   const settled = hand?.phase === 'settled' ? hand.settlement : null
   const errorText = play.error ? t(play.error instanceof ApiError && play.error.status === 409 ? 'play.changed' : 'common.error') : null
   const canRepeat = lastBet >= table.minBet && lastBet <= limit
-
+  const showResult = Boolean(settled) && ready && pendingBet === null
   return (
     <div className={styles.table}>
       <section className={styles.felt}>
@@ -349,7 +376,7 @@ export function Table() {
           </>
         )}
 
-        {settled && ready && pendingBet === null && (
+        {settled && showResult && (
           <>
             <p className={`${styles.net} ${styles[netTone(settled.net)]}`}>{signed(settled.net, lang)}</p>
             <div className={styles.row}>
@@ -372,6 +399,13 @@ const ACTION_ICON: Record<'hit' | 'stand' | 'double' | 'split', ReactNode> = {
   stand: <MinusIcon strokeWidth={2.4} />,
   double: 'x2',
   split: <SplitIcon strokeWidth={2.4} />,
+}
+
+function soundFor(hand: HandView): Sound {
+  const settlement = hand.settlement!
+  if (settlement.hands.some((h) => h.outcome === 'blackjack')) return 'blackjack'
+  const tone = netTone(settlement.net)
+  return tone === 'push' ? 'push' : tone
 }
 
 function netTone(net: number): 'win' | 'lose' | 'push' {
@@ -416,6 +450,7 @@ function BetStack({ amount, small = false }: { amount: number; small?: boolean }
   const style: CSSProperties = {
     background: top.face,
     color: top.text,
+    borderColor: top.stripe,
     boxShadow: shadow.join(', '),
     transform: `translateY(${-depth / 2}px)`,
   }
@@ -466,7 +501,10 @@ function FeltHand({ hand, schedule, ready }: { hand: HandView; schedule: Schedul
         )}
       </div>
 
-      <div className={`${styles.hands} ${hand.hands.length > 2 ? styles.small : ''}`}>
+      <div
+        className={`${styles.hands} ${hand.hands.length > 2 ? styles.small : ''}`}
+        style={{ '--count': hand.hands.length } as CSSProperties}
+      >
         {hand.hands.map((h, hi) => {
           const keys = h.cards.map((c, i) => playerKey(hi, i, c))
           const natural = hand.hands.length === 1 && !h.fromSplit && h.cards.length === 2 && h.value.total === 21

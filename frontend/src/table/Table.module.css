@@ -262,19 +262,48 @@
   gap: 14px 10px;
 }
 
+/* Three or four hands after splitting: one row, every hand sized to share the width */
 .small {
-  --card-w: 52px;
+  --card-w: min(52px, (100cqw - 24px) / var(--count, 3) / 2.5);
+  --overlap: -0.6;
+
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+.small .hand {
+  min-width: 0;
+  padding: 6px 3px;
+  gap: 6px;
+}
+
+/* The value over the bet, so the pair isn't wider than the cards */
+.small .label {
+  flex-direction: column;
+  gap: 4px;
+}
+
+.small .value {
+  min-width: 0;
+  padding: 2px 8px;
+  font-size: 13px;
+}
+
+.small .outcome {
+  padding: 3px 8px;
+  font-size: 0.72rem;
 }
 
 .small .spotSmall {
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
 }
 
 .small .stackSmall {
-  width: 34px;
-  height: 34px;
-  font-size: 10px;
+  width: 30px;
+  height: 30px;
+  border-width: 3px;
+  font-size: 9px;
 }
 
 .hand {
@@ -347,12 +376,14 @@
 .chipRow {
   display: flex;
   justify-content: center;
-  gap: 16px;
+  gap: clamp(8px, 2.5vw, 16px);
 }
 
+/* Six of them still fit side by side on a narrow phone */
 .chip {
-  width: 56px;
-  height: 56px;
+  width: clamp(46px, 13vw, 56px);
+  height: clamp(46px, 13vw, 56px);
+  padding: 0;
   border: 5px dashed #fff;
   border-radius: 50%;
   color: #fff;
@@ -376,22 +407,36 @@
   cursor: not-allowed;
 }
 
-.chip10 {
-  --edge: #1e4a92;
+.chip1 {
+  --edge: #a9a291;
 
-  background: #3a73d8;
+  border-color: #3a73d8;
+  background: #f1ede4;
+  color: #1c130d;
 }
 
-.chip50 {
+.chip5 {
   --edge: #8f2731;
 
   background: #d23f4c;
 }
 
-.chip100 {
+.chip10 {
+  --edge: #1e4a92;
+
+  background: #2f62c9;
+}
+
+.chip25 {
   --edge: #11693c;
 
   background: #1b9a59;
+}
+
+.chip100 {
+  --edge: #050506;
+
+  background: #222327;
 }
 
 .chip500 {
@@ -401,10 +446,10 @@
 }
 
 .chip1000 {
-  --edge: #0d0e10;
+  --edge: #b26f12;
 
-  background: #26272c;
-  color: var(--accent);
+  background: #f0a42a;
+  color: #1c130d;
 }
 
 .row {
@@ -592,7 +637,7 @@
   }
 
   .hands.small {
-    --card-w: 46px;
+    --card-w: min(46px, (100cqw - 24px) / var(--count, 3) / 2.5);
   }
 
   .dealer,
@@ -652,7 +697,9 @@
   }
 
   .small {
-    --card-w: 72px;
+    --card-w: min(72px, (100cqw - 24px) / var(--count, 3) / 2.5);
+
+    gap: 12px;
   }
 
   .print {

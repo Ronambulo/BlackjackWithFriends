@@ -9,7 +9,7 @@
 
 /* Cards overlap like on a real table, each one a little askew */
 .slot + .slot {
-  margin-left: calc(var(--card-w, 64px) * -0.48);
+  margin-left: calc(var(--card-w, 64px) * var(--overlap, -0.48));
 }
 
 .slot:nth-child(even) {
