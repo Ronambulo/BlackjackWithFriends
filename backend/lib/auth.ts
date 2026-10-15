@@ -55,6 +55,11 @@ export function auth() {
   return (instance ??= createAuth())
 }
 
+/** Starts again on the database as it is now (after a restore). */
+export function forgetAuth() {
+  instance = undefined
+}
+
 export interface SessionUser {
   id: string
   /** The username as the player typed it when signing up */

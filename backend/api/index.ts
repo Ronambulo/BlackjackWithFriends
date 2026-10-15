@@ -2,7 +2,7 @@
 import { DEFAULT_RULES } from '@bwf/engine'
 import { clientIp, isAdmin, isBanned } from '../lib/admin.js'
 import { record, recordError } from '../lib/metrics.js'
-import { announcement, isOn } from '../lib/settings.js'
+import { isOn, maintenance } from '../lib/settings.js'
 import { auth, requireUser } from '../lib/auth.js'
 import { sql } from 'drizzle-orm'
 import { db } from '../lib/db.js'
@@ -30,9 +30,10 @@ import {
   deleteUser,
   getAdminLog,
   getAdminSettings,
+  downloadBackup,
   getBackups,
-  postAnnouncement,
   postBackup,
+  renameUser,
   postFlag,
   postRules,
   getEconomy,
@@ -40,11 +41,35 @@ import {
   getModeration,
   getSystem,
   getUserDetail,
+  adjustUser,
+  postRestore,
+  postMaintenance,
+  getReports,
+  resolveReport,
+  deleteReport,
+  getExport,
   getAdminStats,
   listBans,
   listUsers,
   unbanIp,
 } from '../routes/admin.js'
+import {
+  closePoll,
+  deleteCampaign,
+  deletePoll,
+  endNotice,
+  getAdminNotices,
+  getAdminPolls,
+  getNotices,
+  getPolls,
+  legacyAnnouncement,
+  postCampaign,
+  postDevice,
+  postNotice,
+  postNoticeSeen,
+  postPoll,
+  postVote,
+} from '../routes/notices.js'
 import { getAchievements, postAchievementsSeen } from '../routes/achievements.js'
 import { getAdminChallenges, getChallenges, postAdminChallenges } from '../routes/challenges.js'
 import { deleteMessage, getChat, getUnread, postMessage, postReaction, share } from '../routes/chat.js'
@@ -55,8 +80,20 @@ import { getPushKey, getPushPrefs, patchPushPrefs, postPushTest, postSubscribe, 
 import { getProfile, patchProfile, postAvatar } from '../routes/profile.js'
 import { getCeremony, getGroupSeasons, postCeremonySeen } from '../routes/season.js'
 import { getStats } from '../routes/stats.js'
+import { postReport } from '../routes/reports.js'
 
 type Route = (request: Request) => Promise<Response> | Response
+
+// What still works for players while the app is in maintenance: signing in, knowing who they are and when it's back.
+const OPEN_IN_MAINTENANCE = new Set(['/api/health', '/api/status', '/api/me'])
+
+async function signedInAdmin(request: Request): Promise<boolean> {
+  try {
+    return isAdmin((await requireUser(request)).id)
+  } catch {
+    return false
+  }
+}
 type Routes = Record<string, Partial<Record<string, Route>>>
 
 /**
@@ -99,6 +136,8 @@ const routes: Routes = {
         rules: DEFAULT_RULES,
       }),
   },
+  // Whether the app is open; public, so the maintenance screen can tell when it's back.
+  '/api/status': { GET: () => json({ maintenance: maintenance() }) },
   '/api/me': {
     GET: async (request) => {
       const me = await requireUser(request)
@@ -153,18 +192,40 @@ const routes: Routes = {
   '/api/admin/users': { GET: listUsers },
   '/api/admin/users/detail': { GET: getUserDetail },
   '/api/admin/users/delete': { POST: deleteUser },
+  '/api/admin/users/rename': { POST: renameUser },
+  '/api/admin/users/adjust': { POST: adjustUser },
   '/api/admin/bans': { GET: listBans, POST: banIp },
   '/api/admin/bans/delete': { POST: unbanIp },
   '/api/admin/reviews': { POST: decideReview },
   '/api/admin/settings': { GET: getAdminSettings },
   '/api/admin/flags': { POST: postFlag },
-  '/api/admin/announcement': { POST: postAnnouncement },
+  '/api/admin/notices': { GET: getAdminNotices, POST: postNotice },
+  '/api/admin/notices/end': { POST: endNotice },
+  '/api/admin/campaigns': { POST: postCampaign },
+  '/api/admin/campaigns/delete': { POST: deleteCampaign },
+  '/api/admin/polls': { GET: getAdminPolls, POST: postPoll },
+  '/api/admin/polls/close': { POST: closePoll },
+  '/api/admin/polls/delete': { POST: deletePoll },
   '/api/admin/rules': { POST: postRules },
   '/api/admin/challenges': { GET: getAdminChallenges, POST: postAdminChallenges },
   '/api/admin/backups': { GET: getBackups, POST: postBackup },
+  '/api/admin/backups/download': { GET: downloadBackup },
+  '/api/admin/backups/restore': { POST: postRestore },
+  '/api/admin/maintenance': { POST: postMaintenance },
+  '/api/admin/reports': { GET: getReports },
+  '/api/admin/reports/resolve': { POST: resolveReport },
+  '/api/admin/reports/delete': { POST: deleteReport },
+  '/api/admin/export': { GET: getExport },
   '/api/admin/log': { GET: getAdminLog },
   // The notice the admins put on top of the app, for everyone.
-  '/api/announcement': { GET: async () => json(announcement()) },
+  // Apps from before /api/notices.
+  '/api/announcement': { GET: async () => json(legacyAnnouncement()) },
+  '/api/notices': { GET: getNotices },
+  '/api/notices/seen': { POST: postNoticeSeen },
+  '/api/devices': { POST: postDevice },
+  '/api/polls': { GET: getPolls },
+  '/api/polls/vote': { POST: postVote },
+  '/api/reports': { POST: postReport },
   // Live updates (lib/events.ts).
   '/api/events': {
     GET: async (request) => eventStream((await requireUser(request)).id),
@@ -183,6 +244,11 @@ async function route(request: Request): Promise<Response> {
   if (path === '/api/auth' || path.startsWith('/api/auth/')) return auth().handler(request)
   // Uploaded photos (lib/storage.ts): public, like any picture on a page.
   if (path.startsWith('/api/media/') && request.method === 'GET') return serveMedia(path)
+
+  // Maintenance (lib/settings.ts): only the admins get past this. The panel checks for itself.
+  if (maintenance() && !OPEN_IN_MAINTENANCE.has(path) && !path.startsWith('/api/admin/') && !(await signedInAdmin(request))) {
+    throw new HttpError(503, 'La app está en mantenimiento')
+  }
 
   const methods = routes[path]
   if (!methods) throw new HttpError(404, 'No existe')

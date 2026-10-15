@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useUser } from '@/auth/session-context'
 import type { ChallengeId, Tier } from '@/challenges/useChallenges'
 import { api } from '@/lib/api'
+import type { Audience } from '@/push/device'
 
 /** GET /api/me: whether the player runs the app (undefined until known). */
 export function useIsAdmin(): boolean | undefined {
@@ -82,6 +83,19 @@ export interface UserDetail {
   weekPlayMs: number
   totals: { hands: number; net: number; wagered: number }
   lastHands: { at: number; bet: number; net: number | null; phase: string }[]
+  /** Chips or coins an admin added or took away by hand, newest first. */
+  adjustments: Adjustment[]
+}
+
+export type AdjustmentKind = 'saldo' | 'monedas'
+
+export interface Adjustment {
+  id: number
+  tipo: AdjustmentKind
+  cantidad: number
+  motivo: string
+  por: string
+  createdAt: number
 }
 
 export interface Ban {
@@ -152,6 +166,8 @@ export function useEconomy() {
 
 export interface AdminLeague {
   weekStart: string
+  /** Counting from the week the first hand was played in, as 1. */
+  weekNumber: number
   weekEndsAt: number
   now: number
   groups: {
@@ -186,17 +202,36 @@ export interface SystemInfo {
 
 export type Flag = 'signups' | 'play' | 'invites'
 
-export interface Announcement {
-  text: string
-  expiresAt: number | null
-  createdAt: number
-  by: string
-}
-
 /** GET /api/admin/settings */
 export interface AdminSettings {
   flags: Record<Flag, boolean>
-  announcement: Announcement | null
+  maintenance: Maintenance | null
+}
+
+export interface Maintenance {
+  message: string | null
+  since: number
+  /** username of the admin who turned it on */
+  by: string
+}
+
+/** Something a player says went wrong (POST /api/reports). */
+export interface BugReport {
+  id: number
+  userId: string
+  username: string
+  texto: string
+  /** The screen they were on. */
+  ruta: string | null
+  /** Their browser, as it introduces itself. */
+  dispositivo: string | null
+  resuelto: boolean
+  createdAt: number
+}
+
+export function useReports() {
+  const user = useUser()
+  return useQuery({ queryKey: ['admin', user.id, 'reports'], queryFn: () => api<BugReport[]>('/admin/reports') })
 }
 
 export interface Backup {
@@ -278,6 +313,7 @@ function useAdminAction<T>(path: string) {
 }
 
 export const useDeleteUser = () => useAdminAction<{ id: string }>('/admin/users/delete')
+export const useRenameUser = () => useAdminAction<{ id: string; nombre?: string; username?: string }>('/admin/users/rename')
 export const useBan = () =>
   useAdminAction<({ ip: string } | { userId: string }) & { motivo?: string; hours?: number | null }>('/admin/bans')
 export const useUnban = () => useAdminAction<{ ip: string }>('/admin/bans/delete')
@@ -285,19 +321,132 @@ export const useDecideReview = () => useAdminAction<{ userId: string; tipo: Revi
 export const useSetFlag = () => useAdminAction<{ flag: Flag; on: boolean }>('/admin/flags')
 export const useSetRules = () => useAdminAction<EconomyRules>('/admin/rules')
 export const useBackupNow = () => useAdminAction<Record<string, never>>('/admin/backups')
+export const useAdjustUser = () =>
+  useAdminAction<{ id: string; tipo: AdjustmentKind; cantidad: number; motivo: string }>('/admin/users/adjust')
+export const useResolveReport = () => useAdminAction<{ id: number; ok: boolean }>('/admin/reports/resolve')
+export const useDeleteReport = () => useAdminAction<{ id: number }>('/admin/reports/delete')
 
-/** Publishing or taking down the notice also refreshes the one on top of the app. */
-export function useSetAnnouncement() {
-  const user = useUser()
+/** Maintenance also changes what this app shows. */
+export function useSetMaintenance() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (body: { text: string; hours?: number | null }) => api('/admin/announcement', { method: 'POST', body }),
+    mutationFn: (body: { on: boolean; message?: string }) => api('/admin/maintenance', { method: 'POST', body }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['admin', user.id] })
-      void queryClient.invalidateQueries({ queryKey: ['announcement'] })
+      void queryClient.invalidateQueries({ queryKey: ['admin'] })
+      void queryClient.invalidateQueries({ queryKey: ['status'] })
     },
   })
 }
+
+/** Puts a backup back as the database: everything the app knows may be different afterwards. */
+export function useRestoreBackup() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (name: string) => api<{ ok: true; before: string }>('/admin/backups/restore', { method: 'POST', body: { name } }),
+    onSuccess: () => void queryClient.invalidateQueries(),
+  })
+}
+
+/** Notices also change the bar on top of the app. */
+function useNoticeAction<T>(path: string) {
+  const user = useUser()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: T) => api<{ ok: true }>(path, { method: 'POST', body }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin', user.id] })
+      void queryClient.invalidateQueries({ queryKey: ['notices'] })
+      void queryClient.invalidateQueries({ queryKey: ['polls'] })
+    },
+  })
+}
+
+export interface AdminNotice {
+  id: number
+  texto: string
+  audiencia: Audience
+  startsAt: number
+  expiresAt: number | null
+  por: string
+  /** Players who had it on screen, and who of them closed it. */
+  seen: number
+  closed: number
+}
+
+export interface Campaign {
+  id: number
+  titulo: string
+  cuerpo: string
+  url: string
+  audiencia: Audience
+  sendAt: number
+  sentAt: number | null
+  devices: number | null
+  failed: number | null
+  por: string
+}
+
+/** GET /api/admin/notices (routes/notices.ts). */
+export interface AdminNotices {
+  now: number
+  notices: AdminNotice[]
+  campaigns: Campaign[]
+  audiences: {
+    users: number
+    /** Players who opened the app in the last 30 days. */
+    seen: number
+    byPlatform: Record<'ios' | 'android' | 'desktop', number>
+    pwa: number
+    browserOnly: number
+    pushUsers: number
+    pushDevices: number
+    /** Devices a campaign to each audience would reach now. */
+    reach: Record<Audience, number>
+  }
+}
+
+export function useAdminNotices() {
+  const user = useUser()
+  return useQuery({ queryKey: ['admin', user.id, 'notices'], queryFn: () => api<AdminNotices>('/admin/notices') })
+}
+
+export const usePostNotice = () =>
+  useNoticeAction<{ texto: string; audiencia: Audience; startsAt?: number; hours?: number | null }>('/admin/notices')
+export const useEndNotice = () => useNoticeAction<{ id: number }>('/admin/notices/end')
+export const usePostCampaign = () =>
+  useAdminAction<{ titulo: string; cuerpo: string; url?: string; audiencia: Audience; sendAt?: number }>('/admin/campaigns')
+export const useDeleteCampaign = () => useAdminAction<{ id: number }>('/admin/campaigns/delete')
+
+export interface AdminPoll {
+  id: number
+  pregunta: string
+  opciones: string[]
+  endsAt: number | null
+  createdAt: number
+  por: string
+  votes: number[]
+  total: number
+}
+
+/** GET /api/admin/polls (routes/notices.ts). */
+export interface AdminPolls {
+  now: number
+  /** Players seen in the last 30 days: who could have answered. */
+  players: number
+  polls: AdminPoll[]
+}
+
+export function useAdminPolls() {
+  const user = useUser()
+  return useQuery({ queryKey: ['admin', user.id, 'polls'], queryFn: () => api<AdminPolls>('/admin/polls') })
+}
+
+export const usePostPoll = () =>
+  useNoticeAction<{ pregunta: string; opciones: string[]; hours?: number | null; push?: boolean; pushTitle?: string }>(
+    '/admin/polls',
+  )
+export const useClosePoll = () => useNoticeAction<{ id: number }>('/admin/polls/close')
+export const useDeletePoll = () => useNoticeAction<{ id: number }>('/admin/polls/delete')
 
 export interface AdminChallenges {
   today: {

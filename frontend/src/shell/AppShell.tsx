@@ -5,17 +5,21 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useIsAdmin } from '@/admin/useAdmin'
+import { WhatsNewBar } from '@/changelog/WhatsNewBar'
 import { currentLanguage } from '@/i18n'
 import { InstallBanner } from '@/install/InstallBanner'
+import { useMaintenance } from '@/maintenance/useMaintenance'
 import { formatNumber } from '@/lib/format'
 import type { Profile } from '@/profile/useProfile'
 import { CeremonyGate } from '@/season/Ceremony'
 import { GroupPicker } from '@/groups/GroupPicker'
 import { joinPath, pendingInvite } from '@/groups/pendingInvite'
 import { useLiveUpdates } from '@/groups/useLiveUpdates'
+import { useReportDevice } from '@/push/device'
 import { useUnread } from '@/social/useChat'
 import { CardsIcon, ChatIcon, GearIcon, GroupIcon, HomeIcon, UserIcon } from '@/ui/icons'
 import { AnnouncementBar } from './AnnouncementBar'
+import { rememberScreen } from './lastScreen'
 import styles from './AppShell.module.css'
 
 const TABS = [
@@ -29,7 +33,7 @@ const TABS = [
 function isActive(href: string, pathname: string) {
   if (href === '/') return pathname === '/'
   // Settings lives under the profile tab.
-  if (href === '/perfil') return pathname.startsWith('/perfil') || pathname.startsWith('/ajustes')
+  if (href === '/perfil') return ['/perfil', '/ajustes', '/novedades'].some((path) => pathname.startsWith(path))
   return pathname.startsWith(href)
 }
 
@@ -38,7 +42,9 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
   const pathname = usePathname()
   const router = useRouter()
   const admin = useIsAdmin()
+  const maintenance = useMaintenance()
   useLiveUpdates()
+  useReportDevice()
   const { data: unread } = useUnread()
   const unreadTotal = Object.values(unread ?? {}).reduce((sum, n) => sum + n, 0)
 
@@ -54,6 +60,7 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
   const content = useRef<HTMLElement>(null)
   useEffect(() => {
     content.current?.scrollTo(0, 0)
+    rememberScreen(pathname)
   }, [pathname])
 
   return (
@@ -69,7 +76,14 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
       </header>
 
       <main ref={content} className={styles.content}>
+        {/* Only admins get this far while it's on: a reminder that players can't. */}
+        {maintenance && admin && (
+          <Link href="/admin?tab=system" className={styles.maintenance}>
+            {t('maintenance.adminStrip')}
+          </Link>
+        )}
         {!felted && <AnnouncementBar />}
+        {!felted && pathname !== '/novedades' && <WhatsNewBar />}
         {children}
       </main>
 

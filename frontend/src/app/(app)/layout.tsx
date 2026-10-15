@@ -2,9 +2,12 @@
 
 import { useEffect, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useIsAdmin } from '@/admin/useAdmin'
 import { LoginScreen } from '@/auth/LoginScreen'
 import { rememberInvite } from '@/groups/pendingInvite'
 import { useSession } from '@/auth/session-context'
+import { MaintenanceScreen } from '@/maintenance/MaintenanceScreen'
+import { useMaintenance } from '@/maintenance/useMaintenance'
 import { AppShell } from '@/shell/AppShell'
 import { OnboardingScreen } from '@/profile/OnboardingScreen'
 import { useProfile } from '@/profile/useProfile'
@@ -32,6 +35,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
 function SignedIn({ children }: { children: ReactNode }) {
   const { t, i18n } = useTranslation()
+  const maintenance = useMaintenance()
+  const admin = useIsAdmin()
   const { data: profile, isPending, isError, refetch } = useProfile()
 
   // The profile's language wins once the player has one (e.g. a new device).
@@ -39,7 +44,9 @@ function SignedIn({ children }: { children: ReactNode }) {
     if (profile?.nombre && profile.idioma !== i18n.resolvedLanguage) void i18n.changeLanguage(profile.idioma)
   }, [profile?.nombre, profile?.idioma, i18n])
 
-  if (isPending) return <Splash />
+  // Closed for maintenance: admins still get in, to check things before opening again.
+  if (maintenance && admin === false) return <MaintenanceScreen maintenance={maintenance} />
+  if (isPending || (maintenance && admin === undefined)) return <Splash />
   if (isError) {
     return (
       <main className="card" style={{ maxWidth: 360, margin: '30vh auto 0', textAlign: 'center' }}>

@@ -98,9 +98,12 @@ export const rateLimit = sqliteTable('rate_limits', {
 export const LANGUAGES = ['es', 'en'] as const
 export type Language = (typeof LANGUAGES)[number]
 
-export const PUSH_KINDS = ['pay', 'overtaken', 'mention', 'message', 'reaction', 'closing', 'ceremony', 'review'] as const
+export const PUSH_KINDS = ['pay', 'overtaken', 'mention', 'message', 'reaction', 'closing', 'ceremony', 'review', 'news'] as const
 export type PushKind = (typeof PUSH_KINDS)[number]
 export type PushPrefs = Partial<Record<PushKind, boolean>>
+
+export const PLATFORMS = ['ios', 'android', 'desktop'] as const
+export type Platform = (typeof PLATFORMS)[number]
 
 /** One per user, created the first time they open the app. */
 export const profiles = sqliteTable(
@@ -132,6 +135,8 @@ export const profiles = sqliteTable(
     chatLeido: timestamp('chat_leido'),
     // Push notifications switched off, by kind; a kind not here is on (lib/push.ts).
     avisos: text('avisos', { mode: 'json' }).$type<PushPrefs>().notNull().default({}),
+    // When the player last changed their own username (not an admin), for the wait between changes.
+    usuarioCambiado: timestamp('usuario_cambiado'),
     createdAt: createdAt(),
   },
   (t) => [
@@ -277,6 +282,46 @@ export const adminLog = sqliteTable(
     createdAt: createdAt(),
   },
   (t) => [index('admin_log_created_at_idx').on(t.createdAt)],
+)
+
+export const ADJUSTMENT_KINDS = ['saldo', 'monedas'] as const
+export type AdjustmentKind = (typeof ADJUSTMENT_KINDS)[number]
+
+/** A balance or coins put right by hand from the admin panel, and why. */
+export const adjustments = sqliteTable(
+  'adjustments',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    tipo: text('tipo', { enum: ADJUSTMENT_KINDS }).notNull(),
+    // added (negative: taken away)
+    cantidad: integer('cantidad').notNull(),
+    motivo: text('motivo').notNull(),
+    // username of the admin
+    por: text('por').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('adjustments_user_idx').on(t.userId, t.createdAt)],
+)
+
+/** Something that went wrong, as a player tells it from the app. */
+export const reports = sqliteTable(
+  'reports',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    texto: text('texto').notNull(),
+    // The app's screen and the browser it was sent from.
+    ruta: text('ruta'),
+    dispositivo: text('dispositivo'),
+    resuelto: integer('resuelto', { mode: 'boolean' }).notNull().default(false),
+    createdAt: createdAt(),
+  },
+  (t) => [index('reports_created_idx').on(t.createdAt), index('reports_user_idx').on(t.userId, t.createdAt)],
 )
 
 /** Small switches and values the admins change from the panel (feature flags, the notice for everyone). */
@@ -426,9 +471,115 @@ export const pushSubscriptions = sqliteTable(
       .references(() => user.id, { onDelete: 'cascade' }),
     p256dh: text('p256dh').notNull(),
     auth: text('auth').notNull(),
+    // What the device said it is when it last opened the app; null until then.
+    plataforma: text('plataforma', { enum: PLATFORMS }),
+    pwa: integer('pwa', { mode: 'boolean' }),
     createdAt: createdAt(),
   },
   (t) => [index('push_subscriptions_user_idx').on(t.userId)],
+)
+
+// ── Devices, notices, campaigns and polls ──────────────────────────────────
+
+/** Who an admin's notice, push or poll is for, judged per device. */
+export const AUDIENCES = ['all', 'ios', 'android', 'desktop', 'pwa', 'browser', 'push', 'noPush'] as const
+export type Audience = (typeof AUDIENCES)[number]
+
+/** Each browser or installed app a player opens the app on, as it reports itself on opening. */
+export const devices = sqliteTable(
+  'devices',
+  {
+    // Made up by the device and kept in its storage.
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    plataforma: text('plataforma', { enum: PLATFORMS }).notNull(),
+    // Opened from the home screen, not a browser tab.
+    pwa: integer('pwa', { mode: 'boolean' }).notNull(),
+    // Notifications allowed and subscribed on this device.
+    push: integer('push', { mode: 'boolean' }).notNull(),
+    createdAt: createdAt(),
+    lastSeen: timestamp('last_seen').notNull(),
+  },
+  (t) => [index('devices_user_idx').on(t.userId), index('devices_last_seen_idx').on(t.lastSeen)],
+)
+
+/** A notice on top of the app, from `startsAt` until `expiresAt` (null: until removed). */
+export const notices = sqliteTable('notices', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  texto: text('texto').notNull(),
+  audiencia: text('audiencia', { enum: AUDIENCES }).notNull().default('all'),
+  startsAt: timestamp('starts_at').notNull(),
+  expiresAt: timestamp('expires_at'),
+  // username of the admin
+  por: text('por').notNull(),
+  createdAt: createdAt(),
+})
+
+/** Who has had a notice on screen. */
+export const noticeViews = sqliteTable(
+  'notice_views',
+  {
+    noticeId: integer('notice_id')
+      .notNull()
+      .references(() => notices.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    // Closed it with the ✕, not just seen it.
+    cerrado: integer('cerrado', { mode: 'boolean' }).notNull().default(false),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.noticeId, t.userId] })],
+)
+
+/** A push an admin sends to everyone in an audience, now or at `sendAt`. */
+export const pushCampaigns = sqliteTable(
+  'push_campaigns',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    titulo: text('titulo').notNull(),
+    cuerpo: text('cuerpo').notNull(),
+    url: text('url').notNull().default('/'),
+    audiencia: text('audiencia', { enum: AUDIENCES }).notNull().default('all'),
+    sendAt: timestamp('send_at').notNull(),
+    // null until it goes out
+    sentAt: timestamp('sent_at'),
+    dispositivos: integer('dispositivos').notNull().default(0),
+    fallidos: integer('fallidos').notNull().default(0),
+    por: text('por').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('push_campaigns_pending_idx').on(t.sentAt, t.sendAt)],
+)
+
+/** A question for the players, with two to six answers. */
+export const polls = sqliteTable('polls', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  pregunta: text('pregunta').notNull(),
+  opciones: text('opciones', { mode: 'json' }).$type<string[]>().notNull(),
+  // null: open until an admin closes it
+  endsAt: timestamp('ends_at'),
+  por: text('por').notNull(),
+  createdAt: createdAt(),
+})
+
+/** One answer per player and poll; answering again replaces it. */
+export const pollVotes = sqliteTable(
+  'poll_votes',
+  {
+    pollId: integer('poll_id')
+      .notNull()
+      .references(() => polls.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    // index into opciones
+    opcion: integer('opcion').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.pollId, t.userId] })],
 )
 
 // ── Chat ────────────────────────────────────────────────────────────────────

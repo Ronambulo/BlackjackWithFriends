@@ -2,7 +2,7 @@ import { and, eq } from 'drizzle-orm'
 import { requireUser, type SessionUser } from '../lib/auth.js'
 import { db } from '../lib/db.js'
 import { HttpError, json } from '../lib/http.js'
-import { queueReview } from '../lib/admin.js'
+import { queueReview, setUsername } from '../lib/admin.js'
 import { leagueClock, rulesFor } from '../lib/league.js'
 import { LANGUAGES, profiles, reviews, type Language } from '../lib/schema.js'
 import { deleteObject, keyOf, mediaUrl, putObject, sniffImage } from '../lib/storage.js'
@@ -11,6 +11,8 @@ const NAME_MIN = 2
 const NAME_MAX = 20
 // The app sends a 256 px photo; this leaves room for a PNG from a browser without WebP.
 const AVATAR_MAX_BYTES = 400 * 1024
+// So a player can't hop between usernames (and leave a trail of freed ones for others).
+const USERNAME_WAIT_MS = 30 * 24 * 60 * 60 * 1000
 
 type ProfileRow = typeof profiles.$inferSelect
 
@@ -21,7 +23,15 @@ function toJson(row: ProfileRow) {
     avatar_url: row.avatarUrl,
     idioma: row.idioma,
     monedas: row.monedas,
+    // When the player can change their username again; null if they can now.
+    usuario_cambiable_desde: usernameFreeAt(row),
   }
+}
+
+function usernameFreeAt(row: ProfileRow): number | null {
+  if (!row.usuarioCambiado) return null
+  const at = row.usuarioCambiado.getTime() + USERNAME_WAIT_MS
+  return at > Date.now() ? at : null
 }
 
 /** The player's profile, created on first use with their username as the name. */
@@ -48,7 +58,7 @@ export async function getProfile(request: Request): Promise<Response> {
   return json(toJson(loadProfile(user)))
 }
 
-// PATCH /api/profile: the player can only change their name, avatar and language.
+// PATCH /api/profile: the player can only change their name, username, avatar and language.
 export async function patchProfile(request: Request): Promise<Response> {
   const user = await requireUser(request)
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
@@ -71,6 +81,20 @@ export async function patchProfile(request: Request): Promise<Response> {
   }
 
   const current = loadProfile(user)
+  // The username lives with the account, not the profile.
+  if ('username' in body) {
+    const typed = typeof body.username === 'string' ? body.username : ''
+    const sameName = typed.trim().replace(/^@/, '').toLowerCase() === user.name.toLowerCase()
+    // Fixing the capitals of the same name doesn't count as a change.
+    if (!sameName && usernameFreeAt(current)) throw new HttpError(429, 'Todavía no puedes volver a cambiar el usuario')
+    const { old, username } = setUsername(user.id, typed)
+    if (old !== username.toLowerCase()) {
+      const at = new Date()
+      db().update(profiles).set({ usuarioCambiado: at }).where(eq(profiles.id, user.id)).run()
+      current.usuarioCambiado = at
+    }
+  }
+
   if (Object.keys(patch).length === 0) return json(toJson(current))
   const updated = db().update(profiles).set(patch).where(eq(profiles.id, user.id)).returning().get()
   if (patch.avatarUrl === null) {

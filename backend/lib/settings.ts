@@ -16,15 +16,6 @@ export const FLAGS = {
 } as const
 export type Flag = keyof typeof FLAGS
 
-/** A notice every player sees on top of the app until it expires or an admin removes it. */
-export interface Announcement {
-  text: string
-  /** ms; null: until removed */
-  expiresAt: number | null
-  createdAt: number
-  by: string
-}
-
 let cache: Map<string, unknown> | null = null
 
 function all(): Map<string, unknown> {
@@ -34,6 +25,10 @@ function all(): Map<string, unknown> {
 
 export function getSetting<T>(key: string): T | undefined {
   return all().get(key) as T | undefined
+}
+
+export function forgetSettings() {
+  cache = null
 }
 
 export function setSetting(key: string, value: unknown) {
@@ -47,6 +42,17 @@ export function setSetting(key: string, value: unknown) {
   cache = null
 }
 
+/** The app closed to players for a while; admins still get in. */
+export interface Maintenance {
+  message: string | null
+  since: number
+  by: string
+}
+
+export function maintenance(): Maintenance | null {
+  return getSetting<Maintenance>('maintenance') ?? null
+}
+
 export function flags(): Record<Flag, boolean> {
   return Object.fromEntries(
     (Object.keys(FLAGS) as Flag[]).map((key) => [key, getSetting<boolean>(`flag.${key}`) ?? FLAGS[key]]),
@@ -55,9 +61,4 @@ export function flags(): Record<Flag, boolean> {
 
 export function isOn(flag: Flag): boolean {
   return flags()[flag]
-}
-
-export function announcement(now = Date.now()): Announcement | null {
-  const value = getSetting<Announcement>('announcement')
-  return value && (value.expiresAt === null || value.expiresAt > now) ? value : null
 }

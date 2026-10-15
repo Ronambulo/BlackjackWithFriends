@@ -1,4 +1,4 @@
-import { and, eq, gt, isNull, or } from 'drizzle-orm'
+import { and, eq, gt, isNull, ne, or } from 'drizzle-orm'
 import { requireUser, type SessionUser } from './auth.js'
 import { db } from './db.js'
 import { HttpError } from './http.js'
@@ -82,4 +82,30 @@ export function logAction(admin: SessionUser, accion: string, objetivo: string |
     .insert(adminLog)
     .values({ admin: admin.name, accion, objetivo, detalle })
     .run()
+}
+
+// Usernames: what the username plugin accepts at sign up.
+const USERNAME = /^[a-zA-Z0-9_.]{3,20}$/
+
+/**
+ * Gives the player a new username (sign in, @handle) as typed. The made-up email
+ * follows it, so the old one is free for someone else to sign up with. An admin
+ * name can't be taken, and an admin can't rename themselves out of the list.
+ */
+export function setUsername(userId: string, typed: string) {
+  const display = typed.trim().replace(/^@/, '')
+  if (!USERNAME.test(display)) throw new HttpError(400, 'Usuario no válido')
+  const lower = display.toLowerCase()
+  const d = db()
+  const current = d.select({ username: user.username }).from(user).where(eq(user.id, userId)).get()
+  if (!current) throw new HttpError(404, 'No existe')
+  const names = adminNames()
+  if (current.username !== lower && (names.has(lower) || names.has(current.username ?? ''))) throw new HttpError(403, 'Ese usuario no se puede cambiar')
+  const taken = d.select({ id: user.id }).from(user).where(and(eq(user.username, lower), ne(user.id, userId))).get()
+  if (taken) throw new HttpError(409, 'Ese usuario ya existe')
+  d.update(user)
+    .set({ username: lower, displayUsername: display, name: display, email: `${lower}@jugadores.blackjack.invalid`, updatedAt: new Date() })
+    .where(eq(user.id, userId))
+    .run()
+  return { old: current.username, username: display }
 }

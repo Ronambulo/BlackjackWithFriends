@@ -212,6 +212,11 @@ export function closePastWeeks(c: LeagueClock = leagueClock()): boolean {
   return closed
 }
 
+/** After a restore: the copy may have weeks still to close. */
+export function forgetClosedWeeks() {
+  closedBefore = null
+}
+
 /** Closes the week as soon as it ends, then waits for the next one. */
 export function scheduleSeasons() {
   const run = () => {

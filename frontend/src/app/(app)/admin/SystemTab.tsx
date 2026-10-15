@@ -1,16 +1,25 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   useAdminLog,
   useAdminSettings,
   useBackupNow,
   useBackups,
+  useDeleteReport,
+  useReports,
+  useResolveReport,
+  useRestoreBackup,
   useSetFlag,
+  useSetMaintenance,
   useSystem,
+  type Backup,
   type Flag,
 } from "@/admin/useAdmin";
 import { ago, date, duration, number } from "@/admin/format";
+import { ConfirmSheet } from "@/ui/ConfirmSheet";
+import { CheckIcon, RenewIcon, TimerIcon, TrashIcon } from "@/ui/icons";
 import styles from "./admin.module.css";
 
 function size(bytes: number) {
@@ -56,22 +65,108 @@ function Switches() {
   );
 }
 
+function Maintenance() {
+  const { t } = useTranslation();
+  const { data } = useAdminSettings();
+  const setMaintenance = useSetMaintenance();
+  const [message, setMessage] = useState("");
+  const [asking, setAsking] = useState(false);
+  const current = data?.maintenance ?? null;
+  return (
+    <section className={`card ${styles.block}`}>
+      <div className={styles.switchRow}>
+        <span className={styles.userName}>
+          <b>{t("admin.maintenance.title")}</b>
+          <small>
+            {current
+              ? t("admin.maintenance.onSince", {
+                  time: ago(current.since),
+                  who: current.by,
+                })
+              : t("admin.maintenance.text")}
+          </small>
+        </span>
+        <button
+          className={styles.switch}
+          type="button"
+          role="switch"
+          aria-checked={!!current}
+          aria-label={t("admin.maintenance.title")}
+          disabled={!data || setMaintenance.isPending}
+          onClick={() =>
+            current ? setMaintenance.mutate({ on: false }) : setAsking(true)
+          }
+        />
+      </div>
+      {current?.message && <p className={styles.dim}>“{current.message}”</p>}
+      {!current && (
+        <label className="field">
+          <span className="field-label">
+            {t("admin.maintenance.message")}
+          </span>
+          <input
+            className="input"
+            maxLength={200}
+            placeholder={t("maintenance.text")}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+          />
+        </label>
+      )}
+      {setMaintenance.isError && (
+        <p className="error-text">{setMaintenance.error.message}</p>
+      )}
+      <ConfirmSheet
+        open={asking}
+        icon={<TimerIcon />}
+        title={t("admin.maintenance.confirmTitle")}
+        text={t("admin.maintenance.confirmText")}
+        confirm={t("admin.maintenance.confirm")}
+        busy={setMaintenance.isPending}
+        onConfirm={() =>
+          setMaintenance.mutate(
+            { on: true, message: message.trim() || undefined },
+            {
+              onSuccess: () => {
+                setAsking(false);
+                setMessage("");
+              },
+            },
+          )
+        }
+        onCancel={() => setAsking(false)}
+      />
+    </section>
+  );
+}
+
 function Backups() {
   const { t } = useTranslation();
   const { data } = useBackups();
   const backup = useBackupNow();
+  const restore = useRestoreBackup();
+  const [restoring, setRestoring] = useState<Backup | null>(null);
   return (
     <section className={`card ${styles.block}`}>
       <div className={styles.sectionHead}>
         <h2 className="label">{t("admin.backups")}</h2>
-        <button
-          className="btn btn-secondary"
-          type="button"
-          disabled={backup.isPending}
-          onClick={() => backup.mutate({})}
-        >
-          {backup.isPending ? t("admin.backingUp") : t("admin.backupNow")}
-        </button>
+        <div className={styles.headActions}>
+          <a
+            className="btn btn-secondary"
+            href="/api/admin/backups/download"
+            download
+          >
+            {t("admin.downloadDb")}
+          </a>
+          <button
+            className="btn btn-secondary"
+            type="button"
+            disabled={backup.isPending}
+            onClick={() => backup.mutate({})}
+          >
+            {backup.isPending ? t("admin.backingUp") : t("admin.backupNow")}
+          </button>
+        </div>
       </div>
       {backup.isError && <p className="error-text">{backup.error.message}</p>}
       {data?.length === 0 && (
@@ -85,10 +180,140 @@ function Backups() {
               <small className={styles.ellipsis}>{item.name}</small>
             </span>
             <span className={styles.dim}>{size(item.bytes)}</span>
+            <a
+              className="btn btn-ghost"
+              href={`/api/admin/backups/download?name=${encodeURIComponent(item.name)}`}
+              download
+              aria-label={t("admin.download")}
+            >
+              ↓
+            </a>
+            <button
+              className="btn btn-ghost"
+              type="button"
+              aria-label={t("admin.restore.button")}
+              title={t("admin.restore.button")}
+              onClick={() => {
+                restore.reset();
+                setRestoring(item);
+              }}
+            >
+              <RenewIcon width={16} height={16} />
+            </button>
           </li>
         ))}
       </ul>
+      {restore.isSuccess && (
+        <p className={styles.dim}>
+          {t("admin.restore.done", { name: restore.data.before })}
+        </p>
+      )}
       <p className={styles.dim}>{t("admin.backupHint")}</p>
+      <ConfirmSheet
+        open={restoring !== null}
+        icon={<RenewIcon />}
+        title={t("admin.restore.title", {
+          when: restoring ? date(restoring.createdAt) : "",
+        })}
+        text={
+          <>
+            {t("admin.restore.text")}
+            {restore.isError && (
+              <span className="error-text" style={{ display: "block" }}>
+                {restore.error.message}
+              </span>
+            )}
+          </>
+        }
+        confirm={t("admin.restore.confirm")}
+        stacked
+        busy={restore.isPending}
+        onConfirm={() =>
+          restoring &&
+          restore.mutate(restoring.name, {
+            onSuccess: () => setRestoring(null),
+          })
+        }
+        onCancel={() => setRestoring(null)}
+      />
+    </section>
+  );
+}
+
+function Reports() {
+  const { t } = useTranslation();
+  const { data } = useReports();
+  const resolve = useResolveReport();
+  const remove = useDeleteReport();
+  const [showDone, setShowDone] = useState(false);
+  const open = data?.filter((report) => !report.resuelto) ?? [];
+  const list = showDone ? (data ?? []) : open;
+  return (
+    <section className={`card ${styles.block} ${styles.full}`}>
+      <div className={styles.sectionHead}>
+        <h2 className="label">
+          {t("admin.reports.title")}
+          {open.length > 0 && ` · ${open.length}`}
+        </h2>
+        {data && data.length > open.length && (
+          <button
+            type="button"
+            className={styles.link}
+            onClick={() => setShowDone(!showDone)}
+          >
+            {showDone
+              ? t("admin.reports.hideDone")
+              : t("admin.reports.showDone")}
+          </button>
+        )}
+      </div>
+      {list.length === 0 && (
+        <p className={styles.emptyBox}>{t("admin.reports.empty")}</p>
+      )}
+      <ul className={styles.reports}>
+        {list.map((report) => (
+          <li key={report.id} data-done={report.resuelto}>
+            <div className={styles.reportHead}>
+              <b>@{report.username}</b>
+              <span className={styles.dim}>
+                {t("admin.agoShort", { time: ago(report.createdAt) })}
+                {report.ruta ? ` · ${report.ruta}` : ""}
+              </span>
+            </div>
+            <p className={styles.reportText}>{report.texto}</p>
+            {report.dispositivo && (
+              <small className={`${styles.dim} ${styles.ellipsis}`}>
+                {report.dispositivo}
+              </small>
+            )}
+            <div className={styles.reportActions}>
+              <button
+                className="btn btn-secondary"
+                type="button"
+                disabled={resolve.isPending}
+                onClick={() =>
+                  resolve.mutate({ id: report.id, ok: !report.resuelto })
+                }
+              >
+                <CheckIcon width={16} height={16} />
+                {report.resuelto
+                  ? t("admin.reports.reopen")
+                  : t("admin.reports.resolve")}
+              </button>
+              <button
+                className="btn btn-ghost"
+                type="button"
+                aria-label={t("admin.reports.delete")}
+                disabled={remove.isPending}
+                onClick={() => remove.mutate({ id: report.id })}
+              >
+                <TrashIcon width={16} height={16} />
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <p className={styles.dim}>{t("admin.reports.hint")}</p>
     </section>
   );
 }
@@ -223,6 +448,8 @@ export function SystemTab() {
         ))}
       </div>
 
+      <Reports />
+      <Maintenance />
       <Switches />
       <Backups />
 
