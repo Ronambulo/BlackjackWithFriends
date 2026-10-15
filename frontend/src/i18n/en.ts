@@ -33,6 +33,7 @@ export const en: Messages = {
       taken: 'That username is taken. Try another one.',
       wrongCredentials: 'Wrong username or password.',
       rateLimit: 'Too many attempts. Wait a bit and try again.',
+      noSession: 'Couldn’t start your session. Check that your browser accepts cookies and try again.',
     },
   },
   onboarding: {

@@ -62,8 +62,15 @@ export function LoginScreen() {
       mode === 'signIn'
         ? await authClient.signIn.username({ username: name, password })
         : await authClient.signUp.email({ email: placeholderEmail(name), name, username: name, password })
+    if (authError) {
+      setBusy(false)
+      return setError(t(errorKey(authError, mode)))
+    }
+    // Signed in, but the browser didn't keep the cookie (blocked, or another address
+    // than the app's): say so instead of coming back to this same screen.
+    const { data } = await authClient.getSession({ query: { disableCookieCache: true } })
     setBusy(false)
-    if (authError) setError(t(errorKey(authError, mode)))
+    if (!data) setError(t('login.errors.noSession'))
   }
 
   const language = currentLanguage()

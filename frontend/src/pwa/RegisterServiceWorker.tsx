@@ -8,6 +8,8 @@ const RELOAD_GUARD_KEY = 'reloaded-for-build'
 /** If a reload still came back with the old build (a stale cache), try again after this long. */
 const RETRY_AFTER_MS = 60 * 1000
 const VERSION_PARAM = '_v'
+/** Reloads for the same build in one session before waiting for the next open of the app. */
+const MAX_RELOADS = 3
 
 /**
  * Registers /sw.js and reloads the app when a new deploy is live, so the
@@ -40,11 +42,16 @@ export function RegisterServiceWorker() {
         if (!response.ok) return
         const { buildId } = (await response.json()) as { buildId: string }
         if (!buildId || buildId === BUILD_ID) return
+        // Never under someone's fingers: typing a password (and the password manager
+        // taking focus away and back) used to reload the login over and over.
+        if (document.activeElement?.matches('input, textarea, select')) return
         // Don't loop if a cache keeps serving the old page, but don't give up on the
         // build either: an iOS home-screen app keeps its session for days.
-        const [lastBuild, lastAt] = (sessionStorage.getItem(RELOAD_GUARD_KEY) ?? '').split('@')
-        if (lastBuild === buildId && Date.now() - Number(lastAt) < RETRY_AFTER_MS) return
-        sessionStorage.setItem(RELOAD_GUARD_KEY, `${buildId}@${Date.now()}`)
+        const [lastBuild, lastAt, tries] = (sessionStorage.getItem(RELOAD_GUARD_KEY) ?? '').split('@')
+        const attempts = lastBuild === buildId ? Number(tries) || 1 : 0
+        if (attempts && Date.now() - Number(lastAt) < RETRY_AFTER_MS * attempts) return
+        if (attempts >= MAX_RELOADS) return
+        sessionStorage.setItem(RELOAD_GUARD_KEY, `${buildId}@${Date.now()}@${attempts + 1}`)
         // A new URL, so iOS can't answer the reload from its own cache.
         const next = new URL(window.location.href)
         next.searchParams.set(VERSION_PARAM, buildId)

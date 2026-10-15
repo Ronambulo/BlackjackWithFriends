@@ -32,6 +32,7 @@ export const es = {
       taken: 'Ese usuario ya existe. Prueba con otro.',
       wrongCredentials: 'Usuario o contraseña incorrectos.',
       rateLimit: 'Demasiados intentos. Espera un poco y vuelve a probar.',
+      noSession: 'No se ha podido iniciar la sesión. Revisa que el navegador acepte cookies y vuelve a probar.',
     },
   },
   onboarding: {
