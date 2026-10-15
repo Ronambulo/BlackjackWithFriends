@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { useTranslation } from 'react-i18next'
+import { useIsAdmin } from '@/admin/useAdmin'
 import { useUser } from '@/auth/session-context'
+import { AvatarPicker } from '@/profile/AvatarPicker'
 import { StatsPanel } from '@/profile/StatsPanel'
 import { useProfile } from '@/profile/useProfile'
-import { Avatar } from '@/ui/Avatar'
 import { ChevronRightIcon, GearIcon, SlidersIcon } from '@/ui/icons'
 import styles from '../pages.module.css'
 
@@ -13,6 +14,7 @@ export default function ProfilePage() {
   const { t } = useTranslation()
   const user = useUser()
   const { data: profile } = useProfile()
+  const admin = useIsAdmin()
   const name = profile?.nombre ?? ''
   const handle = user.displayUsername ?? user.username
 
@@ -26,7 +28,7 @@ export default function ProfilePage() {
       </div>
 
       <section className={styles.profileHead}>
-        <Avatar seed={user.id} name={name} size={76} className={styles.ringed} />
+        <AvatarPicker size={76} className={styles.ringed} />
         <div className={styles.who}>
           <p className={styles.name}>{name}</p>
           {handle && <p className={`muted ${styles.handle}`}>@{handle}</p>}
@@ -50,6 +52,13 @@ export default function ProfilePage() {
           <span className={styles.listText}>{t('profile.settings')}</span>
           <ChevronRightIcon className={styles.chevron} width={18} height={18} />
         </Link>
+        {admin && (
+          <Link className={styles.listRow} href="/admin">
+            <GearIcon width={20} height={20} />
+            <span className={styles.listText}>{t('admin.title')}</span>
+            <ChevronRightIcon className={styles.chevron} width={18} height={18} />
+          </Link>
+        )}
       </div>
     </div>
   )

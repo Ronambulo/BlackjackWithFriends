@@ -223,4 +223,72 @@ export const groupMembers = sqliteTable(
   ],
 )
 
+/** Addresses the admin has shut out: every request from them gets a 403. */
+export const ipBans = sqliteTable('ip_bans', {
+  ip: text('ip').primaryKey(),
+  motivo: text('motivo'),
+  // null: for good
+  expiresAt: timestamp('expires_at'),
+  // username of the admin who put it in place
+  por: text('por'),
+  createdAt: createdAt(),
+})
+
+export const REVIEW_KINDS = ['foto', 'nombre'] as const
+
+/**
+ * Photos and names waiting for an admin to look at them. They show in the app
+ * straight away; rejecting one takes it down. A newer change replaces the older one.
+ */
+export const reviews = sqliteTable(
+  'reviews',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    tipo: text('tipo', { enum: REVIEW_KINDS }).notNull(),
+    // the name, or the photo's URL
+    valor: text('valor').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.tipo] }), check('reviews_tipo', sql`${t.tipo} in ('foto', 'nombre')`)],
+)
+
+/** What each admin did and to whom, newest last. */
+export const adminLog = sqliteTable(
+  'admin_log',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    // username, kept even if the account goes
+    admin: text('admin').notNull(),
+    accion: text('accion').notNull(),
+    objetivo: text('objetivo'),
+    detalle: text('detalle'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('admin_log_created_at_idx').on(t.createdAt)],
+)
+
+/** Small switches and values the admins change from the panel (feature flags, the notice for everyone). */
+export const settings = sqliteTable('settings', {
+  clave: text('clave').primaryKey(),
+  valor: text('valor', { mode: 'json' }).notNull(),
+  updatedAt: updatedAt(),
+})
+
+/** The league economy from a given Monday on; the newest row not after a week is that week's. */
+export const economyRules = sqliteTable(
+  'economy_rules',
+  {
+    semana: text('semana').primaryKey(),
+    saldoInicial: integer('saldo_inicial').notNull(),
+    pagaDiaria: integer('paga_diaria').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    check('economy_rules_saldo', sql`${t.saldoInicial} between 1 and 1000000`),
+    check('economy_rules_paga', sql`${t.pagaDiaria} between 0 and 1000000`),
+  ],
+)
+
 export const authSchema = { user, session, account, verification, rateLimit }

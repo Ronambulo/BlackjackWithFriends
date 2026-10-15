@@ -31,9 +31,15 @@ function isStandalone(): boolean {
   )
 }
 
-function wasRecentlyDismissed(): boolean {
+// On a phone the banner comes back on every visit until the app is installed: closing it
+// only hides it for this tab. On a computer it stays away for a week.
+function dismissStore(platform: Platform): Storage {
+  return platform === 'other' ? localStorage : sessionStorage
+}
+
+function wasRecentlyDismissed(platform: Platform): boolean {
   try {
-    const at = Number(localStorage.getItem(DISMISS_KEY))
+    const at = Number(dismissStore(platform).getItem(DISMISS_KEY))
     return at > 0 && Date.now() - at < DISMISS_DAYS * 24 * 60 * 60 * 1000
   } catch {
     return false
@@ -43,7 +49,7 @@ function wasRecentlyDismissed(): boolean {
 export function useInstallPrompt() {
   const [platform] = useState(detectPlatform)
   const [installed, setInstalled] = useState(isStandalone)
-  const [dismissed, setDismissed] = useState(wasRecentlyDismissed)
+  const [dismissed, setDismissed] = useState(() => wasRecentlyDismissed(platform))
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null)
 
   useEffect(() => {
@@ -74,12 +80,12 @@ export function useInstallPrompt() {
 
   const dismiss = useCallback(() => {
     try {
-      localStorage.setItem(DISMISS_KEY, String(Date.now()))
+      dismissStore(platform).setItem(DISMISS_KEY, String(Date.now()))
     } catch {
       // Storage unavailable (private mode): just hide for this session.
     }
     setDismissed(true)
-  }, [])
+  }, [platform])
 
   return {
     platform,

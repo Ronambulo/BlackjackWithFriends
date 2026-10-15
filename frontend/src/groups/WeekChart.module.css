@@ -81,8 +81,8 @@
 
 .legend {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 16px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -90,17 +90,57 @@
 }
 
 .legend li {
+  min-width: 0;
+}
+
+/* Each person is a chip tinted with their line's colour. */
+.person {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  width: 100%;
   min-width: 0;
+  min-height: 40px;
+  padding: 0 12px 0 10px;
+  border: 1px solid rgb(255 255 255 / 0.07);
+  border-radius: 12px;
+  background: var(--layer-2);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.1s ease;
+}
+
+.person:hover {
+  border-color: color-mix(in srgb, var(--swatch) 45%, transparent);
+}
+
+.person:active {
+  transform: scale(0.97);
+}
+
+.person[aria-pressed='true'] {
+  border-color: var(--swatch);
+  background: color-mix(in srgb, var(--swatch) 16%, var(--layer-2));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--swatch) 18%, transparent);
+}
+
+.faded {
+  opacity: 0.4;
 }
 
 .swatch {
   flex: none;
   width: 10px;
-  height: 3px;
-  border-radius: 2px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--swatch);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--swatch) 60%, transparent);
 }
 
 .name {
@@ -110,7 +150,59 @@
   white-space: nowrap;
 }
 
+.person[aria-pressed='true'] .name {
+  color: var(--text);
+}
+
 .legend b {
   margin-left: auto;
   font-variant-numeric: tabular-nums;
+}
+
+/* Back to everyone's lines: a pill under the legend while one person is picked. */
+.showAll {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px 0 12px;
+  border: 1px solid rgb(242 193 78 / 0.35);
+  border-radius: 999px;
+  background: rgb(242 193 78 / 0.1);
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  animation: showAllIn 0.2s ease-out;
+  transition:
+    background 0.15s ease,
+    transform 0.1s ease;
+}
+
+.showAll:hover {
+  background: rgb(242 193 78 / 0.18);
+}
+
+.showAll:active {
+  transform: scale(0.96);
+}
+
+@keyframes showAllIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .showAll {
+    animation: none;
+  }
+
+  .person,
+  .showAll {
+    transition: none;
+  }
 }

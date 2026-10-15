@@ -3,9 +3,12 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useUser } from '@/auth/session-context'
 import { currentLanguage } from '@/i18n'
 import { formatNumber } from '@/lib/format'
-import { CardsIcon } from '@/ui/icons'
+import { CardsIcon, CheckIcon, ShareIcon } from '@/ui/icons'
+import { storyImage } from './storyImage'
+import { useProfile } from './useProfile'
 import { useStats, type Stats } from './useStats'
 import styles from './Stats.module.css'
 
@@ -17,6 +20,10 @@ const SLOTS = 30
 function signed(value: number) {
   const number = formatNumber(Math.abs(value), currentLanguage())
   return value > 0 ? `+${number}` : value < 0 ? `−${number}` : number
+}
+
+function netTone(net: number) {
+  return net > 0 ? 'win' : net < 0 ? 'lose' : 'push'
 }
 
 function percent(part: number, whole: number) {
@@ -82,6 +89,79 @@ function Recent({ nets }: { nets: number[] }) {
   )
 }
 
+/**
+ * Makes an Instagram-story image with the numbers and sends it anywhere the phone
+ * can with the system's share sheet, or saves it where there's none. Sharing in
+ * the app's own chat comes later.
+ */
+function ShareStats({ stats, range }: { stats: Stats; range: Range }) {
+  const { t } = useTranslation()
+  const user = useUser()
+  const { data: profile } = useProfile()
+  const [state, setState] = useState<'idle' | 'busy' | 'saved'>('idle')
+  const language = currentLanguage()
+
+  async function onShare() {
+    setState('busy')
+    try {
+      const blob = await storyImage({
+        title: t(`stats.story.${range}`),
+        name: profile?.nombre ?? user.displayUsername ?? user.username ?? '',
+        seed: user.id,
+        photo: profile?.avatar_url ?? null,
+        net: signed(stats.net),
+        tone: netTone(stats.net),
+        chipsLabel: t('stats.story.chips', { count: stats.hands }),
+        outcomes: [
+          { count: stats.wins, label: t('stats.wins', { count: stats.wins }), tone: 'win' },
+          { count: stats.pushes, label: t('stats.pushes', { count: stats.pushes }), tone: 'push' },
+          { count: stats.losses, label: t('stats.losses', { count: stats.losses }), tone: 'lose' },
+        ],
+        tiles: [
+          { value: formatNumber(stats.hands, language), label: t('stats.hands') },
+          { value: formatNumber(stats.blackjacks, language), label: t('stats.blackjacks') },
+          { value: stats.bestWin > 0 ? signed(stats.bestWin) : '—', label: t('stats.bestWin') },
+          { value: formatNumber(stats.bestStreak, language), label: t('stats.bestStreak') },
+        ],
+        dare: t('stats.story.dare'),
+        url: window.location.host,
+      })
+      const file = new File([blob], 'blackjack-with-friends.png', { type: 'image/png' })
+      if (navigator.canShare?.({ files: [file] })) {
+        setState('idle')
+        await navigator.share({ files: [file], title: 'Blackjack with Friends', text: `${t('stats.story.dare')} ${window.location.origin}` })
+        return
+      }
+      // No way to share files (most desktops): download it instead.
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = file.name
+      link.click()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+      setState('saved')
+      setTimeout(() => setState('idle'), 2000)
+    } catch {
+      // Closing the share sheet throws too; nothing to do.
+      setState('idle')
+    }
+  }
+
+  return (
+    <button
+      className={styles.share}
+      type="button"
+      onClick={() => void onShare()}
+      disabled={state === 'busy'}
+      aria-busy={state === 'busy'}
+      aria-live="polite"
+    >
+      {state === 'saved' ? <CheckIcon width={16} height={16} /> : <ShareIcon width={16} height={16} />}
+      {state === 'saved' ? t('stats.saved') : t('stats.share')}
+    </button>
+  )
+}
+
 export function StatsPanel() {
   const { t } = useTranslation()
   const { data, isError, refetch } = useStats()
@@ -133,7 +213,10 @@ export function StatsPanel() {
       </div>
 
       <div className={`card ${styles.summary}`}>
-        <span className="label">{t('stats.result')}</span>
+        <div className={styles.summaryHead}>
+          <span className="label">{t('stats.result')}</span>
+          {stats.hands > 0 && <ShareStats stats={stats} range={range} />}
+        </div>
         <p className={`${styles.net} ${stats.net > 0 ? styles.up : stats.net < 0 ? styles.down : ''}`}>{signed(stats.net)}</p>
         <p className="muted">
           {stats.hands === 0

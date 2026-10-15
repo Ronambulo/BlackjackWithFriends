@@ -15,6 +15,20 @@
       "when": 1792013280396,
       "tag": "0001_pays",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792020153632,
+      "tag": "0002_ip_bans",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1792023715173,
+      "tag": "0003_admin_tools",
+      "breakpoints": true
     }
   ]
 }

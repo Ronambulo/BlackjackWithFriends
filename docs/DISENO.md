@@ -119,7 +119,7 @@ flowchart LR
 | Base de datos | SQLite (better-sqlite3) + Drizzle ORM, un fichero en el volumen `/data` | Sin servicios aparte; migraciones en el repo, aplicadas al arrancar la API. Un solo proceso escribe, así que las transacciones son simples |
 | Login | Better Auth con usuario y contraseña (sin correos) | Librería, no servicio: usuarios y sesiones en nuestra BD, cookie en nuestro dominio. El nombre de usuario es el nombre en la liga |
 | Tareas programadas | Temporizador dentro de la API (o perezosas, al primer uso) | Sin servicios extra |
-| Avatares | Generados (inicial y color); fotos más adelante, guardadas en `/data` | Nada que alojar al principio |
+| Avatares | Inicial con un color propio de cada persona, o una foto subida por el jugador (el jugador elige el cuadrado 1:1 arrastrando y haciendo zoom, y se reduce a 256 px en el navegador) | Las fotos van a un mini almacén de objetos dentro del contenedor (`backend/lib/storage.ts`): ficheros en `/data/media` con claves aleatorias, servidos en `/api/media/…` con caché permanente |
 | Hosting | Una imagen Docker todo en uno (`ghcr.io/ronambulo/blackjackwithfriends`): supervisord arranca la API y Next; se instala en ZimaOS con `docker-compose.yml` | Como FinanceMaster y Beergram. Solo se publica el puerto de Next, así que no hay CORS. Para la PWA hace falta HTTPS: proxy inverso o túnel delante |
 | Vistas previas de enlaces | `generateMetadata` + `opengraph-image` de Next.js (`next/og`) | El HTML de cada invitación ya sale del servidor con sus metadatos e imagen |
 | Códigos QR | Librería `qrcode`, generada en el navegador | Sin servidor y funciona sin conexión |
@@ -410,22 +410,46 @@ Barra inferior con 5 pestañas. El botón central **Jugar** es más grande. Arri
 │ [ Doblar ] [ Dividir ]      │
 └─────────────────────────────┘
 ```
-Al apostar, se toca sobre fichas de 10 / 50 / 100 / 500 / 1.000. También hay botones de "repetir apuesta", "x2" y "all-in".
+Al apostar, se toca sobre fichas de 5 / 10 / 25 / 100 / 500 / 1.000, cada valor con su color. También hay botones de "repetir apuesta", "x2" y "all-in". Después de una mano, irse a otra pantalla (Inicio, Grupos…) equivale a pulsar "Cambiar apuesta": al volver, la mesa está lista para apostar. Las fichas, las cartas, doblar, dividir y el resultado suenan con grabaciones reales y efectos cortos (pack "Casino Audio" de Kenney, "Level up, power up, Coin get" de wobbleboxx y "Casino Hit Big Money" de modusmogulus en Freesound, todos CC0, en `frontend/public/sounds`). Las fichas y cartas seguidas suben de tono al estilo Balatro; ganar, perder y blackjack tienen cada uno su sonido (una subida brillante para ganar, un golpe de gran premio de casino para el blackjack y una bajada suave para perder) y el empate es un choque de fichas. Se pueden silenciar en Ajustes.
 
 **Grupos**: una tarjeta por grupo con tu puesto, la variación del día (▲▼) y quién va primero, más los botones de crear y unirse. Al tocar una tarjeta se abre el grupo (`/grupos/[id]`): el botón **Invitar amigos** (enlace, código y QR, en `/grupos/[id]/invitar`), la clasificación en vivo con el podio, una gráfica de líneas con el saldo de cada miembro a lo largo de la semana (de lunes a domingo; tocar o arrastrar muestra el saldo de cada uno en ese momento; `GET /api/group/history`, que reconstruye el saldo con las manos y las pagas de la semana, guardadas en la tabla `pays`, que solo conserva las de la semana en curso), la lista de miembros, los ajustes si eres admin y salir del grupo. Más adelante, el historial de semanas pasadas y la clasificación de la Baraja del día.
 
-**Social**: dos subpestañas, **Feed** (con reacciones) y **Chat** del grupo.
+**Inicio**: además del saldo y la paga, el ranking de la semana de tus amigos (todos los que comparten algún grupo contigo, `GET /api/ranking/friends`): el top 5, tu fila si vas más abajo y un botón para ver a todos.
+
+**Social**: por ahora, el **ranking global** de la semana (`GET /api/ranking/global`, top 100 más tu puesto). Más adelante, dos subpestañas: **Feed** (con reacciones) y **Chat** del grupo.
 
 **Perfil**:
 - Estadísticas de esta semana o de siempre: resultado, reparto de manos ganadas / empatadas / perdidas, neto global, manos jugadas, blackjacks, mayor ganancia, mejor racha y una gráfica de las últimas 30 manos. Se calculan a partir de las manos guardadas (`GET /api/profile/stats`). Más adelante, semanas ganadas.
 - Vitrina de trofeos y logros.
 - Acceso a **Estilos**.
+- Botón para **compartir las estadísticas** (semana o total): genera una imagen de historia de Instagram (1080×1920, con foto, resultado, ganadas/empates/perdidas y récords, dejando libres las zonas que tapa Instagram) y la manda con el menú de compartir del sistema; donde no se pueden compartir archivos, la descarga.
+- Tocar el avatar cambia la foto: se abre un recortador cuadrado (arrastrar para mover; pellizcar, rueda o barra para el zoom) con el círculo del avatar marcado.
 
 **Estilos y tienda**: una cuadrícula por tipo (tapete, cartas, dorso, fichas, marco de avatar). Cada elemento está equipado, disponible o bloqueado; si está bloqueado, se indica cómo conseguirlo ("Gana una semana" o "150 🪙").
 
 **Ceremonia semanal**: a pantalla completa y en secuencia: redoble → 3º → 2º → 1º con confeti → premios de broma → "has ganado X 🪙" → "¡Nueva semana!".
 
-**Ajustes**: idioma, sonido, vibración, notificaciones (por tipo) y cerrar sesión. Si eres admin, también los ajustes del grupo: expulsar miembros, ocultar el ranking en la vista previa y renovar el enlace de invitación. La paga, el saldo inicial y el reinicio semanal los fija el servidor y no se pueden cambiar por grupo.
+**Ajustes**: foto y nombre, idioma, sonido, vibración, notificaciones (por tipo) y cerrar sesión. Si eres admin, también los ajustes del grupo: expulsar miembros, ocultar el ranking en la vista previa y renovar el enlace de invitación. La paga, el saldo inicial y el reinicio semanal los fija el servidor y no se pueden cambiar por grupo.
+
+**Administración** (`/admin`, enlace desde Perfil y, en escritorio, al pie de la barra lateral): solo para los usuarios de la variable `ADMIN_USERNAMES` (en el `docker-compose.yml`); para el resto la API responde 404.
+- **Estadísticas**: usuarios, grupos, jugadores por grupo, jugadores al día y en la semana, tiempo jugado, manos, apuesta media y máxima, fichas apostadas y pagadas, neto de la banca, actividad de 14 días, tamaño de las apuestas, tops (semana, histórico, monedas, manos, apostado) y grupos más grandes. Más adelante, los cosméticos más usados y comprados.
+- **Usuarios**: buscar por usuario, nombre o IP; ver saldo, manos, grupos, monedas, alta, última conexión e IP; **borrar la cuenta** y **bloquear sus IPs** (tabla `ip_bans`; una IP bloqueada recibe 403 en toda la API). También se puede bloquear o desbloquear una IP a mano.
+- **Moderación**: **cola de revisión** de fotos y nombres nuevos (tabla `reviews`; se ven ya mientras tanto; "Rechazar" quita la foto o devuelve el nombre al usuario); comportamiento raro (rachas, ritmo de bot, cuentas en cadena) con "Bloquear…" e "Ignorar"; cuentas que comparten conexión; **bloqueos con caducidad** (24 h, 7 días, 30 días o para siempre), por IP o por `@usuario`, con motivo y quién lo puso.
+- **Economía**: fichas en juego, paga repartida, lo que se queda la casa, monedas; saldos actuales por tramos; resultados vistos frente a los esperados; **reglas editables** (saldo inicial y paga diaria, tabla `economy_rules`): un cambio se guarda para el lunes siguiente y la semana en curso no se toca.
+- **Liga**: la temporada en curso con su cuenta atrás, los grupos de la semana y el **aviso para todos** (24 h, 7 días o hasta quitarlo), que sale arriba en la app y cada jugador puede cerrar.
+- **Sistema**: estado general, tiempo encendido, latencia p95 y errores (en memoria, desde el último arranque), base de datos, fotos y última copia; **interruptores** (altas nuevas, mesa abierta, unirse a grupos; tabla `settings`); **copias de seguridad** diarias de la base de datos (se guardan las 14 últimas) y "Hacer copia ahora"; rutas más lentas, errores recientes y el **registro de lo que hacen los admins** (tabla `admin_log`).
+
+#### Administración: pendiente
+
+- **Retos diarios** (fase 8): ver los de hoy, preparar los de mañana y cuántos los completan. La tarjeta ya está en Liga como "Próximamente".
+- **Tienda de estilos** (fase 10): subir, ordenar, poner de oferta y retirar estilos; los más usados y comprados. También preparada en Liga.
+- Avisar al jugador cuando se le rechaza una foto o un nombre (con las notificaciones, fase 7).
+- Restaurar una copia desde el panel y descargarla; hoy se restaura a mano en el servidor.
+- Notas privadas de los admins en la ficha de cada jugador.
+- Corregir a mano el saldo o las monedas de un jugador, siempre con motivo y en el registro.
+- Más reglas editables: apuesta mínima y máxima, monedas por puesto y por reto.
+- Avisos solo para un grupo o un idioma, y programados para más tarde.
+- Guardar las métricas entre reinicios y avisar cuando suben los errores.
 
 ### Cosméticos iniciales (propuesta)
 - **Gratis** (los "pochos"): tapete verde básico, cartas clásicas y dorso rojo.
@@ -444,7 +468,8 @@ Al apostar, se toca sobre fichas de 10 / 50 / 100 / 500 / 1.000. También hay bo
 | Reacciones | 🔥 😂 💀 👏 😱 en cada evento del feed. |
 | Chat | Texto y emojis; se refresca cada pocos segundos mientras está abierto. Se pueden citar eventos del feed. |
 | Push | Paga lista (si no has cobrado a las 🔧 18:00), te han adelantado, mención en el chat, quedan 3 h de liga y ceremonia lista. Cada tipo se activa o desactiva por separado. |
-| Compartir fuera | Resultado de la Baraja del día y podio semanal como texto o imagen para WhatsApp. |
+| Compartir fuera | Estadísticas del perfil como historia de Instagram (ya disponible), resultado de la Baraja del día y podio semanal como texto o imagen para WhatsApp. |
+| Compartir en el chat | Mandar una mano jugada o tus estadísticas a una persona o a un grupo, como mensaje del chat. |
 
 Moderación mínima: el admin puede expulsar miembros y cualquiera puede borrar sus propios mensajes.
 
@@ -526,12 +551,12 @@ Cada fase termina con algo usable y desplegado.
 | 4 | ✅ Grupos y liga | Saldo único de liga y paga diaria; crear grupo, unirse, ranking en vivo de cada grupo y admin |
 | 4b | ✅ Invitaciones | Pantalla "Invitar" con compartir, copiar y **QR**; **vista previa del enlace** con imagen generada (`next/og`); renovar el enlace |
 | 5 | Ciclo semanal | Cierre automático, ceremonia, estadísticas, trofeos y monedas |
-| 6 | Social | Feed, reacciones y chat |
+| 6 | Social | Feed, reacciones y chat; compartir manos y estadísticas en el chat, a una persona o a un grupo |
 | 7 | Notificaciones push | Suscripción, preferencias y envíos |
 | 8 | Retos y logros | Retos diarios y logros con insignias; lo que se gana con ellos son monedas para estilos, nunca fichas |
 | 9 | Baraja del día | Semilla diaria, 10 manos, clasificación y compartir (con su vista previa `/r/…`) |
-| 10 | Estilos y tienda | Sistema de temas para la mesa, colección, tienda y selector |
-| 11 | Juice y pulido | Sonidos, más animaciones, vibración, accesibilidad y rendimiento |
+| 10 | Estilos y tienda | Sistema de temas para la mesa, colección, tienda y selector; en Administración, los cosméticos más usados y comprados |
+| 11 | Juice y pulido | Más sonidos (los básicos de la mesa ya están), más animaciones, vibración, accesibilidad y rendimiento |
 | 12 | Beta con amigos | Probar con un grupo real, ajustar la economía y corregir errores |
 
 Para empezar a probar con amigos de verdad bastan las fases 1–5 (incluida la 4b). El resto se va añadiendo semana a semana sin que nadie tenga que reinstalar nada.

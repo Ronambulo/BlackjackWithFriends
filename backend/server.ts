@@ -19,6 +19,9 @@ const { databasePath, migrate } = await import('./lib/db.js')
 const { default: api } = await import('./api/index.js')
 
 migrate()
+// A copy of the database a day, in backups/ next to it (lib/backup.ts).
+const { scheduleBackups } = await import('./lib/backup.js')
+scheduleBackups()
 console.log(`Base de datos en ${databasePath()}`)
 
 async function toRequest(req: IncomingMessage, url: URL): Promise<Request> {

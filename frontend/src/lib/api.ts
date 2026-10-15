@@ -8,12 +8,14 @@ export class ApiError extends Error {
   }
 }
 
-/** JSON request to the backend (same origin, so the session cookie goes along). */
+/** JSON request to the backend (same origin, so the session cookie goes along). A Blob body goes as is. */
 export async function api<T>(path: string, init?: { method?: string; body?: unknown }): Promise<T> {
+  const body = init?.body
+  const raw = body instanceof Blob
   const response = await fetch(`/api${path}`, {
     method: init?.method ?? 'GET',
-    headers: init?.body === undefined ? undefined : { 'content-type': 'application/json' },
-    body: init?.body === undefined ? undefined : JSON.stringify(init.body),
+    headers: body === undefined ? undefined : { 'content-type': raw ? body.type : 'application/json' },
+    body: body === undefined ? undefined : raw ? body : JSON.stringify(body),
     credentials: 'same-origin',
   })
   const data = (await response.json().catch(() => null)) as { error?: string } | null

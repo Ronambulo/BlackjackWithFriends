@@ -195,6 +195,24 @@ export function CloseIcon(props: IconProps) {
   )
 }
 
+export function SearchIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </Icon>
+  )
+}
+
+export function PhoneIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="6" y="2" width="12" height="20" rx="2" />
+      <path d="M11 18h2" />
+    </Icon>
+  )
+}
+
 export function RenewIcon(props: IconProps) {
   return (
     <Icon strokeWidth="2.2" {...props}>
@@ -225,5 +243,32 @@ export function CrownIcon(props: IconProps) {
     <svg viewBox="0 0 28 22" width="28" height="22" fill="currentColor" aria-hidden="true" {...props}>
       <path d="M2 6l6 6 6-10 6 10 6-6-2 16H4z" />
     </svg>
+  )
+}
+
+export function CameraIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 8a2 2 0 0 1 2-2h1.5l1.5-2h6l1.5 2H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" />
+      <circle cx="12" cy="12.5" r="3.5" />
+    </Icon>
+  )
+}
+
+export function SoundIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" />
+      <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />
+    </Icon>
+  )
+}
+
+export function MegaphoneIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 10v4a1 1 0 0 0 1 1h2l8 4V5L7 9H5a1 1 0 0 0-1 1z" />
+      <path d="M7.5 15l1 4.5h2.5l-1-4M18.5 9.5a3.5 3.5 0 0 1 0 5" />
+    </Icon>
   )
 }

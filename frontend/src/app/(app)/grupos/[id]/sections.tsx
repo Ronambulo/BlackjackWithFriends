@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { useUser } from '@/auth/session-context'
 import { InviteQr } from '@/groups/InviteQr'
+import { medal } from '@/groups/medal'
 import { inviteLink } from '@/groups/pendingInvite'
 import {
   GROUP_NAME_MAX,
@@ -175,7 +176,12 @@ export function MembersCard({ group }: { group: Group }) {
       <ul className={styles.list}>
         {group.ranking.map((member) => (
           <li key={member.userId} className={styles.listRow}>
-            <Avatar seed={member.userId} name={member.nombre} size={40} />
+            {/* Listed in ranking order, so the place says where each one stands. */}
+            <span className={styles.memberPlace} style={medal(member.rank)}>
+              <span className="sr-only">{t('ranking.place', { rank: member.rank })}</span>
+              <span aria-hidden="true">{member.rank}</span>
+            </span>
+            <Avatar seed={member.userId} name={member.nombre} src={member.avatarUrl} size={40} />
             <span className={styles.listText}>
               <span>
                 {member.nombre}
@@ -199,7 +205,7 @@ export function MembersCard({ group }: { group: Group }) {
       )}
       <ConfirmSheet
         open={kicking !== null}
-        icon={kicking && <Avatar seed={kicking.userId} name={kicking.nombre} size={64} />}
+        icon={kicking && <Avatar seed={kicking.userId} name={kicking.nombre} src={kicking.avatarUrl} size={64} />}
         title={t('groupSettings.kickTitle', { name: kicking?.nombre ?? '' })}
         text={t('groupSettings.kickText')}
         confirm={t('groupSettings.kick')}

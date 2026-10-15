@@ -1,15 +1,20 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useUser } from '@/auth/session-context'
 import { TopList } from '@/groups/Ranking'
 import { useCurrentGroup, useGroups } from '@/groups/useGroups'
+import { useFriendsRanking } from '@/groups/useRankings'
 import { LeagueCard } from '@/league/LeagueCard'
 import { useProfile } from '@/profile/useProfile'
 import { ShareIcon } from '@/ui/icons'
 import { PullToRefresh } from '@/ui/PullToRefresh'
 import styles from './pages.module.css'
+
+// Places shown before "see all"; the player's own row is added if they're further down.
+const PREVIEW = 5
 
 export default function HomePage() {
   const { t } = useTranslation()
@@ -18,6 +23,11 @@ export default function HomePage() {
   const { data: groups, isError, refetch } = useGroups()
   const group = useCurrentGroup()
   const mine = group?.top.find((member) => member.userId === me.id)
+  // Everyone from all the player's groups: the first few, or the whole list.
+  const { data: friends } = useFriendsRanking()
+  const [expanded, setExpanded] = useState(false)
+  const preview = (friends ?? []).filter((member, i) => i < PREVIEW || (!expanded && member.userId === me.id))
+  const shown = expanded ? (friends ?? []) : preview
 
   return (
     <PullToRefresh>
@@ -52,7 +62,12 @@ export default function HomePage() {
               <h2 className="card-title">{t('home.top')}</h2>
               <span className={styles.live}>{t('ranking.live')}</span>
             </div>
-            <TopList members={group.top} />
+            <TopList members={shown} />
+            {friends && friends.length > PREVIEW && (
+              <button className={styles.more} type="button" aria-expanded={expanded} onClick={() => setExpanded((value) => !value)}>
+                {expanded ? t('home.seeLess') : t('home.seeAll', { count: friends.length })}
+              </button>
+            )}
             <div className={`${styles.actions} ${styles.cardActions}`}>
               <Link className="btn btn-secondary" href={`/grupos/${group.id}`}>
                 {t('home.seeRanking')}

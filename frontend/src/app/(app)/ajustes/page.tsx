@@ -8,8 +8,10 @@ import { useUser } from '@/auth/session-context'
 import { useCurrentGroup } from '@/groups/useGroups'
 import { currentLanguage, LANGUAGES, type Language } from '@/i18n'
 import { authClient } from '@/lib/auth-client'
+import { AvatarPicker } from '@/profile/AvatarPicker'
+import { usePhotoPicker } from '@/profile/usePhotoPicker'
 import { isValidName, NAME_MAX, useProfile, useUpdateProfile } from '@/profile/useProfile'
-import { Avatar } from '@/ui/Avatar'
+import { setSoundsOn, useSoundsOn } from '@/sound/sounds'
 import { ChevronLeftIcon, ChevronRightIcon } from '@/ui/icons'
 import styles from '../pages.module.css'
 
@@ -21,6 +23,8 @@ export default function SettingsPage() {
   const updateName = useUpdateProfile()
   const updateLanguage = useUpdateProfile()
   const group = useCurrentGroup()
+  const photo = usePhotoPicker()
+  const soundsOn = useSoundsOn()
   // The (app) layout only renders this once the profile is loaded.
   const [name, setName] = useState(profile?.nombre ?? '')
   const [editing, setEditing] = useState(false)
@@ -59,7 +63,7 @@ export default function SettingsPage() {
         <h2 className="label">{t('settings.account')}</h2>
         <div className={styles.list}>
           <div className={styles.listRow}>
-            <Avatar seed={user.id} name={profile?.nombre ?? ''} size={40} />
+            <AvatarPicker size={40} />
             <span className={styles.listText}>
               {profile?.nombre}
               {handle && <small>@{handle}</small>}
@@ -107,6 +111,22 @@ export default function SettingsPage() {
                   {t('common.error')}
                 </p>
               )}
+              <div className={styles.photoRow}>
+                <button className="btn btn-secondary" type="button" onClick={photo.pick} disabled={photo.avatar.isPending}>
+                  {photo.avatar.isPending ? t('common.saving') : t('settings.changePhoto')}
+                </button>
+                {profile?.avatar_url && (
+                  <button className="btn btn-ghost" type="button" onClick={photo.remove} disabled={photo.avatar.isPending}>
+                    {t('settings.removePhoto')}
+                  </button>
+                )}
+                {photo.field}
+              </div>
+              {photo.avatar.isError && (
+                <p className="error-text" role="alert">
+                  {t('settings.photoError')}
+                </p>
+              )}
             </form>
           )}
         </div>
@@ -129,6 +149,20 @@ export default function SettingsPage() {
                 {t('common.error')}
               </p>
             )}
+          </div>
+          <div className={styles.listRow}>
+            <span className={styles.listText} id="sounds">
+              {t('settings.sounds')}
+              <small>{t('settings.soundsHint')}</small>
+            </span>
+            <button
+              className="switch"
+              type="button"
+              role="switch"
+              aria-checked={soundsOn}
+              aria-labelledby="sounds"
+              onClick={() => setSoundsOn(!soundsOn)}
+            />
           </div>
           {group && (
             <Link className={styles.listRow} href={`/grupos/${group.id}`}>

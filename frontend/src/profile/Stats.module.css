@@ -23,6 +23,76 @@
 
 /* The result and how the hands went */
 
+.summaryHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.share {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  margin: -4px 0;
+  padding: 0 14px 0 12px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  /* Gold like the coins: it makes a picture to post, so it stands out from the rest */
+  background: linear-gradient(135deg, #f7d27a, #e0a93a);
+  box-shadow:
+    0 4px 14px rgb(242 193 78 / 0.25),
+    inset 0 1px 0 rgb(255 255 255 / 0.45);
+  color: #2a1d05;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.15s ease,
+    filter 0.15s ease;
+}
+
+/* A shine that sweeps across on hover */
+.share::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.45) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.5s ease;
+  pointer-events: none;
+}
+
+.share:hover {
+  box-shadow:
+    0 6px 20px rgb(242 193 78 / 0.38),
+    inset 0 1px 0 rgb(255 255 255 / 0.45);
+}
+
+.share:hover::after {
+  transform: translateX(120%);
+}
+
+.share:active {
+  transform: scale(0.95);
+}
+
+.share:disabled {
+  filter: saturate(0.6) brightness(0.85);
+  cursor: progress;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .share,
+  .share::after {
+    transition: none;
+  }
+}
+
 .summary {
   display: flex;
   flex-direction: column;
