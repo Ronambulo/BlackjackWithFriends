@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useUser } from '@/auth/session-context'
+import type { ChallengeId, Tier } from '@/challenges/useChallenges'
 import { api } from '@/lib/api'
 
 /** GET /api/me: whether the player runs the app (undefined until known). */
@@ -295,5 +296,30 @@ export function useSetAnnouncement() {
       void queryClient.invalidateQueries({ queryKey: ['admin', user.id] })
       void queryClient.invalidateQueries({ queryKey: ['announcement'] })
     },
+  })
+}
+
+export interface AdminChallenges {
+  today: {
+    day: string
+    custom: boolean
+    challenges: { id: ChallengeId; tier: Tier; target: number; coins: number; completed: number }[]
+  }
+  tomorrow: { day: string; custom: boolean; ids: ChallengeId[] }
+  catalogue: { id: ChallengeId; tier: Tier; target: number; coins: number }[]
+}
+
+export function useAdminChallenges() {
+  const user = useUser()
+  return useQuery({ queryKey: ['admin', user.id, 'challenges'], queryFn: () => api<AdminChallenges>('/admin/challenges') })
+}
+
+/** Picks tomorrow's challenges, easy to hard; null goes back to the ones the date gives. */
+export function usePickChallenges() {
+  const user = useUser()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (ids: ChallengeId[] | null) => api('/admin/challenges', { method: 'POST', body: { ids } }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['admin', user.id] }),
   })
 }

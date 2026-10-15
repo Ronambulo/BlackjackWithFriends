@@ -3,6 +3,7 @@ import { syncAchievements } from './achievements.js'
 import { db, type Tx } from './db.js'
 import { notifyAll } from './events.js'
 import { addDays, leagueClock, madridMidnight, type LeagueClock } from './league.js'
+import { pushCeremony } from './push.js'
 import {
   JOKE_PRIZES,
   groupMembers,
@@ -195,6 +196,7 @@ let closedBefore: string | null = null
  */
 export function closePastWeeks(c: LeagueClock = leagueClock()): boolean {
   if (closedBefore === c.weekStart) return false
+  const players: string[] = []
   const closed = db().transaction((tx) => {
     const pending = tx
       .selectDistinct({ semana: profiles.semana })
@@ -202,10 +204,11 @@ export function closePastWeeks(c: LeagueClock = leagueClock()): boolean {
       .where(and(lt(profiles.semana, c.weekStart), sql`${profiles.semana} not in (select ${seasons.semana} from ${seasons})`))
       .orderBy(asc(profiles.semana))
       .all()
-    for (const { semana } of pending) closeWeek(tx, semana)
+    for (const { semana } of pending) players.push(...closeWeek(tx, semana))
     return pending.length > 0
   })
   closedBefore = c.weekStart
+  pushCeremony(players)
   return closed
 }
 

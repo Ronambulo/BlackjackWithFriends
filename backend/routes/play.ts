@@ -14,7 +14,8 @@ import {
 import { and, desc, eq, gte, ne, sql } from 'drizzle-orm'
 import { ACHIEVEMENTS, syncAchievements, type AchievementId } from '../lib/achievements.js'
 import { requireUser } from '../lib/auth.js'
-import { db, sqliteCode } from '../lib/db.js'
+import { syncChallenges, type CompletedChallenge } from '../lib/challenges.js'
+import { db, sqliteCode, type Tx } from '../lib/db.js'
 import { HttpError, json } from '../lib/http.js'
 import { rollover } from '../lib/league.js'
 import { hands, profiles } from '../lib/schema.js'
@@ -34,9 +35,28 @@ function handJson(row: Pick<HandRow, 'id' | 'version'>, state: RoundState, chips
   return { id: row.id, version: row.version, ...toPublicView(state, chips) }
 }
 
-function tableJson(chips: number, hand: ReturnType<typeof handJson> | null, unlocked: AchievementId[] = []) {
-  // With their rewards, for the notice at the table.
-  return { chips, minBet: MIN_BET, maxBet: MAX_BET, hand, unlocked: ACHIEVEMENTS.filter((a) => unlocked.includes(a.id)) }
+interface Rewards {
+  unlocked: AchievementId[]
+  challenges: CompletedChallenge[]
+}
+
+const NONE: Rewards = { unlocked: [], challenges: [] }
+
+/** After a hand settles: the achievements it unlocked and the day's challenges it completed. */
+function settle(tx: Tx, userId: string): Rewards {
+  return { unlocked: syncAchievements(tx, userId), challenges: syncChallenges(tx, userId) }
+}
+
+function tableJson(chips: number, hand: ReturnType<typeof handJson> | null, rewards = NONE) {
+  // With their rewards, for the notices at the table.
+  return {
+    chips,
+    minBet: MIN_BET,
+    maxBet: MAX_BET,
+    hand,
+    unlocked: ACHIEVEMENTS.filter((a) => rewards.unlocked.includes(a.id)),
+    challenges: rewards.challenges,
+  }
 }
 
 // GET /api/play: the player's chips and the hand left half-played, if any.
@@ -106,14 +126,14 @@ function bet(userId: string, amount: unknown): Response {
           neto: state.settlement?.net ?? null,
         })
         .run()
-      return { chips: profile.chips, unlocked: state.settlement ? syncAchievements(tx, userId) : [] }
+      return { chips: profile.chips, rewards: state.settlement ? settle(tx, userId) : NONE }
     })
   } catch (err) {
     if (sqliteCode(err) === 'SQLITE_CONSTRAINT_UNIQUE') throw new HttpError(409, 'Ya tienes una mano en juego')
     throw err
   }
   if (result === null) throw new HttpError(400, 'No tienes fichas suficientes')
-  return json(tableJson(result.chips, handJson({ id, version: 0 }, state, result.chips), result.unlocked))
+  return json(tableJson(result.chips, handJson({ id, version: 0 }, state, result.chips), result.rewards))
 }
 
 function act(userId: string, action: Action, handId: unknown, version: unknown): Response {
@@ -150,8 +170,8 @@ function act(userId: string, action: Action, handId: unknown, version: unknown):
         .where(eq(profiles.id, userId))
         .returning({ chips: profiles.saldo })
         .get()
-      const unlocked = next.settlement ? syncAchievements(tx, userId) : []
-      return { id: hand.id, version: hand.version + 1, next, chips: updated?.chips ?? chips + delta, unlocked }
+      const rewards = next.settlement ? settle(tx, userId) : NONE
+      return { id: hand.id, version: hand.version + 1, next, chips: updated?.chips ?? chips + delta, rewards }
     })
   } catch (err) {
     if (sqliteCode(err) === 'SQLITE_CONSTRAINT_CHECK') throw new HttpError(400, 'No tienes fichas suficientes')
@@ -159,5 +179,5 @@ function act(userId: string, action: Action, handId: unknown, version: unknown):
   }
 
   const view = handJson(result, result.next, result.chips)
-  return json(tableJson(result.chips, view, result.unlocked))
+  return json(tableJson(result.chips, view, result.rewards))
 }

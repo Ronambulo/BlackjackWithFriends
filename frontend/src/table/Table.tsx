@@ -3,8 +3,7 @@
 import type { Action, Card, HandValue, Outcome } from '@bwf/engine'
 import { useCallback, useEffect, useId, useState, type CSSProperties, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { UnlockToast } from '@/achievements/UnlockToast'
-import type { UnlockedAchievement } from '@/achievements/useAchievements'
+import { UnlockToast, type Notice } from '@/achievements/UnlockToast'
 import { currentLanguage } from '@/i18n'
 import { useClaimPay, useLeague } from '@/league/useLeague'
 import { ApiError } from '@/lib/api'
@@ -207,14 +206,18 @@ export function Table() {
     if (resultSound) playSound(resultSound)
   }, [resultSound, hand?.id])
 
-  // Achievements the hand unlocked, announced once the cards have shown it; they
-  // outlive the hand, so going on to the next bet doesn't cut them short.
-  const [toasts, setToasts] = useState<(UnlockedAchievement & { key: string })[]>([])
+  // Achievements the hand unlocked and challenges it completed, announced once the
+  // cards have shown it; they outlive the hand, so going on to the next bet doesn't cut them short.
+  const [toasts, setToasts] = useState<(Notice & { key: string })[]>([])
   const [announced, setAnnounced] = useState<string | null>(null)
-  if (resultSound && hand && table?.unlocked?.length && announced !== hand.id) {
+  if (resultSound && hand && (table?.unlocked?.length || table?.challenges?.length) && announced !== hand.id) {
     setAnnounced(hand.id)
     const handId = hand.id
-    setToasts((queue) => [...queue, ...(table.unlocked ?? []).map((a) => ({ ...a, key: `${handId}-${a.id}` }))])
+    const notices: Notice[] = [
+      ...(table.unlocked ?? []).map((a) => ({ kind: 'achievement' as const, ...a })),
+      ...(table.challenges ?? []).map((c) => ({ kind: 'challenge' as const, ...c })),
+    ]
+    setToasts((queue) => [...queue, ...notices.map((n) => ({ ...n, key: `${handId}-${n.kind}-${n.id}` }))])
   }
   const nextToast = useCallback(() => setToasts((queue) => queue.slice(1)), [])
 
@@ -257,7 +260,7 @@ export function Table() {
   const showResult = Boolean(settled) && ready && pendingBet === null
   return (
     <div className={styles.table}>
-      {toasts[0] && <UnlockToast key={toasts[0].key} achievement={toasts[0]} onDone={nextToast} />}
+      {toasts[0] && <UnlockToast key={toasts[0].key} notice={toasts[0]} onDone={nextToast} />}
       <section className={styles.felt}>
         <div className={styles.feltTop}>
           <div className={styles.shoe} aria-hidden="true" />

@@ -5,6 +5,7 @@ import { requireUser } from '../lib/auth.js'
 import { db } from '../lib/db.js'
 import { notifyChat } from '../lib/events.js'
 import { HttpError, json } from '../lib/http.js'
+import { pushMentions } from '../lib/push.js'
 import { groupMembers, hands, messages, profiles, REACTIONS, reactions, user, type SharedHand, type SharedStats } from '../lib/schema.js'
 import { playerStats } from './stats.js'
 
@@ -211,6 +212,7 @@ export async function postMessage(request: Request): Promise<Response> {
   db().insert(messages).values({ id: crypto.randomUUID(), groupId, userId: me.id, texto, replyTo }).run()
   markRead(groupId, me.id)
   notifyChat(groupId)
+  pushMentions(me.id, groupId, texto)
   return json({ ok: true }, 201)
 }
 

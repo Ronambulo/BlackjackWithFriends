@@ -65,7 +65,7 @@ Separarlas es clave: gastar en la tienda **nunca** te baja en el ranking.
 - Hasta que acabas tus 10 manos no ves las de los demás, para que nadie te haga spoiler.
 
 ### Retos y logros
-- **Retos diarios**: 3 al día, iguales para todos los jugadores (p. ej. "gana 3 manos seguidas", "haz un split ganador", "gana con 5 cartas"). Cada uno da 🪙 **monedas** (no fichas) para gastar en estilos: son un logro personal, así que no cuentan para la liga ni mueven el ranking. La cantidad se ajusta en la beta.
+- **Retos diarios**: 3 al día, iguales para todos los jugadores (p. ej. "gana 3 manos seguidas", "haz un split ganador", "gana con 5 cartas"). Cada uno da 🪙 **monedas** (no fichas) para gastar en estilos: son un logro personal, así que no cuentan para la liga ni mueven el ranking. Uno fácil (10 🪙), uno medio (20 🪙) y uno difícil (40 🪙), sacados de un catálogo de 14 según la fecha, salvo que un admin los elija; el progreso sale de las manos resueltas del día (hora de Madrid) y cambian a medianoche. La cantidad se ajusta en la beta.
 - **Logros** permanentes con insignia en el perfil y algunos con cosmético o monedas de premio (p. ej. "Primer blackjack", "Gana una semana", "10 semanas en el podio", "Sobrevive con 1 ficha").
 - ✅ **Logros hechos** (adelantados a la fase 8): 13, con su catálogo y recompensa en `backend/lib/achievements.ts`, tabla `achievements`. Se calculan con lo que ya hay en la base de datos (manos, grupos, semanas cerradas), así que son **retroactivos**: se comprueban tras cada mano terminada, al unirse alguien a un grupo, al cerrar la semana y para todos al arrancar el servidor. Las monedas se pagan al desbloquear. "Kamikaze" y "Superviviente" necesitan el saldo de cada mano, que solo se puede reconstruir dentro de la semana en curso (las pagas de semanas pasadas se borran), así que no cuentan semanas anteriores. Los cosméticos quedan desbloqueados pero aún no se pueden equipar (fase 10, estilos).
 
@@ -125,7 +125,7 @@ flowchart LR
 | Hosting | Una imagen Docker todo en uno (`ghcr.io/ronambulo/blackjackwithfriends`): supervisord arranca la API y Next; se instala en ZimaOS con `docker-compose.yml` | Como FinanceMaster y Beergram. Solo se publica el puerto de Next, así que no hay CORS. Para la PWA hace falta HTTPS: proxy inverso o túnel delante |
 | Vistas previas de enlaces | `generateMetadata` + `opengraph-image` de Next.js (`next/og`) | El HTML de cada invitación ya sale del servidor con sus metadatos e imagen |
 | Códigos QR | Librería `qrcode`, generada en el navegador | Sin servidor y funciona sin conexión |
-| Push | Web Push con claves VAPID desde el backend | En iPhone solo funciona con la app instalada (iOS 16.4+) |
+| Push | Web Push (`web-push`) con claves VAPID desde el backend; si no están en el entorno se generan una vez y se guardan en ajustes | En iPhone solo funciona con la app instalada (iOS 16.4+) |
 | Tests | Vitest | Sobre todo para el motor de blackjack |
 
 ### Motor de blackjack compartido
@@ -184,7 +184,8 @@ El mazo de cada mano se guarda en el servidor y **nunca se envía al cliente**. 
 | Cuándo | Qué |
 |---|---|
 | Lunes 00:00 Madrid | Cierra la semana (`lib/season.ts`): congela la clasificación de cada grupo, calcula podios y premios de broma, da a cada jugador las monedas de su mejor puesto más las de haber jugado y los trofeos, y archiva las estadísticas. Un temporizador de la API apunta al lunes siguiente; además, cada petición a la API comprueba primero si queda alguna semana sin cerrar (por si el servidor estaba apagado a esa hora), así que nadie llega a ver la semana nueva sin que la anterior esté cerrada. Los saldos se reinician al vuelo, como siempre. Al cerrar, la API avisa por el canal en vivo y las apps abiertas recargan todo y muestran la ceremonia. |
-| Diario 00:00 Madrid | Genera la semilla de la Baraja del día y los 3 retos diarios (los mismos para todos). |
+| Diario 00:00 Madrid | Genera la semilla de la Baraja del día. Los 3 retos no hace falta generarlos: salen de la fecha (o de la elección de un admin) y son los mismos para todos. |
+| Diario 18:00 Madrid | Push: paga lista, a quien aún no la ha cobrado. |
 | Domingo 21:00 | Push: "Quedan 3 horas para el cierre de la liga". |
 
 La paga diaria **no** usa cron: se calcula al cobrarla, según los días que han pasado. Es más sencillo y no falla si el cron se retrasa.
@@ -383,8 +384,9 @@ Barra inferior con 5 pestañas. El botón central **Jugar** es más grande. Arri
 │        🥈 Tú  12.450        │
 │        🥉 Luis 9.800        │
 │ ┌ Retos de hoy ───── 1/3 ┐ │
-│ │ ✅ Gana 3 seguidas      │ │
-│ │ ⬜ Split ganador  +200  │ │
+│ │ ✅ Juega 10 manos  10/10│ │
+│ │ ✅ Gana 3 seguidas  3/3 │ │
+│ │ ⭕ Split ganador   +40🪙│ │
 │ └─────────────────────────┘ │
 │ [🃏 Baraja del día #42  ▶ ] │
 │ Feed ─────────────────────  │
@@ -443,14 +445,12 @@ Al apostar, se toca sobre fichas de 5 / 10 / 25 / 100 / 500 / 1.000, cada valor 
 - **Usuarios**: buscar por usuario, nombre o IP; ver saldo, manos, grupos, monedas, alta, última conexión e IP; **borrar la cuenta** y **bloquear sus IPs** (tabla `ip_bans`; una IP bloqueada recibe 403 en toda la API). También se puede bloquear o desbloquear una IP a mano.
 - **Moderación**: **cola de revisión** de fotos y nombres nuevos (tabla `reviews`; se ven ya mientras tanto; "Rechazar" quita la foto o devuelve el nombre al usuario); comportamiento raro (rachas, ritmo de bot, cuentas en cadena) con "Bloquear…" e "Ignorar"; cuentas que comparten conexión; **bloqueos con caducidad** (24 h, 7 días, 30 días o para siempre), por IP o por `@usuario`, con motivo y quién lo puso.
 - **Economía**: fichas en juego, paga repartida, lo que se queda la casa, monedas; saldos actuales por tramos; resultados vistos frente a los esperados; **reglas editables** (saldo inicial y paga diaria, tabla `economy_rules`): un cambio se guarda para el lunes siguiente y la semana en curso no se toca.
-- **Liga**: la temporada en curso con su cuenta atrás, los grupos de la semana y el **aviso para todos** (24 h, 7 días o hasta quitarlo), que sale arriba en la app y cada jugador puede cerrar.
+- **Liga**: la temporada en curso con su cuenta atrás, los grupos de la semana, los **retos diarios** (los de hoy con cuántos los han completado y un selector para los de mañana, que vuelven a los de la fecha con un botón) y el **aviso para todos** (24 h, 7 días o hasta quitarlo), que sale arriba en la app y cada jugador puede cerrar.
 - **Sistema**: estado general, tiempo encendido, latencia p95 y errores (en memoria, desde el último arranque), base de datos, fotos y última copia; **interruptores** (altas nuevas, mesa abierta, unirse a grupos; tabla `settings`); **copias de seguridad** diarias de la base de datos (se guardan las 14 últimas) y "Hacer copia ahora"; rutas más lentas, errores recientes y el **registro de lo que hacen los admins** (tabla `admin_log`).
 
 #### Administración: pendiente
 
-- **Retos diarios** (fase 8): ver los de hoy, preparar los de mañana y cuántos los completan. La tarjeta ya está en Liga como "Próximamente".
 - **Tienda de estilos** (fase 10): subir, ordenar, poner de oferta y retirar estilos; los más usados y comprados. También preparada en Liga.
-- Avisar al jugador cuando se le rechaza una foto o un nombre (con las notificaciones, fase 7).
 - Restaurar una copia desde el panel y descargarla; hoy se restaura a mano en el servidor.
 - Notas privadas de los admins en la ficha de cada jugador.
 - Corregir a mano el saldo o las monedas de un jugador, siempre con motivo y en el registro.
@@ -474,7 +474,7 @@ Al apostar, se toca sobre fichas de 5 / 10 / 25 / 100 / 500 / 1.000, cada valor 
 | Feed | Eventos automáticos destacables: blackjack con apuesta alta, ganancia o pérdida grande, adelantamiento en el ranking, ruina, reto o logro completado, resultado de la Baraja del día. |
 | Reacciones | 🔥 😂 💀 👏 😱 en cada evento del feed. |
 | Chat | Global y por grupo, de los últimos 7 días; texto y emojis, reacciones, respuestas citando un mensaje y actualización al momento (SSE). Más adelante, citar eventos del feed. |
-| Push | Paga lista (si no has cobrado a las 🔧 18:00), te han adelantado, mención en el chat, quedan 3 h de liga y ceremonia lista. Cada tipo se activa o desactiva por separado. |
+| Push | Paga lista (si no has cobrado a las 🔧 18:00), te han adelantado (alguien de tu grupo te pasa en la semana; como mucho uno por hora y persona), mención con @ en el chat, quedan 3 h de liga (si has jugado esa semana), ceremonia lista y moderación (te rechazan el nombre o la foto). Cada tipo se activa o desactiva por separado en Ajustes; el interruptor del dispositivo va aparte. |
 | Compartir fuera | Estadísticas del perfil como historia de Instagram (ya disponible), resultado de la Baraja del día y podio semanal como texto o imagen para WhatsApp. |
 | Compartir en el chat | Publicar una mano jugada o tus estadísticas (semana o total) en los chats que elijas (ya disponible). Más adelante, los mensajes a una persona. |
 
@@ -559,8 +559,8 @@ Cada fase termina con algo usable y desplegado.
 | 4b | ✅ Invitaciones | Pantalla "Invitar" con compartir, copiar y **QR**; **vista previa del enlace** con imagen generada (`next/og`); renovar el enlace |
 | 5 | ✅ Ciclo semanal | Cierre automático, ceremonia, estadísticas, trofeos y monedas |
 | 6 | 🟡 Social | ✅ Chat global y por grupo con reacciones, respuestas y publicar manos y estadísticas. Falta: feed y mensajes a una persona |
-| 7 | Notificaciones push | Suscripción, preferencias y envíos |
-| 8 | Retos y logros | Retos diarios (los logros ya están hechos, ver §2); lo que se gana con ellos son monedas para estilos, nunca fichas |
+| 7 | ✅ Notificaciones push | Suscripción por dispositivo, preferencias por tipo en Ajustes y envíos (paga, adelantamientos, menciones, cierre, ceremonia y moderación) |
+| 8 | ✅ Retos y logros | Retos diarios en Inicio con aviso en la mesa al completarlos y gestión en Administración; dan monedas para estilos, nunca fichas |
 | 9 | Baraja del día | Semilla diaria, 10 manos, clasificación y compartir (con su vista previa `/r/…`) |
 | 10 | Estilos y tienda | Sistema de temas para la mesa, colección, tienda y selector; en Administración, los cosméticos más usados y comprados |
 | 11 | Juice y pulido | Más sonidos (los básicos de la mesa ya están), más animaciones, vibración, accesibilidad y rendimiento |

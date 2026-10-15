@@ -206,6 +206,10 @@ button.listRow:disabled {
   white-space: nowrap;
 }
 
+.listText .wrap {
+  white-space: normal;
+}
+
 .listValue {
   color: var(--text-dim);
   font-size: 0.85rem;

@@ -28,6 +28,9 @@ scheduleSeasons()
 // Achievements earned before they existed, or while the server was off (lib/achievements.ts).
 const { syncAllAchievements } = await import('./lib/achievements.js')
 syncAllAchievements()
+// Reminders at set times: the daily pay, the week about to close (lib/push.ts).
+const { schedulePush } = await import('./lib/push.js')
+schedulePush()
 console.log(`Base de datos en ${databasePath()}`)
 
 async function toRequest(req: IncomingMessage, url: URL): Promise<Request> {

@@ -226,7 +226,10 @@ export function StatsPanel() {
     )
   }
 
-  const stats = data[range]
+  // Until there are hands from an earlier week, both ranges are the same numbers.
+  const pastWeeks = data.total.hands > data.week.hands
+  const shown = pastWeeks ? range : 'week'
+  const stats = data[shown]
   const tiles = [
     { label: t('stats.hands'), value: formatNumber(stats.hands, language) },
     { label: t('stats.blackjacks'), value: formatNumber(stats.blackjacks, language) },
@@ -236,21 +239,23 @@ export function StatsPanel() {
 
   return (
     <section className={styles.panel} aria-label={t('profile.stats')}>
-      <div className="segmented" role="group" aria-label={t('profile.stats')}>
-        {(['week', 'total'] as const).map((key) => (
-          <button key={key} type="button" aria-pressed={range === key} onClick={() => setRange(key)}>
-            {t(`stats.${key}`)}
-          </button>
-        ))}
-      </div>
+      {pastWeeks && (
+        <div className="segmented" role="group" aria-label={t('profile.stats')}>
+          {(['week', 'total'] as const).map((key) => (
+            <button key={key} type="button" aria-pressed={range === key} onClick={() => setRange(key)}>
+              {t(`stats.${key}`)}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className={`card ${styles.summary}`}>
         <div className={styles.summaryHead}>
           <span className="label">{t('stats.result')}</span>
           {stats.hands > 0 && (
             <div className={styles.shareButtons}>
-              <ShareToChat range={range} />
-              <ShareStats stats={stats} range={range} />
+              <ShareToChat range={shown} />
+              <ShareStats stats={stats} range={shown} />
             </div>
           )}
         </div>

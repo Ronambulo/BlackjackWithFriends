@@ -8,6 +8,7 @@ import { announcement, FLAGS, flags, setSetting, type Announcement, type Flag } 
 import { databasePath, db } from '../lib/db.js'
 import { notifyGroups } from '../lib/events.js'
 import { HttpError, json } from '../lib/http.js'
+import { pushReviewRejected } from '../lib/push.js'
 import { addDays, currentBalance, forgetRules, leagueClock, ruleChanges, rulesFor } from '../lib/league.js'
 import { adminLog, economyRules, groupMembers, groups, hands, ipBans, pays, profiles, reviews, session, user } from '../lib/schema.js'
 import { deleteObject, keyOf, mediaPath } from '../lib/storage.js'
@@ -810,6 +811,8 @@ export async function decideReview(request: Request): Promise<Response> {
           .map((mate) => mate.userId)
       : []
     notifyGroups([id, ...mates])
+    // Only if it was still up: a change of their own since isn't news.
+    if (tipo === 'foto' ? profile?.avatarUrl === row.valor : profile?.nombre === row.valor) pushReviewRejected(id, tipo)
   }
   dropReview(id, tipo)
   logAction(me, body.ok === true ? 'review_ok' : 'review_reject', `@${username}`, tipo === 'nombre' ? row.valor : 'foto')

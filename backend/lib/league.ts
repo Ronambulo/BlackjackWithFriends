@@ -75,6 +75,15 @@ export function madridMidnight(date: string): Date {
   return new Date(guess - (wall - guess))
 }
 
+const HOUR = 60 * 60 * 1000
+const hourFormat = new Intl.DateTimeFormat('en-US', { timeZone: ZONE, hourCycle: 'h23', hour: 'numeric' })
+
+/** The instant Madrid's clock reads `date` at `hour`:00, a summer time change that day included. */
+export function madridAt(date: string, hour: number): Date {
+  const guess = madridMidnight(date).getTime() + hour * HOUR
+  return new Date(guess - (Number(hourFormat.format(guess)) - hour) * HOUR)
+}
+
 /** Today and this week in Madrid. SQLite has no time zones, so the server works them out and passes them in. */
 export interface LeagueClock {
   /** 'YYYY-MM-DD' */

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useUser } from '@/auth/session-context'
+import { ChallengesCard } from '@/challenges/ChallengesCard'
 import { TopList } from '@/groups/Ranking'
 import { useCurrentGroup, useGroups } from '@/groups/useGroups'
 import { useFriendsRanking } from '@/groups/useRankings'
@@ -35,6 +36,8 @@ export default function HomePage() {
         <h1 className={styles.heading}>{t('home.greeting', { name: profile?.nombre ?? '' })}</h1>
 
         <LeagueCard group={group} dayChange={mine?.dayChange} />
+
+        <ChallengesCard />
 
         {isError ? (
           <section className="card">

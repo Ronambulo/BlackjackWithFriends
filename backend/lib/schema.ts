@@ -98,6 +98,10 @@ export const rateLimit = sqliteTable('rate_limits', {
 export const LANGUAGES = ['es', 'en'] as const
 export type Language = (typeof LANGUAGES)[number]
 
+export const PUSH_KINDS = ['pay', 'overtaken', 'mention', 'closing', 'ceremony', 'review'] as const
+export type PushKind = (typeof PUSH_KINDS)[number]
+export type PushPrefs = Partial<Record<PushKind, boolean>>
+
 /** One per user, created the first time they open the app. */
 export const profiles = sqliteTable(
   'profiles',
@@ -126,6 +130,8 @@ export const profiles = sqliteTable(
     dia: text('dia').notNull(),
     // Up to when they've read the global chat; null: never opened it.
     chatLeido: timestamp('chat_leido'),
+    // Push notifications switched off, by kind; a kind not here is on (lib/push.ts).
+    avisos: text('avisos', { mode: 'json' }).$type<PushPrefs>().notNull().default({}),
     createdAt: createdAt(),
   },
   (t) => [
@@ -388,6 +394,41 @@ export const achievements = sqliteTable(
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.logro] })],
+)
+
+// ── Daily challenges ────────────────────────────────────────────────────────
+
+/** Each daily challenge a player has completed, once (lib/challenges.ts); the coins were paid then. */
+export const challengeCompletions = sqliteTable(
+  'challenge_completions',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    // 'YYYY-MM-DD', Madrid
+    dia: text('dia').notNull(),
+    reto: text('reto').notNull(),
+    monedas: integer('monedas').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.dia, t.reto] }), index('challenge_completions_dia_idx').on(t.dia)],
+)
+
+// ── Push notifications ──────────────────────────────────────────────────────
+
+/** A device the player let send them notifications (lib/push.ts). */
+export const pushSubscriptions = sqliteTable(
+  'push_subscriptions',
+  {
+    endpoint: text('endpoint').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    p256dh: text('p256dh').notNull(),
+    auth: text('auth').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('push_subscriptions_user_idx').on(t.userId)],
 )
 
 // ── Chat ────────────────────────────────────────────────────────────────────
