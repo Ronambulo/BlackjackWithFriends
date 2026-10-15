@@ -402,7 +402,21 @@ export interface SharedHand {
   net: number
 }
 
-/** A group's chat: text, or a hand someone chose to publish (routes/chat.ts). */
+/** A player's numbers, as published from their profile: this week's or all-time. */
+export interface SharedStats {
+  range: 'week' | 'total'
+  hands: number
+  wins: number
+  pushes: number
+  losses: number
+  blackjacks: number
+  bestWin: number
+  bestStreak: number
+  net: number
+  wagered: number
+}
+
+/** A chat's message: text, or a hand or stats someone chose to publish (routes/chat.ts). */
 export const messages = sqliteTable(
   'messages',
   {
@@ -414,6 +428,7 @@ export const messages = sqliteTable(
       .references(() => user.id, { onDelete: 'cascade' }),
     texto: text('texto'),
     mano: text('mano', { mode: 'json' }).$type<SharedHand>(),
+    estadisticas: text('estadisticas', { mode: 'json' }).$type<SharedStats>(),
     handId: text('hand_id').references(() => hands.id, { onDelete: 'set null' }),
     // The message this one answers; it stays a reply (to nothing) if that one goes.
     replyTo: text('reply_to').references((): AnySQLiteColumn => messages.id, { onDelete: 'set null' }),
@@ -425,7 +440,7 @@ export const messages = sqliteTable(
     // A hand goes to each chat once.
     uniqueIndex('messages_hand_idx').on(t.groupId, t.handId).where(sql`${t.handId} is not null`),
     uniqueIndex('messages_hand_global_idx').on(t.handId).where(sql`${t.handId} is not null and ${t.groupId} is null`),
-    check('messages_content', sql`${t.texto} is not null or ${t.mano} is not null`),
+    check('messages_content', sql`${t.texto} is not null or ${t.mano} is not null or ${t.estadisticas} is not null`),
   ],
 )
 

@@ -64,6 +64,13 @@
       "when": 1792051986952,
       "tag": "0008_chat_replies",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1792053018052,
+      "tag": "0009_chat_stats",
+      "breakpoints": true
     }
   ]
 }

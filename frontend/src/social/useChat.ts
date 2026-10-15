@@ -20,6 +20,20 @@ export interface SharedHand {
   net: number
 }
 
+/** A player's numbers published from their profile (backend/lib/schema.ts). */
+export interface SharedStats {
+  range: 'week' | 'total'
+  hands: number
+  wins: number
+  pushes: number
+  losses: number
+  blackjacks: number
+  bestWin: number
+  bestStreak: number
+  net: number
+  wagered: number
+}
+
 export interface ChatMessage {
   id: string
   userId: string
@@ -27,10 +41,18 @@ export interface ChatMessage {
   avatarUrl: string | null
   texto: string | null
   mano: SharedHand | null
+  estadisticas: SharedStats | null
   createdAt: string
   reactions: { emoji: string; count: number; mine: boolean }[]
   /** The message it answers, as a quote. */
-  reply: { id: string; userId: string; nombre: string; texto: string | null; mano: boolean } | null
+  reply: {
+    id: string
+    userId: string
+    nombre: string
+    texto: string | null
+    mano: boolean
+    estadisticas: boolean
+  } | null
 }
 
 /** A chat's last week of messages. */
@@ -118,13 +140,16 @@ export function useDeleteMessage(chatId: string) {
   })
 }
 
-/** Publishes a finished hand in the chats the player picks ('global' and/or group ids). */
-export function useShareHand() {
+/** What can be published in the chats: a finished hand, or this week's or all-time stats. */
+export type Shared = { handId: string } | { stats: SharedStats['range'] }
+
+/** Publishes it in the chats the player picks ('global' and/or group ids). */
+export function useShare() {
   const user = useUser()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ handId, chats }: { handId: string; chats: string[] }) =>
-      api<{ chats: string[] }>('/chat/share', { method: 'POST', body: { handId, chats } }),
+    mutationFn: ({ what, chats }: { what: Shared; chats: string[] }) =>
+      api<{ chats: string[] }>('/chat/share', { method: 'POST', body: { ...what, chats } }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['chat', user.id] }),
   })
 }

@@ -4,19 +4,19 @@ import { useEffect, useId, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { useCurrentGroup, useGroups } from '@/groups/useGroups'
-import { CheckIcon, ShareIcon } from '@/ui/icons'
+import { ChatIcon, CheckIcon, ShareIcon } from '@/ui/icons'
 import { SheetIcon } from '@/ui/ConfirmSheet'
 import sheet from '@/ui/ConfirmSheet.module.css'
-import { GLOBAL, useShareHand } from './useChat'
+import { GLOBAL, useShare, type Shared } from './useChat'
 import styles from './ShareSheet.module.css'
 
-/** Picks the chats a finished hand goes to: the global one and/or the player's groups. */
+/** Picks the chats a finished hand or the stats go to: the global one and/or the player's groups. */
 export function ShareSheet({
-  handId,
+  what,
   onClose,
   onShared,
 }: {
-  handId: string
+  what: Shared
   onClose: () => void
   onShared: () => void
 }) {
@@ -24,7 +24,8 @@ export function ShareSheet({
   const id = useId()
   const { data: groups } = useGroups()
   const current = useCurrentGroup()
-  const share = useShareHand()
+  const share = useShare()
+  const kind = 'handId' in what ? 'hand' : 'stats'
   // The group in view to start with; the global chat if there's none.
   const [picked, setPicked] = useState<Set<string>>(() => new Set([current?.id ?? GLOBAL]))
 
@@ -46,7 +47,7 @@ export function ShareSheet({
   const options = [{ id: GLOBAL, name: t('social.globalChat') }, ...(groups ?? []).map((g) => ({ id: g.id, name: g.nombre }))]
 
   const publish = () =>
-    share.mutate({ handId, chats: [...picked] }, { onSuccess: () => onShared() })
+    share.mutate({ what, chats: [...picked] }, { onSuccess: () => onShared() })
 
   return createPortal(
     <div className={sheet.overlay} onClick={onClose}>
@@ -59,14 +60,12 @@ export function ShareSheet({
       >
         <span className={sheet.grab} aria-hidden="true" />
         <div className={sheet.icon} aria-hidden="true">
-          <SheetIcon tone="accent">
-            <ShareIcon />
-          </SheetIcon>
+          <SheetIcon tone="accent">{kind === 'hand' ? <ShareIcon /> : <ChatIcon />}</SheetIcon>
         </div>
         <h2 id={`${id}-title`} className={sheet.title}>
-          {t('social.publishTitle')}
+          {t(kind === 'hand' ? 'social.publishTitle' : 'social.publishStatsTitle')}
         </h2>
-        <p className={sheet.text}>{t('social.publishText')}</p>
+        <p className={sheet.text}>{t(kind === 'hand' ? 'social.publishText' : 'social.publishStatsText')}</p>
 
         <ul className={styles.list}>
           {options.map((option) => {

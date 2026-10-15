@@ -35,16 +35,18 @@ export default function SocialPage() {
     <div className={`${styles.page} ${chatStyles.screen}`}>
       <h1 className={styles.title}>{t('social.title')}</h1>
 
-      <div className={`segmented ${chatStyles.tabs}`} role="group" aria-label={t('social.title')}>
-        {tabs.map(({ key, label, count }) => (
-          <button key={key} type="button" aria-pressed={view === key} onClick={() => setView(key)}>
-            <span className={chatStyles.tabName}>{label}</span>
-            {/* The one on screen gets read as it comes in. */}
-            {view !== key && Boolean(count) && (
-              <span className={chatStyles.badge}>{count! > 99 ? '99+' : count}</span>
-            )}
-          </button>
-        ))}
+      <div className={chatStyles.tabsBar}>
+        <div className={`segmented ${chatStyles.tabs}`} role="group" aria-label={t('social.title')}>
+          {tabs.map(({ key, label, count }) => (
+            <button key={key} type="button" aria-pressed={view === key} onClick={() => setView(key)}>
+              <span className={chatStyles.tabName}>{label}</span>
+              {/* The one on screen gets read as it comes in. */}
+              {view !== key && Boolean(count) && (
+                <span className={chatStyles.badge}>{count! > 99 ? '99+' : count}</span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
       {view === 'global' && <Chat key={GLOBAL} chatId={GLOBAL} name={t('social.globalChat')} />}

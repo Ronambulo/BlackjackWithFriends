@@ -86,7 +86,44 @@
   cursor: progress;
 }
 
+.shareButtons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Next to the gold one, quieter: it stays inside the app */
+.toChat {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin: -4px 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--layer-2);
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease;
+}
+
+.toChat:hover {
+  background: var(--layer-3);
+}
+
+.toChat:active {
+  transform: scale(0.92);
+}
+
+.toChatDone {
+  color: var(--success);
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .toChat,
   .share,
   .share::after {
     transition: none;

@@ -5,10 +5,12 @@ import { requireUser } from '../lib/auth.js'
 import { db } from '../lib/db.js'
 import { notifyChat } from '../lib/events.js'
 import { HttpError, json } from '../lib/http.js'
-import { groupMembers, hands, messages, profiles, REACTIONS, reactions, user, type SharedHand } from '../lib/schema.js'
+import { groupMembers, hands, messages, profiles, REACTIONS, reactions, user, type SharedHand, type SharedStats } from '../lib/schema.js'
+import { playerStats } from './stats.js'
 
 // The chats: one global, open to every player, and one per group. Players write text
-// and publish hands from the table (never on their own); everyone can react. Changes
+// and publish hands from the table (never on their own) or their stats from the
+// profile; everyone can react. Changes
 // reach the open apps as a 'chat' live event (lib/events.ts), so the chat refetches
 // instead of polling. A chat only shows its last week; older messages stay in the
 // database but nobody sees them any more.
@@ -96,10 +98,18 @@ export interface ChatMessage {
   avatarUrl: string | null
   texto: string | null
   mano: SharedHand | null
+  estadisticas: SharedStats | null
   createdAt: string
   reactions: { emoji: string; count: number; mine: boolean }[]
   /** The message it answers, as a quote (null too if that one was deleted). */
-  reply: { id: string; userId: string; nombre: string; texto: string | null; mano: boolean } | null
+  reply: {
+    id: string
+    userId: string
+    nombre: string
+    texto: string | null
+    mano: boolean
+    estadisticas: boolean
+  } | null
 }
 
 // GET /api/chat?id=: a chat's last week of messages, oldest first. Opening it counts as reading it.
@@ -115,6 +125,7 @@ export async function getChat(request: Request): Promise<Response> {
       avatarUrl: profiles.avatarUrl,
       texto: messages.texto,
       mano: messages.mano,
+      estadisticas: messages.estadisticas,
       replyTo: messages.replyTo,
       createdAt: messages.createdAt,
     })
@@ -147,6 +158,7 @@ export async function getChat(request: Request): Promise<Response> {
             nombre: sql<string>`coalesce(${profiles.nombre}, ${user.displayUsername}, ${user.name})`,
             texto: messages.texto,
             mano: sql<boolean>`${messages.mano} is not null`.mapWith(Boolean),
+            estadisticas: sql<boolean>`${messages.estadisticas} is not null`.mapWith(Boolean),
           })
           .from(messages)
           .innerJoin(user, eq(user.id, messages.userId))
@@ -202,48 +214,63 @@ export async function postMessage(request: Request): Promise<Response> {
   return json({ ok: true }, 201)
 }
 
-// POST /api/chat/share { handId, chats }: publishes a finished hand of the player's in
-// the chats they pick ('global' and/or their groups). Each chat gets it once.
-export async function shareHand(request: Request): Promise<Response> {
-  const me = await requireUser(request)
-  const body = await readBody(request)
-  const handId = id(body.handId, 'la mano')
-  const wanted = Array.isArray(body.chats) ? body.chats.filter((c): c is string => typeof c === 'string') : []
-  if (wanted.length === 0 || wanted.length > 21) throw new HttpError(400, 'Falta el chat')
-  throttle(me.id)
-
-  const hand = db()
-    .select({ ronda: hands.ronda, fase: hands.fase })
-    .from(hands)
-    .where(and(eq(hands.id, handId), eq(hands.userId, me.id)))
-    .get()
-  if (!hand || hand.fase !== 'settled') throw new HttpError(404, 'No existe la mano')
-  const groupIds = wanted.filter((c) => c !== GLOBAL)
-  const targets: (string | null)[] = groupIds.length
+/** The chats picked to publish in that the player can use: null for the global one, else group ids. */
+function targets(wanted: unknown, userId: string): (string | null)[] {
+  const chats = Array.isArray(wanted) ? wanted.filter((c): c is string => typeof c === 'string') : []
+  if (chats.length === 0 || chats.length > 21) throw new HttpError(400, 'Falta el chat')
+  const groupIds = chats.filter((c) => c !== GLOBAL)
+  const found: (string | null)[] = groupIds.length
     ? db()
         .select({ groupId: groupMembers.groupId })
         .from(groupMembers)
-        .where(and(eq(groupMembers.userId, me.id), inArray(groupMembers.groupId, groupIds)))
+        .where(and(eq(groupMembers.userId, userId), inArray(groupMembers.groupId, groupIds)))
         .all()
         .map((row) => row.groupId)
     : []
-  if (wanted.includes(GLOBAL)) targets.push(null)
-  if (targets.length === 0) throw new HttpError(404, 'No existe el grupo')
+  if (chats.includes(GLOBAL)) found.push(null)
+  if (found.length === 0) throw new HttpError(404, 'No existe el grupo')
+  return found
+}
 
-  const mano = sharedHand(hand.ronda)
+// POST /api/chat/share { handId, chats } or { stats: 'week' | 'total', chats }: publishes a
+// finished hand of the player's, or their numbers, in the chats they pick ('global' and/or
+// their groups). A hand goes to each chat once; the stats are worked out here, never taken
+// from the app, and can be published again as they change.
+export async function share(request: Request): Promise<Response> {
+  const me = await requireUser(request)
+  const body = await readBody(request)
+  let content: { mano: SharedHand; handId: string } | { estadisticas: SharedStats }
+  if (body.stats === 'week' || body.stats === 'total') {
+    const stats = playerStats(me.id)[body.stats]
+    if (stats.hands === 0) throw new HttpError(400, 'Aún no has jugado')
+    const { streak: _, ...numbers } = stats
+    content = { estadisticas: { range: body.stats, ...numbers } }
+  } else {
+    const handId = id(body.handId, 'la mano')
+    const hand = db()
+      .select({ ronda: hands.ronda, fase: hands.fase })
+      .from(hands)
+      .where(and(eq(hands.id, handId), eq(hands.userId, me.id)))
+      .get()
+    if (!hand || hand.fase !== 'settled') throw new HttpError(404, 'No existe la mano')
+    content = { mano: sharedHand(hand.ronda), handId }
+  }
+  const chats = targets(body.chats, me.id)
+  throttle(me.id)
+
   db().transaction((tx) => {
-    for (const groupId of targets) {
+    for (const groupId of chats) {
       tx.insert(messages)
-        .values({ id: crypto.randomUUID(), groupId, userId: me.id, mano, handId })
+        .values({ id: crypto.randomUUID(), groupId, userId: me.id, ...content })
         .onConflictDoNothing()
         .run()
     }
   })
-  for (const groupId of targets) {
+  for (const groupId of chats) {
     markRead(groupId, me.id)
     notifyChat(groupId)
   }
-  return json({ chats: targets.map((g) => g ?? GLOBAL) })
+  return json({ chats: chats.map((g) => g ?? GLOBAL) })
 }
 
 function findMessage(messageId: string, userId: string) {

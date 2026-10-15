@@ -207,6 +207,120 @@
   color: #fff;
 }
 
+/* ---------- Published stats ---------- */
+
+.statsCard {
+  display: flex;
+  flex-direction: column;
+  min-width: 230px;
+  margin: 4px 0;
+  padding: 12px;
+  border-radius: 12px;
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgb(242 193 78 / 0.12), transparent 60%),
+    var(--layer-1);
+}
+
+.statsRange {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.statsNet {
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.statsCard .push {
+  color: var(--text);
+}
+
+.statsWagered {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.statsBar {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  margin: 10px 0 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--layer-3);
+}
+
+.statsWin {
+  background: var(--success);
+}
+
+.statsPush {
+  background: var(--text-dim);
+}
+
+.statsLoss {
+  background: var(--danger);
+}
+
+.statsLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  list-style: none;
+}
+
+.statsLegend li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.statsLegend b {
+  color: var(--text);
+}
+
+.statsDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.statsTiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 10px 0 0;
+}
+
+.statsTiles div {
+  display: flex;
+  flex-direction: column;
+  padding: 7px 9px;
+  border-radius: 9px;
+  background: var(--layer-2);
+}
+
+.statsTiles dd {
+  order: -1;
+  margin: 0;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.statsTiles dt {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+}
+
 /* ---------- Reactions, the menu and replies ---------- */
 
 /* Dims the chat while a message's menu is open; the message rises above it */
@@ -617,6 +731,43 @@
 }
 
 /* ---------- Social page ---------- */
+
+/* The title scrolls away; the tabs stay at the top, over the page's top padding. */
+.tabsBar {
+  position: sticky;
+  top: -12px;
+  z-index: 3;
+}
+
+/* Once the title has scrolled away, a strip of the page's own background (the body's glow,
+   placed where it sits on screen) runs edge to edge behind the tabs, from the top of the
+   scroller to a fade below them. At the top it'd cover the glow, so it isn't there yet. */
+.tabsBar::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: -12px;
+  bottom: -14px;
+  left: calc(50% - 50vw);
+  width: 100vw;
+  background:
+    radial-gradient(120% 60% at 50% -10%, var(--bg-glow), transparent 70%),
+    var(--bg);
+  background-size: 100vw var(--app-height);
+  background-position: 0 calc(-1 * (var(--topbar-height) + env(safe-area-inset-top)));
+  mask-image: linear-gradient(black calc(100% - 14px), transparent);
+  pointer-events: none;
+  opacity: 0;
+  animation: stuck linear both;
+  animation-timeline: scroll(nearest);
+  animation-range: 30px 64px;
+}
+
+@keyframes stuck {
+  to {
+    opacity: 1;
+  }
+}
 
 .tabs button {
   display: inline-flex;

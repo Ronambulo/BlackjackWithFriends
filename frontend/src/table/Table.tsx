@@ -429,7 +429,7 @@ function PublishButton({ handId }: { handId: string }) {
       </button>
       {open && (
         <ShareSheet
-          handId={handId}
+          what={{ handId }}
           onClose={() => setOpen(false)}
           onShared={() => {
             setOpen(false)

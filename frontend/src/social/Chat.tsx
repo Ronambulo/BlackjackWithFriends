@@ -17,6 +17,7 @@ import { currentLanguage } from '@/i18n'
 import { Avatar } from '@/ui/Avatar'
 import { CloseIcon, ReplyIcon, SendIcon, TrashIcon } from '@/ui/icons'
 import { HandCard } from './HandCard'
+import { StatsCard } from './StatsCard'
 import { REACTIONS, TEXT_MAX, useChat, useDeleteMessage, useReact, useSendMessage, type ChatMessage } from './useChat'
 import styles from './Chat.module.css'
 
@@ -220,7 +221,7 @@ function Message({
           <div
             role="button"
             tabIndex={0}
-            className={`${styles.bubble} ${message.mano ? styles.handBubble : ''} ${swipe.pressing ? styles.pressing : ''}`}
+            className={`${styles.bubble} ${message.mano || message.estadisticas ? styles.handBubble : ''} ${swipe.pressing ? styles.pressing : ''}`}
             aria-expanded={open}
             onKeyDown={(event) => {
               if (event.key === 'Enter' || event.key === ' ') {
@@ -240,7 +241,14 @@ function Message({
               />
             )}
             {message.mano && <span className={styles.shared}>{t('social.sharedHand')}</span>}
-            {message.mano ? <HandCard hand={message.mano} /> : <span className={styles.text}>{message.texto}</span>}
+            {message.estadisticas && <span className={styles.shared}>{t('social.sharedStats')}</span>}
+            {message.mano ? (
+              <HandCard hand={message.mano} />
+            ) : message.estadisticas ? (
+              <StatsCard stats={message.estadisticas} />
+            ) : (
+              <span className={styles.text}>{message.texto}</span>
+            )}
             <time className={styles.time} dateTime={message.createdAt}>
               {time}
             </time>
@@ -308,7 +316,7 @@ function Quote({
   return (
     <span className={`${styles.quote} ${onClick ? styles.quoteLink : ''}`} onClick={onClick}>
       <b className={styles.quoteName}>{reply.userId === me.id ? t('social.you') : reply.nombre}</b>
-      <span className={styles.quoteText}>{reply.mano ? t('social.handQuote') : reply.texto}</span>
+      <span className={styles.quoteText}>{reply.mano ? t('social.handQuote') : reply.estadisticas ? t('social.statsQuote') : reply.texto}</span>
     </span>
   )
 }
@@ -444,7 +452,7 @@ function Composer({
       {replying && (
         <div className={styles.replying}>
           <ReplyIcon className={styles.replyingIcon} width={18} height={18} />
-          <Quote reply={{ ...replying, mano: Boolean(replying.mano) }} />
+          <Quote reply={{ ...replying, mano: Boolean(replying.mano), estadisticas: Boolean(replying.estadisticas) }} />
           <button
             type="button"
             className={styles.replyingClose}

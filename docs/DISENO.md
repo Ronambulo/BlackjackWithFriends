@@ -429,7 +429,7 @@ Al apostar, se toca sobre fichas de 5 / 10 / 25 / 100 / 500 / 1.000, cada valor 
 - Estadísticas de esta semana o de siempre: resultado, reparto de manos ganadas / empatadas / perdidas, neto global, manos jugadas, blackjacks, mayor ganancia, mejor racha y una gráfica de las últimas 30 manos. Se calculan a partir de las manos guardadas (`GET /api/profile/stats`). Más adelante, semanas ganadas.
 - Vitrina de trofeos y logros.
 - Acceso a **Estilos**.
-- Botón para **compartir las estadísticas** (semana o total): genera una imagen de historia de Instagram (1080×1920, con foto, resultado, ganadas/empates/perdidas y récords, dejando libres las zonas que tapa Instagram) y la manda con el menú de compartir del sistema; donde no se pueden compartir archivos, la descarga.
+- Botón para **compartir las estadísticas** (semana o total): genera una imagen de historia de Instagram (1080×1920, con foto, resultado, ganadas/empates/perdidas y récords, dejando libres las zonas que tapa Instagram) y la manda con el menú de compartir del sistema; donde no se pueden compartir archivos, la descarga. Al lado, un botón redondo las **publica en el chat** (global y/o grupos) como una tarjeta con el resultado, la barra de ganadas/empates/perdidas y los récords.
 - Tocar el avatar cambia la foto: se abre un recortador cuadrado (arrastrar para mover; pellizcar, rueda o barra para el zoom) con el círculo del avatar marcado.
 
 **Estilos y tienda**: una cuadrícula por tipo (tapete, cartas, dorso, fichas, marco de avatar). Cada elemento está equipado, disponible o bloqueado; si está bloqueado, se indica cómo conseguirlo ("Gana una semana" o "150 🪙").
@@ -476,7 +476,7 @@ Al apostar, se toca sobre fichas de 5 / 10 / 25 / 100 / 500 / 1.000, cada valor 
 | Chat | Global y por grupo, de los últimos 7 días; texto y emojis, reacciones, respuestas citando un mensaje y actualización al momento (SSE). Más adelante, citar eventos del feed. |
 | Push | Paga lista (si no has cobrado a las 🔧 18:00), te han adelantado, mención en el chat, quedan 3 h de liga y ceremonia lista. Cada tipo se activa o desactiva por separado. |
 | Compartir fuera | Estadísticas del perfil como historia de Instagram (ya disponible), resultado de la Baraja del día y podio semanal como texto o imagen para WhatsApp. |
-| Compartir en el chat | Publicar una mano jugada en los chats que elijas (ya disponible). Más adelante, las estadísticas y los mensajes a una persona. |
+| Compartir en el chat | Publicar una mano jugada o tus estadísticas (semana o total) en los chats que elijas (ya disponible). Más adelante, los mensajes a una persona. |
 
 Moderación mínima: el admin puede expulsar miembros y borrar mensajes del chat de su grupo, y cualquiera puede borrar sus propios mensajes.
 
@@ -558,7 +558,7 @@ Cada fase termina con algo usable y desplegado.
 | 4 | ✅ Grupos y liga | Saldo único de liga y paga diaria; crear grupo, unirse, ranking en vivo de cada grupo y admin |
 | 4b | ✅ Invitaciones | Pantalla "Invitar" con compartir, copiar y **QR**; **vista previa del enlace** con imagen generada (`next/og`); renovar el enlace |
 | 5 | ✅ Ciclo semanal | Cierre automático, ceremonia, estadísticas, trofeos y monedas |
-| 6 | 🟡 Social | ✅ Chat global y por grupo con reacciones, respuestas y publicar manos. Falta: feed, mensajes a una persona y compartir estadísticas en el chat |
+| 6 | 🟡 Social | ✅ Chat global y por grupo con reacciones, respuestas y publicar manos y estadísticas. Falta: feed y mensajes a una persona |
 | 7 | Notificaciones push | Suscripción, preferencias y envíos |
 | 8 | Retos y logros | Retos diarios (los logros ya están hechos, ver §2); lo que se gana con ellos son monedas para estilos, nunca fichas |
 | 9 | Baraja del día | Semilla diaria, 10 manos, clasificación y compartir (con su vista previa `/r/…`) |
