@@ -1,25 +1,18 @@
 'use client'
 
-import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useUser } from '@/auth/session-context'
 import { currentLanguage } from '@/i18n'
 import { formatNumber } from '@/lib/format'
 import { Avatar } from '@/ui/Avatar'
 import { CrownIcon } from '@/ui/icons'
+import { medal } from './medal'
 import { RankChange } from './RankChange'
-import type { RankedMember } from './useGroups'
+import type { RankedPlayer } from './useRankings'
 import styles from './Ranking.module.css'
 
-// Gold, silver and bronze for the first three places.
-const MEDALS = ['#f2c14e', '#d1d5db', '#d69a6a']
-
-function medal(rank: number) {
-  return { '--medal': MEDALS[rank - 1] ?? 'var(--text-dim)' } as CSSProperties
-}
-
 /** The top of a group in a few lines, with the player's own row highlighted. */
-export function TopList({ members }: { members: RankedMember[] }) {
+export function TopList({ members }: { members: RankedPlayer[] }) {
   const { t } = useTranslation()
   const me = useUser()
   const lang = currentLanguage()
@@ -30,7 +23,7 @@ export function TopList({ members }: { members: RankedMember[] }) {
         return (
           <li key={member.userId} className={`${styles.topRow} ${mine ? styles.mine : ''}`} style={medal(member.rank)}>
             <span className={styles.place}>{member.rank}</span>
-            <Avatar seed={member.userId} name={member.nombre} />
+            <Avatar seed={member.userId} name={member.nombre} src={member.avatarUrl} />
             <span className={styles.name}>{mine ? t('ranking.you') : member.nombre}</span>
             <span className={styles.balance}>{formatNumber(member.balance, lang)}</span>
           </li>
@@ -41,7 +34,7 @@ export function TopList({ members }: { members: RankedMember[] }) {
 }
 
 /** The first three on steps, the winner in the middle. */
-export function Podium({ members }: { members: RankedMember[] }) {
+export function Podium({ members }: { members: RankedPlayer[] }) {
   const { t } = useTranslation()
   const me = useUser()
   const lang = currentLanguage()
@@ -56,6 +49,7 @@ export function Podium({ members }: { members: RankedMember[] }) {
             <Avatar
               seed={member.userId}
               name={member.nombre}
+              src={member.avatarUrl}
               size={member.rank === 1 ? 68 : 56}
               className={styles.podiumAvatar}
             />
@@ -75,7 +69,7 @@ export function Podium({ members }: { members: RankedMember[] }) {
 }
 
 /** A group's standings as rows, with the player's own row highlighted. */
-export function Ranking({ members }: { members: RankedMember[] }) {
+export function Ranking({ members }: { members: RankedPlayer[] }) {
   const { t } = useTranslation()
   const me = useUser()
   const lang = currentLanguage()
@@ -86,7 +80,7 @@ export function Ranking({ members }: { members: RankedMember[] }) {
         return (
           <li key={member.userId} className={`${styles.row} ${mine ? styles.mine : ''}`}>
             <span className={styles.rowPlace}>{member.rank}</span>
-            <Avatar seed={member.userId} name={member.nombre} />
+            <Avatar seed={member.userId} name={member.nombre} src={member.avatarUrl} />
             <span className={styles.who}>
               <span className={styles.name}>{mine ? t('ranking.you') : member.nombre}</span>
               {member.balance === 0 && <span className={styles.broke}>{t('ranking.broke')}</span>}

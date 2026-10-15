@@ -1,12 +1,13 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useUser } from '@/auth/session-context'
 import { currentLanguage } from '@/i18n'
 import { api } from '@/lib/api'
 import { formatNumber } from '@/lib/format'
+import { GroupIcon } from '@/ui/icons'
 import type { RankedMember } from './useGroups'
 import styles from './WeekChart.module.css'
 
@@ -47,6 +48,41 @@ function balanceAt(points: [number, number][], at: number) {
   return balance
 }
 
+/**
+ * The week's time axis isn't linear: every stretch between two changes gets a width that
+ * grows with the square root of how long it lasted. A burst of hands in half an hour
+ * spreads out, and a quiet night shrinks to a sliver.
+ */
+interface Warp {
+  times: number[]
+  /** Where each of `times` falls, from 0 to 1. */
+  at: number[]
+}
+
+// The rest of the week, still to be played, takes less room than time that has passed.
+const FUTURE_WEIGHT = 0.5
+
+function buildWarp(from: number, to: number, now: number, changes: number[]): Warp {
+  const times = [...new Set([from, ...changes.filter((time) => time > from && time < now), now, to])].sort((a, b) => a - b)
+  const widths = times.slice(1).map((time, i) => Math.sqrt(time - times[i]) * (times[i] >= now ? FUTURE_WEIGHT : 1))
+  const total = widths.reduce((sum, width) => sum + width, 0) || 1
+  const at = [0]
+  for (const width of widths) at.push(at[at.length - 1] + width / total)
+  return { times, at }
+}
+
+/** Linear between the two neighbouring stops of a piecewise map. */
+function interpolate(xs: number[], ys: number[], value: number) {
+  if (value <= xs[0]) return ys[0]
+  for (let i = 1; i < xs.length; i++) {
+    if (value <= xs[i]) {
+      const span = xs[i] - xs[i - 1]
+      return ys[i - 1] + (span ? ((value - xs[i - 1]) / span) * (ys[i] - ys[i - 1]) : 0)
+    }
+  }
+  return ys[ys.length - 1]
+}
+
 function compact(value: number) {
   return new Intl.NumberFormat(currentLanguage(), { notation: 'compact', maximumFractionDigits: 1 }).format(value)
 }
@@ -60,6 +96,8 @@ export function WeekChart({ groupId, ranking }: { groupId: string; ranking: Rank
   const [width, setWidth] = useState(0)
   // The moment being looked at, while a finger or the mouse is on the chart.
   const [cursor, setCursor] = useState<number | null>(null)
+  // Someone picked in the legend: only their line is drawn.
+  const [only, setOnly] = useState<string | null>(null)
   const language = currentLanguage()
 
   useEffect(() => {
@@ -75,7 +113,9 @@ export function WeekChart({ groupId, ranking }: { groupId: string; ranking: Rank
   const color = (userId: string) => COLORS[place.get(userId) ?? COLORS.length] ?? REST
   // Drawn last to first, with the player's own line on top.
   const order = (userId: string) => (userId === me.id ? -1 : (place.get(userId) ?? ranking.length))
-  const series = [...(data?.series ?? [])].sort((a, b) => order(b.userId) - order(a.userId))
+  const everyone = [...(data?.series ?? [])].sort((a, b) => order(b.userId) - order(a.userId))
+  const picked = everyone.some((line) => line.userId === only) ? only : null
+  const series = picked ? everyone.filter((line) => line.userId === picked) : everyone
 
   const plot = Math.max(0, width - GUTTER)
   const values = series.flatMap((line) => line.points.map(([, value]) => value)).concat(series.length ? [] : [START])
@@ -85,7 +125,10 @@ export function WeekChart({ groupId, ranking }: { groupId: string; ranking: Rank
   const top = high + pad
   // Not down to the edge, so a line at 0 still shows.
   const bottom = low - pad
-  const x = (at: number) => (data ? ((at - data.from) / (data.to - data.from)) * plot : 0)
+  const warp = data
+    ? buildWarp(data.from, data.to, data.now, series.flatMap((line) => line.points.slice(1, -1).map(([time]) => time)))
+    : null
+  const x = (at: number) => (warp ? interpolate(warp.times, warp.at, at) * plot : 0)
   const y = (value: number) => TOP + ((top - value) / (top - bottom || 1)) * (HEIGHT - TOP - BOTTOM)
 
   const day = data ? (data.to - data.from) / 7 : 0
@@ -93,15 +136,17 @@ export function WeekChart({ groupId, ranking }: { groupId: string; ranking: Rank
   const timeFormat = new Intl.DateTimeFormat(language, { weekday: 'short', hour: '2-digit', minute: '2-digit' })
 
   const at = cursor ?? data?.now ?? 0
-  const legend = series
+  const legend = everyone
     .map((line) => ({ ...line, balance: balanceAt(line.points, at) }))
     .sort((a, b) => b.balance - a.balance)
   const average = legend.length ? Math.round(legend.reduce((sum, line) => sum + line.balance, 0) / legend.length) : START
+  // With someone picked, the dashed line is their balance instead of the group's average.
+  const marked = picked ? (legend.find((line) => line.userId === picked)?.balance ?? START) : average
 
   const onPointer = (event: PointerEvent<SVGSVGElement>) => {
-    if (!data || plot === 0) return
+    if (!data || !warp || plot === 0) return
     const left = event.currentTarget.getBoundingClientRect().left
-    const time = data.from + ((event.clientX - left) / plot) * (data.to - data.from)
+    const time = interpolate(warp.at, warp.times, (event.clientX - left) / plot)
     setCursor(Math.min(data.now, Math.max(data.from, time)))
   }
 
@@ -125,22 +170,28 @@ export function WeekChart({ groupId, ranking }: { groupId: string; ranking: Rank
             onPointerLeave={() => setCursor(null)}
             onPointerCancel={() => setCursor(null)}
           >
-            {Array.from({ length: 7 }, (_, i) => (
-              <g key={i}>
-                {i % 2 === 0 && <rect x={i * (plot / 7)} y={0} width={plot / 7} height={HEIGHT - BOTTOM + 4} className={styles.band} />}
-                <text x={(i + 0.5) * (plot / 7)} y={HEIGHT - 6} className={styles.day}>
-                  {weekdays.format(new Date(data.from + (i + 0.5) * day))}
-                </text>
-              </g>
-            ))}
+            {/* The days keep their order but not their width: a busy one takes more room. */}
+            {Array.from({ length: 7 }, (_, i) => {
+              const start = x(data.from + i * day)
+              const end = x(data.from + (i + 1) * day)
+              return (
+                <g key={i}>
+                  {i % 2 === 0 && <rect x={start} y={0} width={end - start} height={HEIGHT - BOTTOM + 4} className={styles.band} />}
+                  {end - start >= 9 && (
+                    <text x={(start + end) / 2} y={HEIGHT - 6} className={styles.day}>
+                      {weekdays.format(new Date(data.from + (i + 0.5) * day))}
+                    </text>
+                  )}
+                </g>
+              )
+            })}
 
-            {/* The group's average at the moment in view */}
-            <line x1={0} x2={plot} y1={y(average)} y2={y(average)} className={styles.average} />
-            {[high, average, low]
+            <line x1={0} x2={plot} y1={y(marked)} y2={y(marked)} className={styles.average} />
+            {[high, marked, low]
               .filter((value, i, all) => all.indexOf(value) === i)
-              .filter((value) => value === average || Math.abs(y(value) - y(average)) > 12)
+              .filter((value) => value === marked || Math.abs(y(value) - y(marked)) > 12)
               .map((value) => (
-                <text key={value} x={plot + 6} y={y(value) + 4} className={`${styles.tick} ${value === average ? styles.averageTick : ''}`}>
+                <text key={value} x={plot + 6} y={y(value) + 4} className={`${styles.tick} ${value === marked ? styles.averageTick : ''}`}>
                   {compact(value)}
                 </text>
               ))}
@@ -179,15 +230,30 @@ export function WeekChart({ groupId, ranking }: { groupId: string; ranking: Rank
         )}
       </div>
 
+      {/* Tapping someone shows only their line; tapping them again, everyone's. */}
       <ul className={styles.legend}>
         {legend.map((line) => (
           <li key={line.userId}>
-            <span className={styles.swatch} style={{ background: color(line.userId) }} aria-hidden="true" />
-            <span className={styles.name}>{line.userId === me.id ? t('ranking.you') : line.nombre}</span>
-            <b>{formatNumber(line.balance, language)}</b>
+            <button
+              type="button"
+              className={`${styles.person} ${picked && picked !== line.userId ? styles.faded : ''}`}
+              style={{ '--swatch': color(line.userId) } as CSSProperties}
+              aria-pressed={picked === line.userId}
+              onClick={() => setOnly(picked === line.userId ? null : line.userId)}
+            >
+              <span className={styles.swatch} aria-hidden="true" />
+              <span className={styles.name}>{line.userId === me.id ? t('ranking.you') : line.nombre}</span>
+              <b>{formatNumber(line.balance, language)}</b>
+            </button>
           </li>
         ))}
       </ul>
+      {picked && (
+        <button type="button" className={styles.showAll} onClick={() => setOnly(null)}>
+          <GroupIcon width={16} height={16} aria-hidden="true" />
+          {t('ranking.showAll')}
+        </button>
+      )}
     </div>
   )
 }
