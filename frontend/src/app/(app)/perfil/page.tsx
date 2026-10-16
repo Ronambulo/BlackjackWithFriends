@@ -9,7 +9,7 @@ import { AvatarPicker } from '@/profile/AvatarPicker'
 import { StatsPanel } from '@/profile/StatsPanel'
 import { useProfile } from '@/profile/useProfile'
 import { Trophies } from '@/season/Trophies'
-import { ChevronRightIcon, GearIcon, SlidersIcon } from '@/ui/icons'
+import { BrushIcon, ChevronRightIcon, GearIcon, SlidersIcon } from '@/ui/icons'
 import styles from '../pages.module.css'
 
 export default function ProfilePage() {
@@ -44,10 +44,11 @@ export default function ProfilePage() {
       <Achievements />
 
       <div className={styles.list}>
-        <button className={styles.listRow} type="button" disabled>
+        <Link className={styles.listRow} href="/estilos">
+          <BrushIcon width={20} height={20} />
           <span className={styles.listText}>{t('profile.styles')}</span>
-          <span className={styles.listValue}>{t('common.soon')}</span>
-        </button>
+          <ChevronRightIcon className={styles.chevron} width={18} height={18} />
+        </Link>
         <Link className={styles.listRow} href="/ajustes">
           <SlidersIcon width={20} height={20} />
           <span className={styles.listText}>{t('profile.settings')}</span>

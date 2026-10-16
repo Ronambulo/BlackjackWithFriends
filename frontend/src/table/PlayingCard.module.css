@@ -1,7 +1,7 @@
 .slot {
   flex-shrink: 0;
   width: var(--card-w, 64px);
-  aspect-ratio: 5 / 7;
+  aspect-ratio: var(--card-ratio, 5 / 7);
   perspective: 600px;
   transform: rotate(var(--tilt, -3deg));
   animation: deal 0.42s cubic-bezier(0.2, 0.8, 0.3, 1) var(--deal-delay, 0s) both;
@@ -60,7 +60,8 @@
 .back {
   position: absolute;
   inset: 0;
-  border-radius: calc(var(--card-w, 64px) * 0.12);
+  border-radius: calc(var(--card-w, 64px) * var(--card-radius, 0.12));
+  clip-path: var(--card-clip, none);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   box-shadow:
@@ -68,20 +69,39 @@
     0 0 0 1px rgb(0 0 0 / 0.08);
 }
 
+/*
+  The look comes from the player's style (frontend/src/cosmetics/themes.ts);
+  the fallbacks are the free one.
+*/
 .face {
-  background: #fbfaf6;
-  color: #16181c;
+  background: var(--card-face, #fbfaf6);
+  box-shadow:
+    var(--card-frame, 0 0 0 transparent),
+    0 6px 14px rgb(0 0 0 / 0.35),
+    0 0 0 1px rgb(0 0 0 / 0.08);
+  color: var(--card-ink, #16181c);
+  font-family: var(--card-font, inherit);
+  text-shadow: var(--card-glow, none);
+  backdrop-filter: var(--card-blur, none);
 }
 
-.red {
-  color: #c3243a;
+.face[data-suit='H'] {
+  color: var(--card-red, #c3243a);
+}
+
+.face[data-suit='D'] {
+  color: var(--card-diamond, var(--card-red, #c3243a));
+}
+
+.face[data-suit='C'] {
+  color: var(--card-club, var(--card-ink, #16181c));
 }
 
 .corner {
   position: absolute;
-  top: 5%;
-  left: 8%;
-  font-size: calc(var(--card-w, 64px) * 0.24);
+  top: var(--card-corner-y, 5%);
+  left: var(--card-corner-x, 8%);
+  font-size: calc(var(--card-w, 64px) * var(--card-index, 0.24));
   font-weight: 800;
   line-height: 0.95;
   text-align: center;
@@ -90,8 +110,8 @@
 
 .bottom {
   top: auto;
-  right: 8%;
-  bottom: 5%;
+  right: var(--card-corner-x, 8%);
+  bottom: var(--card-corner-y, 5%);
   left: auto;
   transform: rotate(180deg);
 }
@@ -101,14 +121,16 @@
   inset: 0;
   display: grid;
   place-items: center;
-  font-size: calc(var(--card-w, 64px) * 0.5);
+  font-size: calc(var(--card-w, 64px) * var(--card-pip, 0.5));
 }
 
 .back {
   transform: rotateY(180deg);
-  border: calc(var(--card-w, 64px) * 0.06) solid #fbfaf6;
-  background:
+  border: calc(var(--card-w, 64px) * 0.06) solid var(--card-back-edge, #fbfaf6);
+  background: var(
+    --card-back,
     repeating-linear-gradient(45deg, rgb(255 255 255 / 0.12) 0 3px, transparent 3px 8px),
     repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.12) 0 3px, transparent 3px 8px),
-    #8e1d2c;
+    #8e1d2c
+  );
 }

@@ -120,6 +120,14 @@ export function ChevronDownIcon(props: IconProps) {
   )
 }
 
+export function ChevronUpIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m6 15 6-6 6 6" />
+    </Icon>
+  )
+}
+
 export function ShareIcon(props: IconProps) {
   return (
     <Icon {...props}>
@@ -174,6 +182,15 @@ export function SlidersIcon(props: IconProps) {
       <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
       <circle cx="16" cy="7" r="2" />
       <circle cx="10" cy="17" r="2" />
+    </Icon>
+  )
+}
+
+export function BrushIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M18.4 3.6a2 2 0 0 1 2.8 2.8l-8.5 8.5-2.8-2.8z" />
+      <path d="M9.4 12.6c-2 0-3.4 1.4-3.4 3.4 0 1.6-1 2.6-2 3 1 .8 2.4 1 3.6 1 2.6 0 4.6-2 4.6-4.6" />
     </Icon>
   )
 }

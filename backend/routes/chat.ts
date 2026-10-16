@@ -6,6 +6,7 @@ import { db } from '../lib/db.js'
 import { notifyChat } from '../lib/events.js'
 import { HttpError, json } from '../lib/http.js'
 import { pushMentions, pushMessage, pushReaction, type ChatContent } from '../lib/push.js'
+import { frameColumn } from '../lib/cosmetics.js'
 import { groupMembers, hands, messages, profiles, REACTIONS, reactions, user, type SharedHand, type SharedStats } from '../lib/schema.js'
 import { playerStats } from './stats.js'
 
@@ -97,6 +98,8 @@ export interface ChatMessage {
   userId: string
   nombre: string
   avatarUrl: string | null
+  /** Their avatar frame (lib/cosmetics.ts). */
+  marco: string | null
   texto: string | null
   mano: SharedHand | null
   estadisticas: SharedStats | null
@@ -124,6 +127,7 @@ export async function getChat(request: Request): Promise<Response> {
       userId: messages.userId,
       nombre: sql<string>`coalesce(${profiles.nombre}, ${user.displayUsername}, ${user.name})`,
       avatarUrl: profiles.avatarUrl,
+      marco: frameColumn(),
       texto: messages.texto,
       mano: messages.mano,
       estadisticas: messages.estadisticas,

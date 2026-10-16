@@ -67,7 +67,7 @@ Separarlas es clave: gastar en la tienda **nunca** te baja en el ranking.
 ### Retos y logros
 - **Retos diarios**: 3 al día, iguales para todos los jugadores (p. ej. "gana 3 manos seguidas", "haz un split ganador", "gana con 5 cartas"). Cada uno da 🪙 **monedas** (no fichas) para gastar en estilos: son un logro personal, así que no cuentan para la liga ni mueven el ranking. Uno fácil (10 🪙), uno medio (20 🪙) y uno difícil (40 🪙), sacados de un catálogo de 25 según la fecha, salvo que un admin los elija. Cada reto tiene un tipo (volumen, victorias, rachas, dobles…) y los tres del día son siempre de tipos distintos; cada nivel rota en rondas barajadas, así que un reto no vuelve hasta que han salido los demás de su nivel; el progreso sale de las manos resueltas del día (hora de Madrid) y cambian a medianoche. La cantidad se ajusta en la beta.
 - **Logros** permanentes con insignia en el perfil y algunos con cosmético o monedas de premio (p. ej. "Primer blackjack", "Gana una semana", "10 semanas en el podio", "Sobrevive con 1 ficha").
-- ✅ **Logros hechos** (adelantados a la fase 8): 13, con su catálogo y recompensa en `backend/lib/achievements.ts`, tabla `achievements`. Se calculan con lo que ya hay en la base de datos (manos, grupos, semanas cerradas), así que son **retroactivos**: se comprueban tras cada mano terminada, al unirse alguien a un grupo, al cerrar la semana y para todos al arrancar el servidor. Las monedas se pagan al desbloquear. "Kamikaze" y "Superviviente" necesitan el saldo de cada mano, que solo se puede reconstruir dentro de la semana en curso (las pagas de semanas pasadas se borran), así que no cuentan semanas anteriores. Los cosméticos quedan desbloqueados pero aún no se pueden equipar (fase 10, estilos).
+- ✅ **Logros hechos** (adelantados a la fase 8): 13, con su catálogo y recompensa en `backend/lib/achievements.ts`, tabla `achievements`. Se calculan con lo que ya hay en la base de datos (manos, grupos, semanas cerradas), así que son **retroactivos**: se comprueban tras cada mano terminada, al unirse alguien a un grupo, al cerrar la semana y para todos al arrancar el servidor. Las monedas se pagan al desbloquear. "Kamikaze" y "Superviviente" necesitan el saldo de cada mano, que solo se puede reconstruir dentro de la semana en curso (las pagas de semanas pasadas se borran), así que no cuentan semanas anteriores. Los cosméticos se equipan desde Estilos (fase 10).
 
 ---
 
@@ -269,11 +269,11 @@ erDiagram
     int version
     bigint neto
   }
-  cosmetics {
-    text id PK
-    text tipo "tapete | cartas | dorso | fichas | marco_avatar"
-    text origen "gratis | logro | trofeo | tienda"
-    int precio_monedas
+  user_cosmetics {
+    uuid user_id PK,FK
+    text estilo PK "p. ej. tapete.neon"
+    int monedas "lo que pagó"
+    timestamptz created_at
   }
 ```
 
@@ -435,7 +435,7 @@ Al apostar, se toca sobre fichas de 5 / 10 / 25 / 100 / 500 / 1.000, cada valor 
 - Botón para **compartir las estadísticas** (semana o total): genera una imagen de historia de Instagram (1080×1920, con foto, resultado, ganadas/empates/perdidas y récords, dejando libres las zonas que tapa Instagram) y la manda con el menú de compartir del sistema; donde no se pueden compartir archivos, la descarga. Al lado, un botón redondo las **publica en el chat** (global y/o grupos) como una tarjeta con el resultado, la barra de ganadas/empates/perdidas y los récords.
 - Tocar el avatar cambia la foto: se abre un recortador cuadrado (arrastrar para mover; pellizcar, rueda o barra para el zoom) con el círculo del avatar marcado.
 
-**Estilos y tienda**: una cuadrícula por tipo (tapete, cartas, dorso, fichas, marco de avatar). Cada elemento está equipado, disponible o bloqueado; si está bloqueado, se indica cómo conseguirlo ("Gana una semana" o "150 🪙").
+**Estilos y tienda** (`/estilos`, desde Perfil): arriba, una mesa pequeña con lo que llevas puesto y lo que estás mirando, con cartas, dorso, fichas y tu avatar con el marco. Debajo, la barra del elegido (ponérmelo, comprar por X 🪙 con confirmación, o cuánto te falta) y una cuadrícula por tipo (tapete, cartas, dorso, fichas, marco de avatar). Cada elemento está puesto, es tuyo, tiene precio o está bloqueado; si está bloqueado, se indica cómo conseguirlo ("Gana una semana" o "Logro «Medianoche»").
 
 **Ceremonia semanal**: a pantalla completa y en secuencia: redoble → 3º → 2º → 1º con confeti → premios de broma → "has ganado X 🪙" → "¡Nueva semana!".
 
@@ -450,20 +450,32 @@ Al apostar, se toca sobre fichas de 5 / 10 / 25 / 100 / 500 / 1.000, cada valor 
 - **Avisos y notificaciones**: a quién llegamos (jugadores de los últimos 30 días por plataforma, con la app instalada o solo en el navegador, con notificaciones y cuántos dispositivos); **avisos** que salen arriba en la app (tabla `notices`), ahora o programados, durante 24 h, 7 días o hasta quitarlos, con cuántos los han visto y cuántos los cerraron (`notice_views`); y **notificaciones push** (tabla `push_campaigns`), ahora o programadas, con título, texto y la pantalla que abren, y cuántos dispositivos las recibieron. Cada aviso o notificación va a una audiencia: todos, iPhone/iPad, Android, ordenador, con la app instalada, sin ella, con notificaciones o sin ellas (esta última solo para avisos). Cada dispositivo dice lo que es al abrir la app (`POST /api/devices`, tabla `devices`); los avisos se filtran en el propio dispositivo y las notificaciones en el servidor, solo a quien tiene activado el tipo "Novedades".
 - **Encuestas**: preguntas de 2 a 6 respuestas (tablas `polls` y `poll_votes`), con plantillas sobre las reglas (límite por mano, paga diaria, fichas de la semana, duración de la liga), abiertas 24 h, 3 días, 7 días o hasta cerrarlas, y con notificación push opcional; los resultados y la participación frente a los jugadores activos, y botones para cerrar y borrar.
 - **Sistema**: estado general, tiempo encendido, latencia p95 y errores (en memoria, desde el último arranque), base de datos, fotos y última copia; **interruptores** (altas nuevas, mesa abierta, unirse a grupos; tabla `settings`); **copias de seguridad** diarias de la base de datos (se guardan las 14 últimas), "Hacer copia ahora" y **descargar** la base de datos (una copia nueva o cualquiera de las guardadas) y **restaurar** una copia guardada (antes se hace una copia de cómo está, y quien entró después tiene que volver a entrar); **avisos de fallos** de los jugadores, con "Resuelto", "Reabrir" y "Borrar"; **modo mantenimiento** con un mensaje opcional: la API responde 503 a todo salvo a los admins, el estado (`/api/status`) y el propio panel, los jugadores ven una pantalla de "Volvemos enseguida" que se abre sola al terminar y los admins una franja roja arriba; rutas más lentas, errores recientes y el **registro de lo que hacen los admins** (tabla `admin_log`).
+- **Tienda**: los estilos en una cuadrícula por tipo (Tapetes, Dorsos, Cartas, Fichas, Marcos), en el orden de la tienda, con filtros (todos, a la venta, retirados, con oferta) y una pestaña de **Estadísticas** (monedas por tipo, los más vendidos, los más llevados y los que más monedas han dado, y cuántos a la venta no ha comprado nadie). Al pulsar un estilo se abre una ventana (una hoja desde abajo en el móvil) para **cambiar el precio** o volver al de serie, ponerle una **oferta** (más barata que el precio), **moverlo** antes o después (el gratis va siempre primero) y **ponerlo a la venta o retirarlo**. Todos los estilos de la tienda **salen retirados** hasta que un admin los pone a la venta; los gratis, los de logros y los de trofeos no se pueden retirar. Quien tiene un estilo retirado lo conserva y puede llevarlo; comprarlo responde 410, y un precio que ha cambiado mientras mirabas, 409. Una **rebaja** en toda la tienda (un porcentaje, como mucho un 90 %) se gana a las ofertas solo si deja el precio más bajo. Se guarda en `settings` (`shop`), encima del catálogo del código, así que un estilo nuevo aparece solo (retirado). La pestaña del panel va en la dirección (`?tab=`), así que al recargar se queda donde estabas.
 
 #### Administración: pendiente
 
-- **Tienda de estilos** (fase 10): subir, ordenar, poner de oferta y retirar estilos; los más usados y comprados. También preparada en Liga.
 - Notas privadas de los admins en la ficha de cada jugador.
 - Más reglas editables: apuesta mínima y máxima, monedas por puesto y por reto.
 - Avisos y notificaciones solo para un grupo o un idioma.
 - Guardar las métricas entre reinicios y avisar cuando suben los errores.
 
-### Cosméticos iniciales (propuesta)
-- **Gratis** (los "pochos"): tapete verde básico, cartas clásicas y dorso rojo.
-- **Logros**: p. ej. tapete "Medianoche" por 100 blackjacks, o dorso "Kamikaze" por ganar un all-in.
-- **Trofeos**: tapete dorado "Campeón" al ganar 1 semana, o marco de avatar con laurel al ganar 5.
-- **Tienda** (🪙): unos 15 estilos variados, como neón, madera, pixel-art, minimalista o retro.
+### Cosméticos (catálogo y precios)
+✅ Hechos (fase 10). El catálogo y los precios están en `backend/lib/cosmetics.ts`; el aspecto de cada estilo, en `frontend/src/cosmetics/themes.ts` (variables CSS que el marco de la app aplica a toda la app y que la tienda pone en cada vista previa). Solo se guarda en `user_cosmetics` lo comprado: lo gratis, lo de logros y lo de trofeos se calcula al vuelo. Lo que lleva cada jugador está en `profiles.estilos_equipados`; el marco viaja con su nombre en rankings y chat, así que lo ven los demás.
+
+El precio sube con lo que cambia el estilo. Un jugador activo saca unas 300-450 🪙 a la semana, así que un color cuesta una semana de juego y lo legendario es un objetivo de varios meses.
+
+| Nivel | 🪙 | Tapete | Cartas (cara y forma) | Dorso | Fichas | Marco |
+|---|---|---|---|---|---|---|
+| Gratis | 0 | Verde casino | Clásicas | Rojo | Casino | Sin marco |
+| Color | 300 | Azul, Burdeos, Morado, Grafito, Turquesa, Coral, Oliva, Abismo, Musgo | Jumbo (índices grandes), Pastel, Ceniza | Azul, Verde, Negro, Morado, Abismo, Musgo | Retro | Bronce, Plata, Hierro, Cobre |
+| Estampado | 750 | Madera, Damasco, Cuero, Escocés, Topos, Riviera, Mármol, Vichy, Acero, Fibra de carbono, Bosque, Desierto | Cuatro colores, Vintage | Rombos, Retro, Carbono, Hojas | Pastel, Blanco y negro, Obsidiana, Bosque, Océano | Oro, Oro rosa, Cromo, Océano |
+| Diseño | 1.500 | Neón, Píxel, Atardecer, Aurora, Circuito, Lava, Nebulosa, Chapa, Obsidiana, Océano, Otoño | Noir, Neón, Pizarra, Sakura, Suerte y Cristal (como las de Balatro), Sangre, Acero, Bosque, Piedra | Art déco, Píxel, Tachuelas, Obsidiana | Neón, Gemas, Acero, Cobre | Neón, Arcoíris, Fuego, Hielo, Pinchos, Hiedra, Sombra |
+| Forma | 2.250 | | Redondas, Octógono, Hexágono | | | |
+| Legendario | 3.500 | Realeza, Holográfico, Montecarlo (con marquetería de oro) | Tarot (más alta, con su dorso), Dorada (con su dorso) | | Oro | Diamante |
+| Logro | | Medianoche (100 blackjacks) | | Kamikaze (all-in ganado) | | |
+| Trofeos | | Campeón (1 semana) | | | | Laurel (5 semanas) |
+
+Al comprar se paga y se equipa a la vez; si no llegan las monedas, la API responde 402 y no cobra nada (la resta es atómica).
 
 ---
 
@@ -563,7 +575,7 @@ Cada fase termina con algo usable y desplegado.
 | 7 | ✅ Notificaciones push | Suscripción por dispositivo, preferencias por tipo en Ajustes y envíos (paga, adelantamientos, menciones, cierre, ceremonia y moderación) |
 | 8 | ✅ Retos y logros | Retos diarios en Inicio con aviso en la mesa al completarlos y gestión en Administración; dan monedas para estilos, nunca fichas |
 | 9 | Baraja del día | Semilla diaria, 10 manos, clasificación y compartir (con su vista previa `/r/…`) |
-| 10 | Estilos y tienda | Sistema de temas para la mesa, colección, tienda y selector; en Administración, los cosméticos más usados y comprados |
+| 10 | ✅ Estilos y tienda | Sistema de temas para la mesa, colección, tienda y selector; en Administración, los cosméticos más usados y comprados |
 | 11 | Juice y pulido | Más sonidos (los básicos de la mesa ya están), más animaciones, vibración, accesibilidad y rendimiento |
 | 12 | Beta con amigos | Probar con un grupo real, ajustar la economía y corregir errores |
 

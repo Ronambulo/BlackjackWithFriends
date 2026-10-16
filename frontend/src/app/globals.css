@@ -329,6 +329,188 @@ select {
   object-fit: cover;
 }
 
+/*
+  Avatar frames from the shop (cosmetics): a ring drawn just outside the avatar,
+  so it takes no room in the layout. --frame-w comes from the avatar's size.
+*/
+.frame {
+  position: relative;
+  display: grid;
+  flex: none;
+  border-radius: 50%;
+}
+
+.frame::before {
+  position: absolute;
+  inset: calc(-1 * var(--frame-w, 3px));
+  border-radius: 50%;
+  background: var(--frame);
+  content: '';
+}
+
+.frame > .avatar {
+  position: relative;
+}
+
+.frame-plata {
+  --frame: conic-gradient(from 30deg, #f4f6f8, #9aa3ad, #e6e9ed, #7c858f, #f4f6f8);
+}
+
+.frame-oro {
+  --frame: conic-gradient(from 30deg, #fff1b8, #c9921f, #ffe08a, #8a5f10, #fff1b8);
+}
+
+.frame-neon {
+  --frame: linear-gradient(135deg, #00e5ff, #ff2ec4);
+}
+
+.frame-neon::before {
+  box-shadow:
+    0 0 8px rgb(0 229 255 / 0.7),
+    0 0 14px rgb(255 46 196 / 0.45);
+}
+
+.frame-arcoiris {
+  --frame: conic-gradient(#ff4d4d, #ffb84d, #fff24d, #5cff7a, #4dc3ff, #9a5cff, #ff4dd2, #ff4d4d);
+}
+
+.frame-arcoiris::before {
+  animation: frame-spin 4s linear infinite;
+}
+
+@keyframes frame-spin {
+  to {
+    rotate: 1turn;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame-arcoiris::before {
+    animation: none;
+  }
+}
+
+.frame-bronce {
+  --frame: conic-gradient(from 30deg, #f0c18f, #9a5b2a, #e3a670, #6e3c17, #f0c18f);
+}
+
+.frame-rosa {
+  --frame: conic-gradient(from 30deg, #ffe0d6, #c9786a, #f7c3b4, #95504a, #ffe0d6);
+}
+
+.frame-fuego {
+  --frame: conic-gradient(#ffd23f, #ff7a1a, #e8261c, #ff7a1a, #ffd23f, #ff9a1a, #e8261c, #ffd23f);
+}
+
+.frame-fuego::before {
+  box-shadow: 0 0 10px rgb(255 122 26 / 0.65);
+  animation: frame-flicker 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes frame-flicker {
+  to {
+    box-shadow: 0 0 16px rgb(255 70 20 / 0.8);
+    rotate: 40deg;
+  }
+}
+
+.frame-hielo {
+  --frame: conic-gradient(from 10deg, #ffffff, #8fd8ff, #d9f3ff, #4aa8e0, #ffffff, #b3e6ff, #ffffff);
+}
+
+.frame-hielo::before {
+  box-shadow: 0 0 8px rgb(143 216 255 / 0.6);
+}
+
+/* Diamond: white facets that catch the light as it turns. */
+.frame-diamante {
+  --frame: conic-gradient(#ffffff, #b9f2ff 10%, #ffffff 20%, #d6c8ff 30%, #ffffff 40%, #9ee8ff 55%, #ffffff 65%, #ffd6f5 80%, #ffffff);
+}
+
+.frame-diamante::before {
+  box-shadow:
+    0 0 6px rgb(255 255 255 / 0.9),
+    0 0 14px rgb(158 232 255 / 0.6);
+  animation: frame-spin 6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame-fuego::before,
+  .frame-diamante::before {
+    animation: none;
+  }
+}
+
+.frame-hierro {
+  --frame: conic-gradient(from 30deg, #6b7178, #2e3236, #575c62, #1d2023, #6b7178);
+}
+
+.frame-cobre {
+  --frame: conic-gradient(from 30deg, #f2b98a, #8a4f22, #e8a06a, #5e3214, #f2b98a);
+}
+
+.frame-cromo {
+  --frame: conic-gradient(from 20deg, #ffffff, #5d6670, #f4f6f8, #2f353b, #e3e7eb, #7c858f, #ffffff);
+}
+
+.frame-cromo::before {
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.4);
+}
+
+.frame-oceano {
+  --frame: conic-gradient(#0b2a40, #1aa39a, #8fe3ff, #1f7fae, #0b2a40, #5fd0c4, #0b2a40);
+}
+
+/* Steel teeth all round, poking out further than a plain ring. */
+.frame-pinchos {
+  --frame: repeating-conic-gradient(#e3e7eb 0 5deg, #7c858f 5deg 8deg, #1d2023 8deg 15deg);
+}
+
+.frame-pinchos::before {
+  inset: calc(-1.6 * var(--frame-w, 3px));
+}
+
+.frame-hiedra {
+  --frame: conic-gradient(#2e6b3a, #6fae4b, #1f4d28, #8cc463, #2e6b3a, #4f8f37, #1f4d28, #2e6b3a);
+}
+
+.frame-hiedra::before {
+  box-shadow: 0 0 6px rgb(111 174 75 / 0.5);
+}
+
+.frame-sombra {
+  --frame: conic-gradient(#0a0710, #3a1f5a, #0a0710, #5a2a7a, #0a0710);
+}
+
+.frame-sombra::before {
+  box-shadow: 0 0 10px rgb(90 42 122 / 0.8);
+  animation: frame-pulse 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes frame-pulse {
+  to {
+    box-shadow: 0 0 18px rgb(140 60 190 / 0.95);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame-sombra::before {
+    animation: none;
+  }
+}
+
+.frame-laurel {
+  --frame: #d9b24a;
+}
+
+.frame-leaves {
+  position: absolute;
+  inset: -22%;
+  width: 144%;
+  height: 144%;
+  pointer-events: none;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

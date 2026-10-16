@@ -39,6 +39,8 @@ export interface ChatMessage {
   userId: string
   nombre: string
   avatarUrl: string | null
+  /** Their avatar frame from the shop, null for none. */
+  marco: string | null
   texto: string | null
   mano: SharedHand | null
   estadisticas: SharedStats | null

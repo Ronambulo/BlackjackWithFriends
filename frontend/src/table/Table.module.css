@@ -98,7 +98,7 @@
 }
 
 .printPayout {
-  fill: rgb(242 193 78 / 0.8);
+  fill: color-mix(in srgb, var(--felt-print, rgb(242 193 78)) 80%, transparent);
   font-family: var(--font-felt), Georgia, serif;
   font-size: 22px;
   font-style: italic;
@@ -129,7 +129,7 @@
   width: 112px;
   height: 112px;
   margin-top: 28px;
-  border: 2px dashed rgb(242 193 78 / 0.6);
+  border: 2px dashed color-mix(in srgb, var(--felt-print, rgb(242 193 78)) 60%, transparent);
   border-radius: 50%;
 }
 
@@ -168,7 +168,7 @@
   place-items: center;
   width: 58px;
   height: 58px;
-  border: 2px solid rgb(242 193 78 / 0.55);
+  border: 2px solid color-mix(in srgb, var(--felt-print, rgb(242 193 78)) 55%, transparent);
   border-radius: 50%;
 }
 
@@ -314,7 +314,7 @@
 
 .active {
   background: rgb(0 0 0 / 0.14);
-  box-shadow: inset 0 0 0 2px rgb(242 193 78 / 0.6);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--felt-print, rgb(242 193 78)) 60%, transparent);
 }
 
 .outcome {
@@ -408,49 +408,61 @@
   cursor: not-allowed;
 }
 
+/* The colours come from the player's chip style (cosmetics/themes.ts) */
 .chip1 {
-  --edge: #a9a291;
+  --edge: var(--chip1-edge, #a9a291);
 
-  border-color: #9a968c;
-  background: #f1ede4;
-  color: #1c130d;
+  border-color: var(--chip1-stripe, #9a968c);
+  background: var(--chip1-face, #f1ede4);
+  color: var(--chip1-text, #1c130d);
 }
 
 .chip5 {
-  --edge: #8f2731;
+  --edge: var(--chip5-edge, #8f2731);
 
-  background: #d23f4c;
+  border-color: var(--chip5-stripe, #fff);
+  background: var(--chip5-face, #d23f4c);
+  color: var(--chip5-text, #fff);
 }
 
 .chip10 {
-  --edge: #1e4a92;
+  --edge: var(--chip10-edge, #1e4a92);
 
-  background: #2f62c9;
+  border-color: var(--chip10-stripe, #fff);
+  background: var(--chip10-face, #2f62c9);
+  color: var(--chip10-text, #fff);
 }
 
 .chip25 {
-  --edge: #11693c;
+  --edge: var(--chip25-edge, #11693c);
 
-  background: #1b9a59;
+  border-color: var(--chip25-stripe, #fff);
+  background: var(--chip25-face, #1b9a59);
+  color: var(--chip25-text, #fff);
 }
 
 .chip100 {
-  --edge: #050506;
+  --edge: var(--chip100-edge, #050506);
 
-  background: #222327;
+  border-color: var(--chip100-stripe, #fff);
+  background: var(--chip100-face, #222327);
+  color: var(--chip100-text, #fff);
 }
 
 .chip500 {
-  --edge: #522d8c;
+  --edge: var(--chip500-edge, #522d8c);
 
-  background: #7b47c9;
+  border-color: var(--chip500-stripe, #fff);
+  background: var(--chip500-face, #7b47c9);
+  color: var(--chip500-text, #fff);
 }
 
 .chip1000 {
-  --edge: #b26f12;
+  --edge: var(--chip1000-edge, #b26f12);
 
-  background: #f0a42a;
-  color: #1c130d;
+  border-color: var(--chip1000-stripe, #fff);
+  background: var(--chip1000-face, #f0a42a);
+  color: var(--chip1000-text, #1c130d);
 }
 
 .row {

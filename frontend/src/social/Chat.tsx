@@ -190,7 +190,7 @@ function Message({
     >
       {!mine && (
         <span className={styles.avatar}>
-          {head && <Avatar seed={message.userId} name={message.nombre} src={message.avatarUrl} size={30} />}
+          {head && <Avatar seed={message.userId} name={message.nombre} src={message.avatarUrl} frame={message.marco} size={30} />}
         </span>
       )}
       <div className={styles.body}>

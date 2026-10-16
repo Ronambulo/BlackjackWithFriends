@@ -2,6 +2,7 @@
 
 import { useTranslation } from 'react-i18next'
 import { useUser } from '@/auth/session-context'
+import { frameClass } from '@/cosmetics/themes'
 import { Avatar } from '@/ui/Avatar'
 import { CameraIcon } from '@/ui/icons'
 import { usePhotoPicker } from './usePhotoPicker'
@@ -28,7 +29,9 @@ export function AvatarPicker({ size, className = '' }: { size: number; className
           name={profile?.nombre ?? ''}
           src={profile?.avatar_url}
           size={size}
-          className={`${className} ${avatar.isPending ? styles.busy : ''}`}
+          frame={profile?.estilos.marco}
+          // A frame already rings it.
+          className={`${frameClass(profile?.estilos.marco) ? '' : className} ${avatar.isPending ? styles.busy : ''}`}
         />
         <span className={styles.badge} aria-hidden="true">
           <CameraIcon width={14} height={14} />

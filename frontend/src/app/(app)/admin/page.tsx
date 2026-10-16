@@ -16,11 +16,12 @@ import { LeagueTab } from './LeagueTab'
 import { ModerationTab } from './ModerationTab'
 import { NoticesTab } from './NoticesTab'
 import { PollsTab } from './PollsTab'
+import { ShopTab } from './ShopTab'
 import { StatsTab } from './StatsTab'
 import { SystemTab } from './SystemTab'
 import { UsersTab } from './UsersTab'
 
-const TABS = ['stats', 'users', 'moderation', 'economy', 'league', 'notices', 'polls', 'system'] as const
+const TABS = ['stats', 'users', 'moderation', 'economy', 'shop', 'league', 'notices', 'polls', 'system'] as const
 type Tab = (typeof TABS)[number]
 
 const PANELS: Record<Tab, (go: (tab: Tab) => void) => React.ReactNode> = {
@@ -28,6 +29,7 @@ const PANELS: Record<Tab, (go: (tab: Tab) => void) => React.ReactNode> = {
   users: () => <UsersTab />,
   moderation: () => <ModerationTab />,
   economy: () => <EconomyTab />,
+  shop: () => <ShopTab />,
   league: () => <LeagueTab />,
   notices: () => <NoticesTab />,
   polls: () => <PollsTab />,
@@ -53,7 +55,14 @@ function AdminPanel({ initialTab }: { initialTab: Tab }) {
   const { t } = useTranslation()
   const admin = useIsAdmin()
   const user = useUser()
-  const [tab, setTab] = useState(initialTab)
+  const [tab, setShown] = useState(initialTab)
+  // The tab goes in the address too, so a reload stays on it.
+  const setTab = (next: Tab) => {
+    setShown(next)
+    const url = new URL(window.location.href)
+    url.searchParams.set('tab', next)
+    window.history.replaceState(window.history.state, '', url)
+  }
   const { data: moderation } = useModeration()
   const { data: reports } = useReports()
 
@@ -114,7 +123,7 @@ function AdminPanel({ initialTab }: { initialTab: Tab }) {
               </button>
             ))}
           </div>
-          <div className={tab === 'users' ? styles.single : styles.grid}>{PANELS[tab](setTab)}</div>
+          <div className={tab === 'users' || tab === 'shop' ? styles.single : styles.grid}>{PANELS[tab](setTab)}</div>
         </main>
       </div>
     </PullToRefresh>

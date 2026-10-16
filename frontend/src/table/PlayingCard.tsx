@@ -21,7 +21,6 @@ export function PlayingCard({
   flipAt?: number
   still?: boolean
 }) {
-  const red = card?.suit === 'H' || card?.suit === 'D'
   const style = { '--deal-delay': `${delay}s`, '--flip-delay': `${flipAt ?? 0}s` } as CSSProperties
   const turn = !card ? styles.faceDown : flipAt !== undefined ? styles.flip : ''
   return (
@@ -32,7 +31,7 @@ export function PlayingCard({
       aria-label={card ? `${card.rank}${SUIT_SYMBOL[card.suit]}` : '?'}
     >
       <div className={`${styles.inner} ${turn}`}>
-        <div className={`${styles.face} ${red ? styles.red : ''}`} aria-hidden="true">
+        <div className={styles.face} data-suit={card?.suit} aria-hidden="true">
           {card && (
             <>
               <span className={styles.corner}>

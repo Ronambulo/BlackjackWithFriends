@@ -1,0 +1,55 @@
+/* ---------- Chips ---------- */
+
+.chip {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 4px dashed;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.chipSmall {
+  width: 26px;
+  height: 26px;
+  border-width: 3px;
+  font-size: 0.6rem;
+}
+
+/* ---------- A style on its own ---------- */
+
+.preview {
+  --card-w: 40px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  height: 72px;
+  border-radius: 12px;
+  background: var(--layer-2);
+}
+
+.preview :global(.frame),
+.preview :global(.avatar) {
+  margin: 0 auto;
+}
+
+.preview_tapete {
+  background: var(--felt-bg, #0c5a34);
+}
+
+.previewSpot {
+  width: 34px;
+  height: 34px;
+  border: 2px dashed color-mix(in srgb, var(--felt-print, rgb(242 193 78)) 60%, transparent);
+  border-radius: 50%;
+}
+
+.preview_cartas > *,
+.preview_dorso > * {
+  --tilt: 0deg;
+}

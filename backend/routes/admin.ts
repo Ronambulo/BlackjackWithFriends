@@ -5,6 +5,7 @@ import { and, count, desc, eq, inArray, or, sql } from 'drizzle-orm'
 import { activeBan, dropReview, forgetBans, isAdmin, logAction, requireAdmin, setUsername } from '../lib/admin.js'
 import { forgetAuth } from '../lib/auth.js'
 import { backupDir, createBackup, listBackups, restoreBackup } from '../lib/backup.js'
+import { cosmeticStats, setShopItem, setShopOrder, setShopSale } from '../lib/cosmetics.js'
 import { snapshot } from '../lib/metrics.js'
 import { FLAGS, flags, forgetSettings, getSetting, maintenance, setSetting, type Flag, type Maintenance } from '../lib/settings.js'
 import { databasePath, db } from '../lib/db.js'
@@ -516,6 +517,36 @@ export async function getEconomy(request: Request): Promise<Response> {
     nextRules: ruleChanges().some((rule) => rule.semana > clock.weekStart) ? rulesFor(addDays(clock.weekStart, 7)) : null,
     nextWeek: addDays(clock.weekStart, 7),
   })
+}
+
+// GET /api/admin/shop: every style with its price, sale and sales, and the sale on everything.
+export async function getAdminShop(request: Request): Promise<Response> {
+  await requireAdmin(request)
+  return json(cosmeticStats())
+}
+
+// POST /api/admin/shop/item { id, precio, oferta, retirado }: null puts a price back as it was.
+export async function postShopItem(request: Request): Promise<Response> {
+  const me = await requireAdmin(request)
+  const body = await readBody(request)
+  logAction(me, 'shop_item', String(body.id), setShopItem(body.id, body))
+  return json({ ok: true })
+}
+
+// POST /api/admin/shop/order { tipo, ids }
+export async function postShopOrder(request: Request): Promise<Response> {
+  const me = await requireAdmin(request)
+  const body = await readBody(request)
+  logAction(me, 'shop_order', setShopOrder(body.tipo, body.ids))
+  return json({ ok: true })
+}
+
+// POST /api/admin/shop/sale { rebaja }: a percentage off everything, 0 to end it.
+export async function postShopSale(request: Request): Promise<Response> {
+  const me = await requireAdmin(request)
+  const body = await readBody(request)
+  logAction(me, 'shop_sale', null, `${setShopSale(body.rebaja)} %`)
+  return json({ ok: true })
 }
 
 // GET /api/admin/league: the week in progress and how every group stands in it.
