@@ -3,6 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useUser } from '@/auth/session-context'
 import type { ChallengeId, Tier } from '@/challenges/useChallenges'
+import type { CosmeticKind } from '@/cosmetics/themes'
+import type { Source, StyleId } from '@/cosmetics/useCosmetics'
 import { api } from '@/lib/api'
 import type { Audience } from '@/push/device'
 
@@ -153,6 +155,52 @@ export interface Economy {
   nextRules: EconomyRules | null
   nextWeek: string
 }
+
+/** A style in the shop's order: how it's had today, what the admins changed, and how it sells. */
+export type AdminShopItem = {
+  id: StyleId
+  tipo: CosmeticKind
+  retirado: boolean
+  /** The price in the code, for shop styles. */
+  serie: number | null
+  /** The price an admin set instead. */
+  propio: number | null
+  oferta: number | null
+  bought: number
+  coins: number
+  wearing: number
+} & Source
+
+/** GET /api/admin/shop */
+export interface AdminShop {
+  /** A percentage off everything sold. */
+  rebaja: number
+  items: AdminShopItem[]
+}
+
+export function useAdminShop() {
+  const user = useUser()
+  return useQuery({ queryKey: ['admin', user.id, 'shop'], queryFn: () => api<AdminShop>('/admin/shop') })
+}
+
+/** The shop changes for the admin too, who may be looking at it as a player. */
+function useShopAction<T>(path: string) {
+  const user = useUser()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: T) => api<{ ok: true }>(path, { method: 'POST', body }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin', user.id] })
+      void queryClient.invalidateQueries({ queryKey: ['cosmetics', user.id] })
+    },
+  })
+}
+
+/** null puts a price back as it is in the code. */
+export const useSetShopItem = () =>
+  useShopAction<{ id: string; precio: number | null; oferta: number | null; retirado: boolean }>('/admin/shop/item')
+export const useSetShopOrder = () => useShopAction<{ tipo: CosmeticKind; ids: string[] }>('/admin/shop/order')
+export const useSetShopSale = () => useShopAction<{ rebaja: number }>('/admin/shop/sale')
 
 export interface EconomyRules {
   startBalance: number

@@ -11,6 +11,8 @@ export interface RankedMember {
   userId: string
   nombre: string
   avatarUrl: string | null
+  /** Their avatar frame from the shop, null for none. */
+  marco: string | null
   rol: GroupRole
   balance: number
   /** Chips won or lost today, pay included. */

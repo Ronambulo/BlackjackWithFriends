@@ -118,7 +118,8 @@ export const profiles = sqliteTable(
     idioma: text('idioma', { enum: LANGUAGES }).notNull().default('es'),
     // only the server changes them (prizes, shop)
     monedas: integer('monedas').notNull().default(0),
-    estilosEquipados: text('estilos_equipados', { mode: 'json' }).notNull().default({}),
+    // The style picked for each kind ('tapete' → 'tapete.neon'); a kind not here uses its free one (lib/cosmetics.ts).
+    estilosEquipados: text('estilos_equipados', { mode: 'json' }).$type<Partial<Record<CosmeticKind, string>>>().notNull().default({}),
     // League chips: one balance shared by all the player's groups (see lib/league.ts).
     saldo: integer('saldo').notNull().default(1000),
     // Dates are 'YYYY-MM-DD' in Madrid time, set by the server (lib/league.ts):
@@ -457,6 +458,26 @@ export const challengeCompletions = sqliteTable(
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.dia, t.reto] }), index('challenge_completions_dia_idx').on(t.dia)],
+)
+
+// ── Styles ──────────────────────────────────────────────────────────────────
+
+export const COSMETIC_KINDS = ['tapete', 'dorso', 'cartas', 'fichas', 'marco'] as const
+export type CosmeticKind = (typeof COSMETIC_KINDS)[number]
+
+/** Each style a player bought in the shop, once (lib/cosmetics.ts); free, achievement and trophy ones aren't stored. */
+export const userCosmetics = sqliteTable(
+  'user_cosmetics',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    estilo: text('estilo').notNull(),
+    // What it cost then, in coins.
+    monedas: integer('monedas').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.estilo] }), index('user_cosmetics_estilo_idx').on(t.estilo)],
 )
 
 // ── Push notifications ──────────────────────────────────────────────────────

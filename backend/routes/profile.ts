@@ -3,6 +3,7 @@ import { requireUser, type SessionUser } from '../lib/auth.js'
 import { db } from '../lib/db.js'
 import { HttpError, json } from '../lib/http.js'
 import { queueReview, setUsername } from '../lib/admin.js'
+import { equipped } from '../lib/cosmetics.js'
 import { leagueClock, rulesFor } from '../lib/league.js'
 import { LANGUAGES, profiles, reviews, type Language } from '../lib/schema.js'
 import { deleteObject, keyOf, mediaUrl, putObject, sniffImage } from '../lib/storage.js'
@@ -23,6 +24,8 @@ function toJson(row: ProfileRow) {
     avatar_url: row.avatarUrl,
     idioma: row.idioma,
     monedas: row.monedas,
+    // The styles the player wears, every kind filled in (lib/cosmetics.ts).
+    estilos: equipped(row.estilosEquipados),
     // When the player can change their username again; null if they can now.
     usuario_cambiable_desde: usernameFreeAt(row),
   }

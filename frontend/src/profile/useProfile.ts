@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useUser } from '@/auth/session-context'
+import type { Equipped } from '@/cosmetics/themes'
 import type { Language } from '@/i18n'
 import { api } from '@/lib/api'
 import { authClient } from '@/lib/auth-client'
@@ -15,6 +16,8 @@ export interface Profile {
   avatar_url: string | null
   idioma: Language
   monedas: number
+  /** The style of each kind the player has on (the free one if none). */
+  estilos: Equipped
   /** When the player can change their username again (ms); null if they can now. */
   usuario_cambiable_desde: number | null
 }

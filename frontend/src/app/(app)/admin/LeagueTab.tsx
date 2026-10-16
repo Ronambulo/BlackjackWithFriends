@@ -162,19 +162,6 @@ export function LeagueTab() {
       </section>
 
       <Challenges />
-
-      <section className={`card ${styles.block} ${styles.full}`}>
-        <div className={styles.sectionHead}>
-          <h2 className="label">{t('admin.comingSoon')}</h2>
-          <span className={styles.dim}>{t('admin.comingSoonHint')}</span>
-        </div>
-        <div className={styles.soonGrid}>
-          <article className={styles.soon}>
-            <b>{t('admin.soon.shop.title')}</b>
-            <span className={styles.dim}>{t('admin.soon.shop.text')}</span>
-          </article>
-        </div>
-      </section>
     </>
   )
 }

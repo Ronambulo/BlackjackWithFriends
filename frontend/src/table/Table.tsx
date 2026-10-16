@@ -135,16 +135,13 @@ function signed(n: number, lang: ReturnType<typeof currentLanguage>): string {
 
 type ChipValue = (typeof STACK_VALUES)[number]
 
-/** Casino colours: the face, the darker edge seen on a stack, the number and the stripes. */
-const CHIP_COLORS: Record<ChipValue, { face: string; edge: string; text: string; stripe: string }> = {
-  1: { face: '#f1ede4', edge: '#a9a291', text: '#1c130d', stripe: '#9a968c' },
-  5: { face: '#d23f4c', edge: '#8f2731', text: '#fff', stripe: '#fff' },
-  10: { face: '#2f62c9', edge: '#1e4a92', text: '#fff', stripe: '#fff' },
-  25: { face: '#1b9a59', edge: '#11693c', text: '#fff', stripe: '#fff' },
-  100: { face: '#222327', edge: '#050506', text: '#fff', stripe: '#fff' },
-  500: { face: '#7b47c9', edge: '#522d8c', text: '#fff', stripe: '#fff' },
-  1000: { face: '#f0a42a', edge: '#b26f12', text: '#1c130d', stripe: '#fff' },
-}
+/** A chip's colours, from the player's chip style (cosmetics/themes.ts). */
+const chipColors = (value: ChipValue) => ({
+  face: `var(--chip${value}-face)`,
+  edge: `var(--chip${value}-edge)`,
+  text: `var(--chip${value}-text)`,
+  stripe: `var(--chip${value}-stripe)`,
+})
 
 /** The fewest chips that make up an amount, largest first. */
 function chipsFor(amount: number): ChipValue[] {
@@ -471,7 +468,7 @@ function FeltPrint({ compact = false }: { compact?: boolean }) {
   return (
     <svg className={`${styles.print} ${compact ? styles.printCompact : ''}`} viewBox="0 0 390 140" aria-hidden="true">
       <path id={arcId} d="M30 24 Q195 120 360 24" fill="none" />
-      <path d="M18 42 Q195 144 372 42" fill="none" stroke="rgb(242 193 78 / 0.35)" strokeWidth="1.5" />
+      <path d="M18 42 Q195 144 372 42" fill="none" stroke="var(--felt-print, rgb(242 193 78))" strokeOpacity="0.35" strokeWidth="1.5" />
       <text className={styles.printPayout}>
         <textPath href={`#${arcId}`} startOffset="50%" textAnchor="middle">
           {t('play.payout')}
@@ -489,7 +486,7 @@ function BetStack({ amount, small = false }: { amount: number; small?: boolean }
   const lang = currentLanguage()
   const [top, ...rest] = chipsFor(amount)
     .slice(0, 7)
-    .map((value) => CHIP_COLORS[value])
+    .map(chipColors)
   if (!top) return null
   const u = small ? 2 : 4
   const shadow = [

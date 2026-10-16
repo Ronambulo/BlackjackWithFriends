@@ -11,6 +11,26 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    id: '2026-10-16-estilos',
+    date: '2026-10-16',
+    items: {
+      es: [
+        'Tienda de estilos (Perfil → Estilos): gasta tus monedas en tapetes, cartas, dorsos, fichas y marcos para tu avatar.',
+        'Desde un dorso de otro color hasta cartas redondas, octogonales o de tarot. Pruébalos en la mesa de muestra antes de comprar.',
+        'Tu marco se ve junto a tu nombre en los rankings y en el chat.',
+        'Ya puedes ponerte el tapete Medianoche, el dorso Kamikaze y los premios por trofeos si los tienes.',
+        'Estilos oscuros, metálicos y de naturaleza: acero, obsidiana, fibra de carbono, bosque, océano, otoño y más.',
+      ],
+      en: [
+        'Style shop (Profile → Styles): spend your coins on felts, cards, card backs, chips and avatar frames.',
+        'From a card back in another colour to round, octagonal or tarot cards. Try them on the sample table before buying.',
+        'Your frame shows next to your name in the rankings and the chat.',
+        'You can now wear the Midnight felt, the Kamikaze back and the trophy rewards if you have them.',
+        'Dark, metal and nature styles: steel, obsidian, carbon fibre, forest, ocean, autumn and more.',
+      ],
+    },
+  },
+  {
     id: '2026-10-15-avisos',
     date: '2026-10-15',
     items: {

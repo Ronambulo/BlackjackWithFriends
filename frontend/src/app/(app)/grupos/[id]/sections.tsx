@@ -181,7 +181,7 @@ export function MembersCard({ group }: { group: Group }) {
               <span className="sr-only">{t('ranking.place', { rank: member.rank })}</span>
               <span aria-hidden="true">{member.rank}</span>
             </span>
-            <Avatar seed={member.userId} name={member.nombre} src={member.avatarUrl} size={40} />
+            <Avatar seed={member.userId} name={member.nombre} src={member.avatarUrl} frame={member.marco} size={40} />
             <span className={styles.listText}>
               <span>
                 {member.nombre}

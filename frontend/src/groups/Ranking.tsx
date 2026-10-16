@@ -23,7 +23,7 @@ export function TopList({ members }: { members: RankedPlayer[] }) {
         return (
           <li key={member.userId} className={`${styles.topRow} ${mine ? styles.mine : ''}`} style={medal(member.rank)}>
             <span className={styles.place}>{member.rank}</span>
-            <Avatar seed={member.userId} name={member.nombre} src={member.avatarUrl} />
+            <Avatar seed={member.userId} name={member.nombre} src={member.avatarUrl} frame={member.marco} />
             <span className={styles.name}>{mine ? t('ranking.you') : member.nombre}</span>
             <span className={styles.balance}>{formatNumber(member.balance, lang)}</span>
           </li>
@@ -50,8 +50,10 @@ export function Podium({ members }: { members: RankedPlayer[] }) {
               seed={member.userId}
               name={member.nombre}
               src={member.avatarUrl}
+              frame={member.marco}
               size={member.rank === 1 ? 68 : 56}
-              className={styles.podiumAvatar}
+              // A frame already rings it.
+              className={member.marco ? '' : styles.podiumAvatar}
             />
             <span className={styles.podiumName}>{member.userId === me.id ? t('ranking.you') : member.nombre}</span>
             <span className={styles.podiumBalance}>{formatNumber(member.balance, lang)}</span>
@@ -80,7 +82,7 @@ export function Ranking({ members }: { members: RankedPlayer[] }) {
         return (
           <li key={member.userId} className={`${styles.row} ${mine ? styles.mine : ''}`}>
             <span className={styles.rowPlace}>{member.rank}</span>
-            <Avatar seed={member.userId} name={member.nombre} src={member.avatarUrl} />
+            <Avatar seed={member.userId} name={member.nombre} src={member.avatarUrl} frame={member.marco} />
             <span className={styles.who}>
               <span className={styles.name}>{mine ? t('ranking.you') : member.nombre}</span>
               {member.balance === 0 && <span className={styles.broke}>{t('ranking.broke')}</span>}

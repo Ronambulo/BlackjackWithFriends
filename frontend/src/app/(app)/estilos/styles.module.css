@@ -1,0 +1,235 @@
+.page {
+  composes: page from '../pages.module.css';
+}
+
+.titleRow {
+  composes: titleRow from '../pages.module.css';
+}
+
+.backButton {
+  composes: backButton from '../pages.module.css';
+}
+
+.title {
+  composes: title from '../pages.module.css';
+
+  flex: 1;
+}
+
+.balance {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--layer-1);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.coin {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: inset 0 0 0 3px #c99a2e;
+}
+
+.coinBig {
+  composes: coin;
+
+  width: 26px;
+  height: 26px;
+  box-shadow: inset 0 0 0 5px #c99a2e;
+}
+
+/* ---------- The small table that wears what's being tried on ---------- */
+
+.showcase {
+  --card-w: 54px;
+
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 20px 16px 16px;
+  border-radius: var(--radius);
+  background: var(--felt-bg, #0c5a34);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.25), inset 0 -30px 50px rgb(0 0 0 / 0.25);
+  color: #f4f1e8;
+  overflow: hidden;
+}
+
+.cards {
+  display: flex;
+  min-height: calc(var(--card-w) * 1.75);
+  align-items: center;
+}
+
+.seat {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.chips {
+  display: flex;
+  gap: 6px;
+}
+
+/* ---------- What's picked ---------- */
+
+.selected {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 12px 14px 12px 18px;
+  border: 1px solid rgb(255 255 255 / 0.07);
+  border-radius: var(--radius);
+  background: var(--layer-1);
+}
+
+.selectedText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.selectedName {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.selected :global(.btn) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.wearing {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--success);
+  font-weight: 700;
+}
+
+.short {
+  max-width: 55%;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  text-align: right;
+}
+
+/* ---------- The grid ---------- */
+
+.kinds button {
+  min-width: 0;
+  padding: 0 4px;
+  font-size: 0.85rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 10px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: 150px;
+  padding: 10px 8px 12px;
+  border: 1px solid rgb(255 255 255 / 0.07);
+  border-radius: 16px;
+  background: var(--layer-1);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.tile:hover {
+  background: var(--layer-2);
+}
+
+.picked {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.locked .tilePreview {
+  filter: saturate(0.5) brightness(0.75);
+}
+
+.skeleton {
+  animation: pulse 1.2s ease-in-out infinite alternate;
+  cursor: default;
+}
+
+@keyframes pulse {
+  to {
+    opacity: 0.5;
+  }
+}
+
+.tileName {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.stateOn,
+.stateOwned,
+.statePrice,
+.stateLocked {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.stateOn {
+  color: var(--success);
+}
+
+.stateOwned {
+  color: var(--text-dim);
+}
+
+.statePrice {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.stateLocked {
+  color: var(--text-dim);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.was {
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.sale {
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.stateLocked svg {
+  flex: none;
+}

@@ -6,6 +6,7 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useIsAdmin } from '@/admin/useAdmin'
 import { WhatsNewBar } from '@/changelog/WhatsNewBar'
+import { themeStyle } from '@/cosmetics/themes'
 import { currentLanguage } from '@/i18n'
 import { InstallBanner } from '@/install/InstallBanner'
 import { useMaintenance } from '@/maintenance/useMaintenance'
@@ -64,7 +65,7 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
   }, [pathname])
 
   return (
-    <div className={`${styles.shell} ${felted ? styles.felted : ''}`}>
+    <div className={`${styles.shell} ${felted ? styles.felted : ''}`} style={themeStyle(profile.estilos)}>
       {/* iOS 27 paints the status bar from a fixed element at the top; without it the edge is blurred */}
       <div className={styles.statusTint} aria-hidden="true" />
       <header className={styles.topbar}>

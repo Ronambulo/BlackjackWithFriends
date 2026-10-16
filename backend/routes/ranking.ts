@@ -3,6 +3,7 @@ import { requireUser } from '../lib/auth.js'
 import { db, type Tx } from '../lib/db.js'
 import { json } from '../lib/http.js'
 import { currentBalance, dayStartBalance, leagueClock, rollover, type LeagueClock } from '../lib/league.js'
+import { frameColumn } from '../lib/cosmetics.js'
 import { groupMembers, profiles, user } from '../lib/schema.js'
 
 // Rankings beyond a single group: everyone the player shares a group with, and the
@@ -15,6 +16,7 @@ interface PlayerRow {
   userId: string
   nombre: string
   avatarUrl: string | null
+  marco: string | null
   balance: number
   dayStart: number
 }
@@ -23,6 +25,7 @@ export interface RankedPlayer {
   userId: string
   nombre: string
   avatarUrl: string | null
+  marco: string | null
   balance: number
   dayChange: number
   rank: number
@@ -34,6 +37,7 @@ function columns(c: LeagueClock) {
     userId: profiles.id,
     nombre: sql<string>`coalesce(${profiles.nombre}, ${user.displayUsername}, ${user.name})`,
     avatarUrl: profiles.avatarUrl,
+    marco: frameColumn(),
     balance: currentBalance(c),
     dayStart: dayStartBalance(c),
   }
@@ -51,6 +55,7 @@ function rank(rows: PlayerRow[]): RankedPlayer[] {
         userId: row.userId,
         nombre: row.nombre,
         avatarUrl: row.avatarUrl,
+        marco: row.marco,
         balance: row.balance,
         dayChange: row.balance - row.dayStart,
         rank: current,

@@ -5,6 +5,7 @@ import { requireUser } from '../lib/auth.js'
 import { db, sqliteCode, type Tx } from '../lib/db.js'
 import { HttpError, json } from '../lib/http.js'
 import { currentBalance, dayStartBalance, leagueClock, rollover, rulesFor } from '../lib/league.js'
+import { frameColumn } from '../lib/cosmetics.js'
 import { groupMembers, groups, hands, pays, profiles, user, type GroupRole, type GroupSettings } from '../lib/schema.js'
 
 // Groups are rankings: each one orders its members by their league balance, which
@@ -59,6 +60,7 @@ interface MemberRow {
   rol: GroupRole
   nombre: string
   avatarUrl: string | null
+  marco: string | null
   balance: number
   dayStart: number
 }
@@ -67,6 +69,7 @@ export interface RankedMember {
   userId: string
   nombre: string
   avatarUrl: string | null
+  marco: string | null
   rol: GroupRole
   balance: number
   /** Chips won or lost today (pay included). */
@@ -89,6 +92,7 @@ function rank(members: MemberRow[]): RankedMember[] {
         userId: m.userId,
         nombre: m.nombre,
         avatarUrl: m.avatarUrl,
+        marco: m.marco,
         rol: m.rol,
         balance: m.balance,
         dayChange: m.balance - m.dayStart,
@@ -109,6 +113,7 @@ function selectMembers(tx: Tx, groupIds: string[] | SQL): MemberRow[] {
       rol: groupMembers.rol,
       nombre: sql<string>`coalesce(${profiles.nombre}, ${user.displayUsername}, ${user.name})`,
       avatarUrl: profiles.avatarUrl,
+      marco: frameColumn(),
       balance: currentBalance(clock),
       dayStart: dayStartBalance(clock),
     })

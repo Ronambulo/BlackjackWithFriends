@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import {
   useAdminLog,
@@ -347,7 +348,7 @@ function AuditLog() {
                     {t(`admin.log.${entry.accion}`, {
                       defaultValue: entry.accion,
                     })}
-                    {entry.objetivo ? ` · ${entry.objetivo}` : ""}
+                    {entry.objetivo ? ` · ${target(entry.accion, entry.objetivo, t)}` : ""}
                   </td>
                   <td className={styles.wrapCell}>{entry.detalle ?? "—"}</td>
                 </tr>
@@ -513,4 +514,11 @@ export function SystemTab() {
       <AuditLog />
     </>
   );
+}
+
+/** The shop's entries name a style or a kind: shown by name, not by id. */
+function target(accion: string, objetivo: string, t: TFunction): string {
+  if (accion === "shop_item") return t(`styles.items.${objetivo}`, { defaultValue: objetivo });
+  if (accion === "shop_order") return t(`styles.kind.${objetivo}`, { defaultValue: objetivo });
+  return objetivo;
 }
