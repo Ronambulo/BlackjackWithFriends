@@ -41,6 +41,26 @@ const svg = (width: number, height: number, body: string) =>
     `<svg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}' viewBox='0 0 ${width} ${height}'>${body}</svg>`,
   )}")`
 
+/**
+ * A 260 × 260 tile of stars, scattered the same way every time (a fixed seed),
+ * in a few sizes, white, blue and warm, with three four-pointed twinkles.
+ */
+function starField() {
+  let seed = 7
+  const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647
+  let stars = ''
+  for (let i = 0; i < 46; i++) {
+    const [x, y, size] = [random() * 260, random() * 260, random()]
+    const r = size > 0.9 ? 1.3 : size > 0.6 ? 0.9 : 0.55
+    const opacity = 0.35 + random() * 0.6
+    const colour = random() > 0.8 ? '#ffe9c4' : random() > 0.6 ? '#c9d6ff' : '#fff'
+    stars += `<circle cx='${x.toFixed(1)}' cy='${y.toFixed(1)}' r='${r}' fill='${colour}' opacity='${opacity.toFixed(2)}'/>`
+  }
+  const twinkle = (x: number, y: number, k: number) =>
+    `<path d='M${x} ${y - k}Q${x} ${y} ${x + k} ${y}Q${x} ${y} ${x} ${y + k}Q${x} ${y} ${x - k} ${y}Q${x} ${y} ${x} ${y - k}Z' fill='#fff' opacity='0.9'/>`
+  return svg(260, 260, stars + twinkle(48, 70, 4) + twinkle(190, 40, 3) + twinkle(150, 200, 3.5))
+}
+
 /** Soft colour bands, one wave over the next, from the top down. */
 const bands = (colours: string[]) => {
   const step = 600 / colours.length
@@ -60,45 +80,49 @@ const bands = (colours: string[]) => {
 /** The same random numbers every time, so a drawing doesn't change between renders. */
 const seeded = (seed: number) => () => (seed = (seed * 16807) % 2147483647) / 2147483647
 
-/** Clouds of coloured gas across the felt, with a dark lane of dust and stars all over. */
-function galaxy() {
-  const random = seeded(29)
-  const stars = Array.from({ length: 260 }, () => {
-    const r = (0.35 + random() ** 3 * 1.4).toFixed(2)
-    return `<circle cx='${(random() * 1000).toFixed(0)}' cy='${(random() * 600).toFixed(0)}' r='${r}' fill='#fff' opacity='${(0.35 + random() * 0.65).toFixed(2)}'/>`
+/**
+ * A nebula: clouds of pink, violet and teal gas over a field of stars. Each cloud is
+ * SVG fractal noise tinted one colour and faded out by a radial mask; drawn square
+ * with everything near the middle, so a phone (which only shows the middle) gets it all.
+ */
+function nebula() {
+  const random = seeded(13)
+  const size = 1000
+  // Noise in one colour, see-through wherever the noise is below 0.42
+  const cloud = (id: string, seed: number, frequency: string, [r, g, b]: number[], strength: number) =>
+    `<filter id='${id}' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='${frequency}' numOctaves='5' seed='${seed}'/>` +
+    `<feColorMatrix values='0 0 0 0 ${r} 0 0 0 0 ${g} 0 0 0 0 ${b} ${strength} 0 0 0 ${(-strength * 0.42).toFixed(2)}'/></filter>`
+  const mask = (id: string, cx: number, cy: number, r: number) =>
+    `<radialGradient id='${id}g' gradientUnits='userSpaceOnUse' cx='${cx}' cy='${cy}' r='${r}'><stop offset='0' stop-color='#fff'/><stop offset='1' stop-color='#000'/></radialGradient>` +
+    `<mask id='${id}'><rect width='${size}' height='${size}' fill='url(#${id}g)'/></mask>`
+  const colours = ['#fff', '#fff', '#ffd6f0', '#cfe0ff']
+  const stars = Array.from(
+    { length: 320 },
+    () =>
+      `<circle cx='${(random() * size).toFixed(0)}' cy='${(random() * size).toFixed(0)}' r='${(0.4 + random() ** 3 * 1.6).toFixed(2)}' fill='${colours[Math.floor(random() * colours.length)]}' opacity='${(0.35 + random() * 0.65).toFixed(2)}'/>`,
+  ).join('')
+  // A few bright stars with a soft glow, inside the clouds
+  const bright = Array.from({ length: 7 }, () => {
+    const x = (250 + random() * 500).toFixed(0)
+    const y = (150 + random() * 700).toFixed(0)
+    return `<circle cx='${x}' cy='${y}' r='9' fill='#fff' opacity='0.35' filter='url(#glow)'/><circle cx='${x}' cy='${y}' r='2' fill='#fff'/>`
   }).join('')
-  const glints = [
-    [180, 120],
-    [830, 90],
-    [620, 470],
-    [90, 430],
-    [900, 380],
-  ]
-    .map(
-      ([x, y]) =>
-        `<g stroke='#fff' stroke-linecap='round' opacity='0.9'><path d='M${x - 7} ${y}h14M${x} ${y - 7}v14' stroke-width='0.8'/></g><circle cx='${x}' cy='${y}' r='1.8' fill='#fff'/>`,
-    )
-    .join('')
+  const layer = (filter: string, mask: string, opacity = 1) =>
+    `<rect width='${size}' height='${size}' filter='url(#${filter})' mask='url(#${mask})' opacity='${opacity}'/>`
   return svg(
-    1000,
-    600,
-    `<defs>${[
-      ['p', '#6a2bd1', 0.7],
-      ['k', '#d0408f', 0.6],
-      ['u', '#2b5bd1', 0.55],
-      ['c', '#ffd9f2', 0.75],
-      ['d', '#070418', 0.6],
-    ]
-      .map(([id, colour, opacity]) => `<radialGradient id='${id}'><stop offset='0' stop-color='${colour}' stop-opacity='${opacity}'/><stop offset='1' stop-color='${colour}' stop-opacity='0'/></radialGradient>`)
-      .join('')}</defs>` +
-      `<g transform='rotate(-14 500 300)'>` +
-      `<ellipse cx='300' cy='270' rx='400' ry='190' fill='url(#p)'/>` +
-      `<ellipse cx='690' cy='320' rx='340' ry='160' fill='url(#k)'/>` +
-      `<ellipse cx='520' cy='230' rx='380' ry='120' fill='url(#u)'/>` +
-      `<ellipse cx='500' cy='300' rx='200' ry='80' fill='url(#c)'/>` +
-      `<ellipse cx='480' cy='316' rx='400' ry='26' fill='url(#d)'/></g>` +
+    size,
+    size,
+    `<defs>${cloud('pink', 8, '0.0032 0.0045', [0.95, 0.28, 0.72], 2.4)}${cloud('violet', 21, '0.004', [0.48, 0.32, 1], 2.2)}${cloud('teal', 4, '0.006', [0.2, 0.85, 0.9], 2.6)}` +
+      `${mask('m1', 420, 330, 420)}${mask('m2', 600, 660, 420)}${mask('m3', 520, 500, 230)}` +
+      `<radialGradient id='core'><stop offset='0' stop-color='#ffe3f4' stop-opacity='0.55'/><stop offset='1' stop-color='#ffe3f4' stop-opacity='0'/></radialGradient>` +
+      `<filter id='glow'><feGaussianBlur stdDeviation='5'/></filter></defs>` +
+      `<rect width='${size}' height='${size}' fill='#08031a'/>` +
       stars +
-      glints,
+      layer('violet', 'm2') +
+      layer('pink', 'm1') +
+      layer('teal', 'm3', 0.8) +
+      `<ellipse cx='500' cy='470' rx='230' ry='170' fill='url(#core)'/>` +
+      bright,
   )
 }
 
@@ -126,9 +150,9 @@ const TAPETES: Record<string, Vars> = {
     'rgb(255 225 77)',
   ),
   'tapete.cosmos': felt(
-    [lit('transparent', 'rgb(0 0 0 / 0.1)', 'rgb(0 0 0 / 0.45)'), `${galaxy()} center / cover`, '#070418'].join(', '),
+    [lit('transparent', 'rgb(0 0 0 / 0.1)', 'rgb(0 0 0 / 0.5)'), `${nebula()} center / cover`, '#08031a'].join(', '),
     '#0d0824',
-    'rgb(230 210 255)',
+    'rgb(245 225 255)',
   ),
   'tapete.turquesa': felt(lit('#1ba3a0', '#0f6f6d', '#073f3e'), '#0b5c5a'),
   'tapete.escoces': felt(
@@ -139,17 +163,15 @@ const TAPETES: Record<string, Vars> = {
     ].join(', '),
     '#5f1820',
   ),
+  // A starry night with a faint Milky Way across it.
   'tapete.medianoche': felt(
     [
-      'radial-gradient(1.5px 1.5px at 12% 18%, rgb(255 255 255 / 0.7), transparent)',
-      'radial-gradient(1px 1px at 78% 12%, rgb(255 255 255 / 0.6), transparent)',
-      'radial-gradient(1.5px 1.5px at 64% 44%, rgb(255 255 255 / 0.5), transparent)',
-      'radial-gradient(1px 1px at 30% 62%, rgb(255 255 255 / 0.5), transparent)',
-      'radial-gradient(1px 1px at 88% 70%, rgb(255 255 255 / 0.6), transparent)',
-      lit('#1f2a5e', '#0f1536', '#06081a'),
+      `${starField()} 0 0 / 260px repeat`,
+      'linear-gradient(155deg, transparent 28%, rgb(150 165 255 / 0.07) 42%, rgb(215 195 255 / 0.11) 50%, rgb(150 165 255 / 0.07) 58%, transparent 72%)',
+      lit('#26337a', '#131b4a', '#070a20'),
     ].join(', '),
     '#0c1029',
-    'rgb(200 210 255)',
+    'rgb(222 228 255)',
   ),
   'tapete.campeon': felt(lit('#c9921f', '#8a5f10', '#4a3006'), '#6e4c0c', 'rgb(255 244 200)'),
   'tapete.coral': felt(lit('#e0705a', '#b24a39', '#6e2a1f'), '#8e3b2d', 'rgb(255 236 210)'),
@@ -671,7 +693,7 @@ const FICHAS: Record<string, Vars> = {
     },
     GEM_TEXT,
   ),
-  // Pixel-art sprites, like an old arcade game; the 1000 is a clown.
+  // Pixel-art sprites, like an old arcade game.
   'fichas.pixel': chips(
     {
       1: spriteChip('fichas-pixel/1', '#ebf6f8', '#7c9195', '#445457'),
@@ -680,7 +702,7 @@ const FICHAS: Record<string, Vars> = {
       25: spriteChip('fichas-pixel/25', '#55a383', '#4d8276', '#fff'),
       100: spriteChip('fichas-pixel/100', '#4f6367', '#445457', '#fff'),
       500: spriteChip('fichas-pixel/500', '#8a71e1', '#6059a0', '#fff'),
-      1000: spriteChip('fichas-pixel/1000', '#ebf6f8', '#7c9195', '#445457'),
+      1000: spriteChip('fichas-pixel/1000', '#f2c255', '#bd983c', '#445457'),
     },
     { font: 'var(--font-pixel), monospace', weight: '400', lift: '2px', rim: '0' },
   ),
