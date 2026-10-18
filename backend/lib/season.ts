@@ -32,8 +32,13 @@ import {
 export const PLACE_COINS = [100, 60, 30]
 /** Coins for having played at all that week, once. */
 export const PLAYED_COINS = 10
+/** Coins for each joke prize won in a group that gives prizes; each prize counts once. */
+export const JOKE_COINS = 20
 /** A group gives prizes only if this many of its members played. */
 export const MIN_PLAYERS = 2
+
+/** How many joke prizes each week gives, drawn from all of them. */
+export const JOKES_PER_WEEK = 5
 
 /** What each joke prize ranks by: the most of it wins. */
 const JOKE_STAT: Record<JokePrize, keyof SeasonStats> = {
@@ -42,6 +47,35 @@ const JOKE_STAT: Record<JokePrize, keyof SeasonStats> = {
   worstStreak: 'worstStreak',
   hands: 'hands',
   insurances: 'insurances',
+  bestStreak: 'bestStreak',
+  bestWin: 'bestWin',
+  wins: 'wins',
+  pushes: 'pushes',
+  doubles: 'doubles',
+  splits: 'splits',
+  busts: 'busts',
+  surrenders: 'surrenders',
+  dealerBlackjacks: 'dealerBlackjacks',
+}
+
+/** The week's joke prizes: a draw seeded by its Monday, so every group gets the same ones. */
+export function weekJokes(semana: string): JokePrize[] {
+  // FNV-1a of the date, then mulberry32 for the shuffle.
+  let seed = 2166136261
+  for (const char of semana) seed = Math.imul(seed ^ char.charCodeAt(0), 16777619)
+  const random = () => {
+    seed = (seed + 0x6d2b79f5) | 0
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+  const pool = [...JOKE_PRIZES]
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1))
+    ;[pool[i], pool[j]] = [pool[j]!, pool[i]!]
+  }
+  const drawn = new Set(pool.slice(0, JOKES_PER_WEEK))
+  return JOKE_PRIZES.filter((prize) => drawn.has(prize))
 }
 
 interface Played {
@@ -50,6 +84,11 @@ interface Played {
   wagered: number
   blackjack: number
   insurance: number
+  doubles: number
+  split: number
+  busts: number
+  surrender: number
+  dealerBlackjack: number
 }
 
 function statsOf(played: Played[]): SeasonStats {
@@ -64,8 +103,15 @@ function statsOf(played: Played[]): SeasonStats {
     biggestBet: 0,
     worstStreak: 0,
     insurances: 0,
+    bestStreak: 0,
+    doubles: 0,
+    splits: 0,
+    busts: 0,
+    surrenders: 0,
+    dealerBlackjacks: 0,
   }
   let run = 0
+  let wins = 0
   for (const hand of played) {
     stats.hands++
     if (hand.net > 0) stats.wins++
@@ -79,6 +125,14 @@ function statsOf(played: Played[]): SeasonStats {
     // Losses in a row; a push doesn't break it.
     if (hand.net < 0) stats.worstStreak = Math.max(stats.worstStreak, ++run)
     else if (hand.net > 0) run = 0
+    // Wins in a row, the same way round.
+    if (hand.net > 0) stats.bestStreak = Math.max(stats.bestStreak, ++wins)
+    else if (hand.net < 0) wins = 0
+    stats.doubles += hand.doubles
+    if (hand.split) stats.splits++
+    stats.busts += hand.busts
+    if (hand.surrender) stats.surrenders++
+    if (hand.dealerBlackjack) stats.dealerBlackjacks++
   }
   return stats
 }
@@ -105,6 +159,15 @@ function closeWeek(tx: Tx, semana: string) {
         where json_extract(value, '$.outcome') = 'blackjack'
       )`,
       insurance: sql<number>`coalesce(json_extract(${hands.ronda}, '$.insuranceBet'), 0) > 0`,
+      doubles: sql<number>`(select count(*) from json_each(${hands.ronda}, '$.hands') where json_extract(value, '$.doubled'))`,
+      split: sql<number>`json_array_length(${hands.ronda}, '$.hands') > 1`,
+      busts: sql<number>`(select count(*) from json_each(${hands.ronda}, '$.settlement.hands')
+        where json_extract(value, '$.outcome') = 'bust')`,
+      surrender: sql<number>`exists (
+        select 1 from json_each(${hands.ronda}, '$.settlement.hands')
+        where json_extract(value, '$.outcome') = 'surrender'
+      )`,
+      dealerBlackjack: sql<number>`coalesce(json_extract(${hands.ronda}, '$.settlement.dealerBlackjack'), 0)`,
     })
     .from(hands)
     .innerJoin(profiles, eq(profiles.id, hands.userId))
@@ -133,12 +196,14 @@ function closeWeek(tx: Tx, semana: string) {
     .where(inArray(groupMembers.userId, userIds))
     .all()
   const best = new Map<string, number>()
+  const drawn = weekJokes(semana)
+  const titles = new Map<string, Set<JokePrize>>(userIds.map((id) => [id, new Set()]))
   for (const groupId of new Set(memberships.map((m) => m.groupId))) {
     const players = memberships.filter((m) => m.groupId === groupId).map((m) => m.userId)
     const conPremios = players.length >= MIN_PLAYERS
     const rank = places(players, (id) => balances.get(id) ?? 0)
     const jokes = new Map<string, JokePrize[]>(players.map((id) => [id, []]))
-    for (const prize of JOKE_PRIZES) {
+    for (const prize of drawn) {
       const of = (id: string) => stats.get(id)![JOKE_STAT[prize]]
       const top = Math.max(...players.map(of))
       const winners = players.filter((id) => of(id) === top)
@@ -148,7 +213,10 @@ function closeWeek(tx: Tx, semana: string) {
     }
     for (const userId of players) {
       const posicion = rank.get(userId)!
-      if (conPremios) best.set(userId, Math.min(best.get(userId) ?? Infinity, posicion))
+      if (conPremios) {
+        best.set(userId, Math.min(best.get(userId) ?? Infinity, posicion))
+        for (const prize of jokes.get(userId)!) titles.get(userId)!.add(prize)
+      }
       tx.insert(seasonStandings)
         .values({
           semana,
@@ -166,7 +234,7 @@ function closeWeek(tx: Tx, semana: string) {
 
   for (const userId of userIds) {
     const place = best.get(userId)
-    const monedas = (place ? (PLACE_COINS[place - 1] ?? 0) : 0) + PLAYED_COINS
+    const monedas = (place ? (PLACE_COINS[place - 1] ?? 0) : 0) + PLAYED_COINS + titles.get(userId)!.size * JOKE_COINS
     tx.insert(seasonResults)
       .values({
         semana,

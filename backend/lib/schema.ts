@@ -488,6 +488,16 @@ export interface SeasonStats {
   /** Losses in a row, at most. */
   worstStreak: number
   insurances: number
+  /** Wins in a row, at most; a push doesn't break it. */
+  bestStreak: number
+  /** Hands doubled. */
+  doubles: number
+  /** Rounds split. */
+  splits: number
+  busts: number
+  surrenders: number
+  /** Rounds where the dealer had blackjack. */
+  dealerBlackjacks: number
 }
 
 /** Each player who played a closed week, once: final balance, numbers and the coins they got. */
@@ -502,7 +512,7 @@ export const seasonResults = sqliteTable(
       .references(() => user.id, { onDelete: 'cascade' }),
     saldoFinal: integer('saldo_final').notNull(),
     estadisticas: text('estadisticas', { mode: 'json' }).$type<SeasonStats>().notNull(),
-    // The prize of their best place, plus the one for having played.
+    // The prize of their best place, the one for having played and the joke prizes'.
     monedas: integer('monedas').notNull(),
     // Best place among the groups that gave prizes; null if none did.
     mejorPuesto: integer('mejor_puesto'),
@@ -514,7 +524,8 @@ export const seasonResults = sqliteTable(
   (t) => [primaryKey({ columns: [t.semana, t.userId] }), index('season_results_user_id_idx').on(t.userId)],
 )
 
-export const JOKE_PRIZES = ['blackjacks', 'biggestBet', 'worstStreak', 'hands', 'insurances'] as const
+// Every joke prize there is; each week draws a few of them (lib/season.ts).
+export const JOKE_PRIZES = ['blackjacks', 'biggestBet', 'worstStreak', 'hands', 'insurances', 'bestStreak', 'bestWin', 'wins', 'pushes', 'doubles', 'splits', 'busts', 'surrenders', 'dealerBlackjacks'] as const
 export type JokePrize = (typeof JOKE_PRIZES)[number]
 
 /** A group's frozen ranking when a week closed: only the members who played that week. */

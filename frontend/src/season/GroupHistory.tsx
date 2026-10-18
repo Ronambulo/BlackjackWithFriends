@@ -78,9 +78,7 @@ function Week({ week }: { week: GroupWeek }) {
                 .join(', ')}{' '}
               <span className="muted">
                 ·{' '}
-                {joke.prize === 'biggestBet'
-                  ? t('season.jokeValue.biggestBet', { amount: formatNumber(joke.value, lang) })
-                  : t(`season.jokeValue.${joke.prize}`, { count: joke.value })}
+                {t(`season.jokeValue.${joke.prize}`, { count: joke.value, amount: formatNumber(joke.value, lang) })}
               </span>
             </li>
           ))}

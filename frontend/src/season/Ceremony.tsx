@@ -11,7 +11,7 @@ import { play } from '@/sound/sounds'
 import { Avatar } from '@/ui/Avatar'
 import { ChevronLeftIcon, ChevronRightIcon, CrownIcon } from '@/ui/icons'
 import styles from './Ceremony.module.css'
-import { useCeremony, useCeremonyReplay, useCeremonySeen, type Ceremony as CeremonyData } from './useSeason'
+import { JOKE_COINS, useCeremony, useCeremonyReplay, useCeremonySeen, type Ceremony as CeremonyData } from './useSeason'
 
 type Step = 'drum' | 'podium' | 'jokes' | 'coins' | 'week'
 
@@ -294,8 +294,8 @@ function Jokes({ ceremony }: { ceremony: CeremonyData }) {
   const me = useUser()
   const lang = currentLanguage()
   const group = ceremony.group!
-  const nameOf = (userId: string) =>
-    userId === me.id ? t('ranking.you') : (group.standings.find((s) => s.userId === userId)?.nombre ?? '')
+  const playerOf = (userId: string) => group.standings.find((s) => s.userId === userId)
+  const nameOf = (userId: string) => (userId === me.id ? t('ranking.you') : (playerOf(userId)?.nombre ?? ''))
   return (
     <>
       <h2 className={styles.title}>{t('season.jokes')}</h2>
@@ -306,12 +306,17 @@ function Jokes({ ceremony }: { ceremony: CeremonyData }) {
             className={`${styles.joke} ${joke.userIds.includes(me.id) ? styles.mine : ''}`}
             style={{ animationDelay: `${i * 160}ms` }}
           >
+            {/* Ties overlap, the first few only */}
+            <span className={styles.jokeFaces}>
+              {joke.userIds.slice(0, 3).map((userId) => (
+                <Avatar key={userId} seed={userId} name={playerOf(userId)?.nombre ?? ''} src={playerOf(userId)?.avatarUrl} size={40} />
+              ))}
+            </span>
             <span className={styles.jokeTitle}>{t(`season.joke.${joke.prize}`)}</span>
             <span className={styles.jokeWho}>{joke.userIds.map(nameOf).join(', ')}</span>
             <span className={styles.jokeValue}>
-              {joke.prize === 'biggestBet'
-                ? t('season.jokeValue.biggestBet', { amount: formatNumber(joke.value, lang) })
-                : t(`season.jokeValue.${joke.prize}`, { count: joke.value })}
+              {t(`season.jokeValue.${joke.prize}`, { count: joke.value, amount: formatNumber(joke.value, lang) })}
+              {group.conPremios && <span className={styles.jokeReward}>{t('season.jokeReward', { n: JOKE_COINS })}</span>}
             </span>
           </li>
         ))}

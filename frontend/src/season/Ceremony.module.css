@@ -311,7 +311,7 @@
 
 .joke {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: auto 1fr auto;
   gap: 2px 12px;
   padding: 14px 16px;
   border: 1px solid var(--border);
@@ -326,6 +326,21 @@
   background: rgb(242 193 78 / 0.1);
 }
 
+.jokeFaces {
+  display: flex;
+  grid-row: span 2;
+  align-self: center;
+}
+
+.jokeFaces > * {
+  border: 2px solid var(--layer-1);
+  border-radius: 999px;
+}
+
+.jokeFaces > * + * {
+  margin-left: -14px;
+}
+
 .jokeTitle {
   color: var(--accent);
   font-weight: 800;
@@ -333,6 +348,7 @@
 
 .jokeWho {
   grid-row: 2;
+  grid-column: 2;
   overflow: hidden;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -340,12 +356,22 @@
 }
 
 .jokeValue {
-  grid-row: span 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  grid-row: 1 / span 2;
+  grid-column: 3;
   align-self: center;
   color: var(--text-dim);
   font-size: 0.85rem;
   font-weight: 700;
   text-align: right;
+}
+
+.jokeReward {
+  color: var(--accent);
+  font-weight: 800;
 }
 
 /* ---------- Coins ---------- */
