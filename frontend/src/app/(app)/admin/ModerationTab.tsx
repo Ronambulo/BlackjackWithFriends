@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import {
@@ -9,12 +9,15 @@ import {
   useDecideReview,
   useModeration,
   useUnban,
+  useUserDetail,
   type ModerationFlag,
   type Review,
 } from '@/admin/useAdmin'
 import { ago, date } from '@/admin/format'
+import { useSetMarks } from '@/admin/useAdminTools'
 import { CloseIcon } from '@/ui/icons'
 import styles from './admin.module.css'
+import ui from './tools.module.css'
 
 export function flagTitle(t: TFunction, flag: ModerationFlag) {
   return t(`admin.flag.${flag.kind}`, { count: flag.kind === 'bot' ? Math.round(flag.value / 1000) : flag.value })
@@ -122,7 +125,7 @@ function BanForm({ target, onTarget }: { target: string; onTarget: (value: strin
           maxLength={64}
         />
       </label>
-      <label className={`${styles.formField} ${styles.narrowField}`}>
+      <label className={styles.formField}>
         {t('admin.banFor')}
         <select
           className={styles.fieldInput}
@@ -154,6 +157,41 @@ function BanForm({ target, onTarget }: { target: string; onTarget: (value: strin
   )
 }
 
+/** What the flagged player said lately, next to the flag being looked at. */
+function ChatContext({ flag }: { flag: ModerationFlag | undefined }) {
+  const { t } = useTranslation()
+  const { data, isLoading } = useUserDetail(flag?.userId ?? null)
+  const time = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+  return (
+    <aside className={ui.modContext}>
+      <h3 className="label">{flag?.username ? t('panel.mod.chatOf', { name: flag.username }) : t('panel.mod.chat')}</h3>
+      {!flag?.userId ? (
+        <p className={styles.dim}>{t('panel.mod.noUser')}</p>
+      ) : isLoading ? (
+        <p className={styles.dim}>{t('common.loading')}</p>
+      ) : !data?.messages.length ? (
+        <p className={styles.dim}>{t('panel.mod.noMessages')}</p>
+      ) : (
+        <ul className={ui.chatLines}>
+          {data.messages.slice(0, 12).map((m, i) => (
+            <li key={`${m.at}${i}`}>
+              <small className={styles.dim}>
+                {time.format(m.at)} · {m.global ? t('panel.mod.global') : t('panel.mod.group')}
+              </small>
+              <span>{m.texto}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {data?.marks.silenciadoHasta && data.marks.silenciadoHasta > Date.now() && (
+        <span className={ui.tagChip} data-tag="SILENCIADO">
+          {t('panel.user.silencedUntil', { date: date(data.marks.silenciadoHasta) })}
+        </span>
+      )}
+    </aside>
+  )
+}
+
 export function ModerationTab() {
   const { t } = useTranslation()
   const { data, isError, refetch } = useModeration()
@@ -161,6 +199,34 @@ export function ModerationTab() {
   const unban = useUnban()
   const [ignored, setIgnored] = useState(readIgnored)
   const [target, setTarget] = useState('')
+  const [selected, setSelected] = useState(0)
+  const [done, setDone] = useState<string | null>(null)
+  const marks = useSetMarks()
+  const flags = (data?.flags ?? []).filter((flag) => !ignored.includes(flagKey(flag)))
+  const current = flags[Math.min(selected, flags.length - 1)]
+
+  // S silences for a day, B takes them to the ban form, D dismisses, J/K move.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.metaKey || event.altKey || !current) return
+      const el = event.target as HTMLElement | null
+      if (el && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName))) return
+      const key = event.key.toLowerCase()
+      if (key === 'j') setSelected((i) => Math.min(flags.length - 1, i + 1))
+      else if (key === 'k') setSelected((i) => Math.max(0, i - 1))
+      else if (key === 'd') ignore(current)
+      else if (key === 'b') pick(current.username ? `@${current.username}` : (current.ip ?? ''))
+      else if (key === 's' && current.userId)
+        marks.mutate(
+          { userId: current.userId, silenceHours: 24 },
+          { onSuccess: () => setDone(t('panel.mod.silenced', { name: current.username ?? '' })) },
+        )
+      else return
+      event.preventDefault()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
 
   if (isError) return <ErrorCard onRetry={() => void refetch()} />
   if (!data) return <section className={`card ${styles.placeholder}`} aria-busy="true" />
@@ -178,12 +244,11 @@ export function ModerationTab() {
     setTarget(value)
     document.getElementById('ban-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
-  const flags = data.flags.filter((flag) => !ignored.includes(flagKey(flag)))
 
   return (
     <>
       <section className={`card ${styles.block} ${styles.full}`}>
-        <div className={styles.sectionHead}>
+        <div className={styles.headStack}>
           <h2 className="label">{t('admin.reviewQueue', { count: data.reviews.length })}</h2>
           <span className={styles.dim}>{t('admin.reviewHint')}</span>
         </div>
@@ -199,10 +264,27 @@ export function ModerationTab() {
       </section>
 
       <section className={`card ${styles.block} ${styles.full}`}>
-        <h2 className="label">{t('admin.flags')}</h2>
+        <div className={styles.sectionHead}>
+          <h2 className="label">{t('admin.flags')}</h2>
+          {flags.length > 0 && (
+            <span className={ui.keys}>
+              <kbd>J</kbd>/<kbd>K</kbd> {t('panel.mod.keyMove')} · <kbd>S</kbd> {t('panel.mod.keySilence')} · <kbd>B</kbd>{' '}
+              {t('panel.mod.keyBan')} · <kbd>D</kbd> {t('panel.mod.keyDismiss')}
+            </span>
+          )}
+        </div>
+        {done && <p className={styles.up} role="status">{done}</p>}
         {flags.length === 0 && <p className={styles.emptyBox}>{t('admin.noFlags')}</p>}
-        {flags.map((flag) => (
-          <div key={flagKey(flag)} className={styles.flagRow}>
+        {flags.length > 0 && (
+        <div className={ui.modGrid}>
+        <div>
+        {flags.map((flag, i) => (
+          <div
+            key={flagKey(flag)}
+            className={styles.flagRow}
+            data-selected={flag === current || undefined}
+            onClick={() => setSelected(i)}
+          >
             <span className={styles.sev} data-level={flag.level}>
               {t(`admin.flagLevel.${flag.level}`)}
             </span>
@@ -226,6 +308,10 @@ export function ModerationTab() {
             </div>
           </div>
         ))}
+        </div>
+        <ChatContext flag={current} />
+        </div>
+        )}
       </section>
 
       <section className={`card ${styles.block}`}>
@@ -251,7 +337,7 @@ export function ModerationTab() {
         <p className={styles.dim}>{t('admin.clusterHint')}</p>
       </section>
 
-      <section className={`card ${styles.block}`}>
+      <section className={`card ${styles.block} ${styles.span2}`}>
         <h2 className="label">{t('admin.bansTitle')}</h2>
         <BanForm target={target} onTarget={setTarget} />
         {bans.data?.length === 0 && <p className="muted">{t('admin.noBans')}</p>}

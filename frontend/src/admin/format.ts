@@ -4,6 +4,11 @@ export function number(value: number, digits = 0) {
   return new Intl.NumberFormat(currentLanguage(), { maximumFractionDigits: digits, useGrouping: 'always' }).format(value)
 }
 
+/** Short form for tight labels: "1,5 mil", "12K". */
+export function compact(value: number) {
+  return new Intl.NumberFormat(currentLanguage(), { notation: 'compact', maximumFractionDigits: 1 }).format(value)
+}
+
 export function duration(ms: number) {
   const minutes = Math.round(ms / 60_000)
   return minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)} h ${minutes % 60} min`

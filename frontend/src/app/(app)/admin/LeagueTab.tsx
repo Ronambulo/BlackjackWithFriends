@@ -38,7 +38,7 @@ function Challenges() {
   }
 
   return (
-    <form className={`card ${styles.block}`} onSubmit={submit}>
+    <form className={`card ${styles.block} ${styles.span2}`} onSubmit={submit}>
       <div className={styles.sectionHead}>
         <h2 className="label">{t('admin.challengesTitle')}</h2>
         <span className={styles.dim}>{data.today.custom ? t('admin.challengesCustom') : t('admin.challengesAuto')}</span>
@@ -47,7 +47,7 @@ function Challenges() {
         {data.today.challenges.map((c) => (
           <li key={c.id}>
             <span className={styles.userName}>
-              <b className={styles.ellipsis}>{text(c)}</b>
+              <b className={styles.wrapText}>{text(c)}</b>
               <small className={styles.ellipsis}>
                 {t(`challenges.tiers.${c.tier}`)} · {t('challenges.reward', { count: c.coins })}
               </small>

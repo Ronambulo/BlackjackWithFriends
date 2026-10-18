@@ -6,6 +6,7 @@ import { and, eq, sql } from 'drizzle-orm'
 import type { AchievementId } from './achievements.js'
 import { db, type Tx } from './db.js'
 import { HttpError } from './http.js'
+import { priceFactor, scheduledSale, testFor, testGroup } from './schedule.js'
 import { getSetting, setSetting } from './settings.js'
 import { achievements, COSMETIC_KINDS, profiles, seasonStandings, userCosmetics, type CosmeticKind } from './schema.js'
 
@@ -178,13 +179,22 @@ function ordered(kind: CosmeticKind, saved: string[] | undefined): Cosmetic[] {
   return [free, ...list]
 }
 
-/** Every style in the shop's order with today's prices. */
-export function catalogue(settings = shopSettings()): Listed[] {
+/**
+ * Every style in the shop's order with today's prices: the admins' own, scaled by a scheduled
+ * price change, then the best sale. For a player in group B of a price test, that test's price.
+ */
+export function catalogue(settings = shopSettings(), userId?: string): Listed[] {
+  const factor = priceFactor()
   return COSMETIC_KINDS.flatMap((kind) => ordered(kind, settings.order[kind])).map((cosmetic): Listed => {
     if (cosmetic.source.from !== 'tienda') return { cosmetic, source: cosmetic.source, retirado: false }
     const own = settings.items[cosmetic.id] ?? {}
-    const base = own.precio ?? cosmetic.source.precio
-    const sale = Math.max(1, Math.round((base * (100 - settings.rebaja)) / 100))
+    const test = userId ? testFor(cosmetic.id) : undefined
+    const base =
+      test && testGroup(userId!, test.id) === 'B'
+        ? test.precioB
+        : Math.max(1, Math.round(((own.precio ?? cosmetic.source.precio) * factor) / 100))
+    const rebaja = Math.max(settings.rebaja, scheduledSale(cosmetic.tipo))
+    const sale = Math.max(1, Math.round((base * (100 - rebaja)) / 100))
     const precio = Math.min(base, own.oferta ?? base, sale)
     return {
       cosmetic,
@@ -245,7 +255,7 @@ export function cosmeticsFor(userId: string) {
       monedas: profile?.monedas ?? 0,
       equipped: equipped(profile?.estilos),
       // Out of the shop, a style is still there for whoever has it.
-      items: catalogue()
+      items: catalogue(undefined, userId)
         .filter((l) => !l.retirado || owned.has(l.cosmetic.id))
         .map((l) => ({ id: l.cosmetic.id, tipo: l.cosmetic.tipo, ...l.source, antes: l.antes, owned: owned.has(l.cosmetic.id) })),
     }
@@ -278,7 +288,7 @@ export function equipCosmetic(userId: string, id: unknown) {
 /** Buys a shop style with coins and puts it on, at the price the player saw. */
 export function buyCosmetic(userId: string, id: unknown, seen: unknown) {
   const cosmetic = find(id)
-  const listed = catalogue().find((l) => l.cosmetic === cosmetic)!
+  const listed = catalogue(undefined, userId).find((l) => l.cosmetic === cosmetic)!
   const source = listed.source
   if (source.from !== 'tienda') throw new HttpError(400, 'Ese estilo no se vende')
   if (listed.retirado) throw new HttpError(410, 'Ese estilo ya no está a la venta')

@@ -34,6 +34,9 @@ syncAllAchievements()
 // Reminders at set times: the daily pay, the week about to close (lib/push.ts).
 const { schedulePush } = await import('./lib/push.js')
 schedulePush()
+// The rules the owners switch on in the panel, and their Monday summary (lib/automations.ts).
+const { scheduleAutomations } = await import('./lib/automations.js')
+scheduleAutomations()
 console.log(`Base de datos en ${databasePath()}`)
 
 async function toRequest(req: IncomingMessage, url: URL): Promise<Request> {

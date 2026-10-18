@@ -8,15 +8,32 @@ import type { Source, StyleId } from '@/cosmetics/useCosmetics'
 import { api } from '@/lib/api'
 import type { Audience } from '@/push/device'
 
-/** GET /api/me: whether the player runs the app (undefined until known). */
-export function useIsAdmin(): boolean | undefined {
+export type Role = 'dueno' | 'moderador' | 'soporte'
+
+function useMe() {
   const user = useUser()
-  const { data } = useQuery({
+  return useQuery({
     queryKey: ['me', user.id],
-    queryFn: () => api<{ id: string; admin: boolean }>('/me'),
+    queryFn: () => api<{ id: string; admin: boolean; role: Role | null }>('/me'),
     staleTime: Infinity,
   })
-  return data?.admin
+}
+
+/** GET /api/me: whether the player runs the app (undefined until known). */
+export function useIsAdmin(): boolean | undefined {
+  return useMe().data?.admin
+}
+
+/** What the admin may do: owner, moderator or support (null: not on the team). */
+export function useRole(): Role | null | undefined {
+  return useMe().data?.role
+}
+
+const RANK: Record<Role, number> = { soporte: 0, moderador: 1, dueno: 2 }
+
+/** Whether the role reaches at least `min`. */
+export function can(role: Role | null | undefined, min: Role) {
+  return role ? RANK[role] >= RANK[min] : false
 }
 
 export interface TopEntry {
@@ -39,6 +56,8 @@ export interface WeekFigures {
 /** GET /api/admin/stats (routes/admin.ts). */
 export interface AdminStats {
   now: number
+  /** Days each period covers (1, 7, 28 or 90). */
+  span: number
   weekEndsAt: number
   live: { players: number; open: number; lastHandAt: number | null }
   users: number
@@ -74,6 +93,27 @@ export interface AdminUser {
   monedas: number | null
   admin: boolean
   banned: boolean
+  lastHand: number | null
+  etiquetas: string[]
+  silenced: boolean
+}
+
+export type Segment = 'new' | 'risk' | 'broke' | 'whales'
+
+export interface AdminUsers {
+  total: number
+  segments: Record<Segment, number>
+  tags: { tag: string; n: number }[]
+  users: AdminUser[]
+}
+
+export interface HistoryEvent {
+  kind: 'signup' | 'purchase' | 'achievement' | 'group' | 'admin'
+  at: number
+  text?: string | null
+  value?: number | null
+  by?: string | null
+  detail?: string | null
 }
 
 /** GET /api/admin/users/detail (routes/admin.ts). */
@@ -87,6 +127,13 @@ export interface UserDetail {
   lastHands: { at: number; bet: number; net: number | null; phase: string }[]
   /** Chips or coins an admin added or took away by hand, newest first. */
   adjustments: Adjustment[]
+  marks: { etiquetas: string[]; hermanas: { id: string; username: string }[]; silenciadoHasta: number | null }
+  notes: { id: number; admin: string; texto: string; createdAt: number }[]
+  history: HistoryEvent[]
+  /** Chips won or lost each day for two weeks. */
+  chart: { day: string; net: number; hands: number }[]
+  /** Their last chat messages. */
+  messages: { texto: string; at: number; global: boolean }[]
 }
 
 export type AdjustmentKind = 'saldo' | 'monedas'
@@ -294,6 +341,8 @@ export interface LogEntry {
   accion: string
   objetivo: string | null
   detalle: string | null
+  undoable: boolean
+  deshecho: boolean
   createdAt: number
 }
 
@@ -322,16 +371,25 @@ export function useModeration() {
   return useQuery({ queryKey: ['admin', user.id, 'moderation'], queryFn: () => api<Moderation>('/admin/moderation') })
 }
 
-export function useAdminStats() {
-  const user = useUser()
-  return useQuery({ queryKey: ['admin', user.id, 'stats'], queryFn: () => api<AdminStats>('/admin/stats') })
-}
-
-export function useAdminUsers(q: string) {
+export function useAdminStats(days = 7) {
   const user = useUser()
   return useQuery({
-    queryKey: ['admin', user.id, 'users', q],
-    queryFn: () => api<{ total: number; users: AdminUser[] }>(`/admin/users?q=${encodeURIComponent(q)}`),
+    queryKey: ['admin', user.id, 'stats', days],
+    queryFn: () => api<AdminStats>(`/admin/stats?days=${days}`),
+    placeholderData: (previous) => previous,
+  })
+}
+
+export function useAdminUsers(q: string, segment: Segment | null = null, tag: string | null = null) {
+  const user = useUser()
+  return useQuery({
+    queryKey: ['admin', user.id, 'users', q, segment, tag],
+    queryFn: () => {
+      const params = new URLSearchParams({ q })
+      if (segment) params.set('segment', segment)
+      if (tag) params.set('tag', tag)
+      return api<AdminUsers>(`/admin/users?${params}`)
+    },
     placeholderData: (previous) => previous,
   })
 }
@@ -351,7 +409,7 @@ export function useBans() {
 }
 
 /** A change from the admin screen: refreshes everything on it afterwards. */
-function useAdminAction<T>(path: string) {
+export function useAdminAction<T>(path: string) {
   const user = useUser()
   const queryClient = useQueryClient()
   return useMutation({

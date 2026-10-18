@@ -2,6 +2,7 @@ import { and, eq, lt, sql } from 'drizzle-orm'
 import type { Tx } from './db.js'
 import { db } from './db.js'
 import { economyRules, pays, profiles } from './schema.js'
+import { payMultiplier } from './schedule.js'
 
 // The league economy. Everything is fixed by the server and the same for every
 // group: the balance is the player's, groups only rank it.
@@ -173,7 +174,8 @@ export function selectLeague(tx: Tx, userId: string, c = leagueClock()): LeagueS
 /** Claims every unclaimed day of pay this week at once. Returns false if there was nothing. */
 export function claimPay(tx: Tx, userId: string, c = leagueClock()): boolean {
   // What the claim pays, worked out before the update moves ultimaPaga.
-  const { dailyPay } = rulesFor(c.weekStart)
+  // A "hora feliz" the admins scheduled multiplies it.
+  const dailyPay = rulesFor(c.weekStart).dailyPay * payMultiplier()
   const paid = dailyPay * (tx.select({ days: pendingDays(c) }).from(profiles).where(eq(profiles.id, userId)).get()?.days ?? 0)
   const claimed = tx
     .update(profiles)

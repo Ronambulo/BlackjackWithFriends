@@ -176,7 +176,8 @@ function ShopTile({ item, position, onOpen }: { item: AdminShopItem; position: n
         <b>{name}</b>
         <PriceLine item={item} />
         <small className={styles.dim}>
-          {t('admin.shop.tileStats', { bought: number(item.bought), wearing: number(item.wearing) })}
+          {t('admin.shop.boughtN', { count: item.bought, n: number(item.bought) })} ·{' '}
+          {t('admin.shop.wearingN', { count: item.wearing, n: number(item.wearing) })}
         </small>
       </span>
     </button>
@@ -287,7 +288,7 @@ function EditModal({ item, list, onClose }: { item: AdminShopItem; list: AdminSh
           {isSold && (
             <div className={styles.shopRowBox}>
               <span>
-                <b>{onSale ? t('admin.shop.on') : t('admin.shop.off')}</b>
+                <b>{t('admin.shop.on')}</b>
                 <small>{onSale ? t('admin.shop.onHint') : t('admin.shop.offHint')}</small>
               </span>
               <button
@@ -414,9 +415,10 @@ function ShopStats({ items }: { items: AdminShopItem[] }) {
     return { kind, coins: of.reduce((sum, item) => sum + item.coins, 0), bought: of.reduce((sum, item) => sum + item.bought, 0) }
   })
   const most = Math.max(1, ...perKind.map((row) => row.coins))
+  // Only what can be bought: the free styles everyone starts with would top "most worn".
   const top = (key: 'bought' | 'wearing' | 'coins') =>
     items
-      .filter((item) => item[key] > 0)
+      .filter((item) => sold(item) && item[key] > 0)
       .sort((a, b) => b[key] - a[key])
       .slice(0, 5)
   const never = items.filter((item) => sold(item) && !item.retirado && item.bought === 0).length
@@ -432,37 +434,39 @@ function ShopStats({ items }: { items: AdminShopItem[] }) {
               <span style={{ width: `${(row.coins / most) * 100}%` }} />
             </span>
             <span>
-              {number(row.coins)} <small className={styles.dim}>· {t('admin.shop.boughtN', { n: number(row.bought) })}</small>
+              {number(row.coins)} <small className={styles.dim}>· {t('admin.shop.boughtN', { count: row.bought, n: number(row.bought) })}</small>
             </span>
           </div>
         ))}
         <small className={styles.dim}>{t('admin.shop.neverBought', { count: never })}</small>
       </section>
-      {(['bought', 'wearing', 'coins'] as const).map((key) => {
-        const rows = top(key)
-        return (
-          <section key={key} className={styles.shopRanking}>
-            <h3 className="label">{t(`admin.shop.top.${key}`)}</h3>
-            {rows.length === 0 ? (
-              <p className={styles.dim}>{t('admin.shop.nothingYet')}</p>
-            ) : (
-              <ol>
-                {rows.map((item, i) => (
-                  <li key={item.id}>
-                    <span className={styles.dim}>{i + 1}</span>
-                    <StylePreview id={item.id} tipo={item.tipo} className={styles.shopMini} />
-                    <span className={styles.userName}>
-                      <b>{t(`styles.items.${item.id}`)}</b>
-                      <small>{t(`styles.kind.${item.tipo}`)}</small>
-                    </span>
-                    <b>{number(item[key])}</b>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </section>
-        )
-      })}
+      <div className={styles.shopRankings}>
+        {(['bought', 'wearing', 'coins'] as const).map((key) => {
+          const rows = top(key)
+          return (
+            <section key={key} className={styles.shopRanking}>
+              <h3 className="label">{t(`admin.shop.top.${key}`)}</h3>
+              {rows.length === 0 ? (
+                <p className={styles.dim}>{t('admin.shop.nothingYet')}</p>
+              ) : (
+                <ol>
+                  {rows.map((item, i) => (
+                    <li key={item.id}>
+                      <span className={styles.dim}>{i + 1}</span>
+                      <StylePreview id={item.id} tipo={item.tipo} className={styles.shopMini} />
+                      <span className={styles.userName}>
+                        <b>{t(`styles.items.${item.id}`)}</b>
+                        <small>{t(`styles.kind.${item.tipo}`)}</small>
+                      </span>
+                      <b>{number(item[key])}</b>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </section>
+          )
+        })}
+      </div>
     </div>
   )
 }

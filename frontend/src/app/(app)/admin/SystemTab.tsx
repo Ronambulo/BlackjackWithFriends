@@ -4,7 +4,6 @@ import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import {
-  useAdminLog,
   useAdminSettings,
   useBackupNow,
   useBackups,
@@ -105,8 +104,9 @@ function Maintenance() {
           <span className="field-label">
             {t("admin.maintenance.message")}
           </span>
-          <input
-            className="input"
+          <textarea
+            className={`${styles.fieldInput} ${styles.textarea}`}
+            rows={4}
             maxLength={200}
             placeholder={t("maintenance.text")}
             value={message}
@@ -178,7 +178,7 @@ function Backups() {
           <li key={item.name}>
             <span className={styles.userName}>
               <b>{date(item.createdAt)}</b>
-              <small className={styles.ellipsis}>{item.name}</small>
+              <small className={styles.wrapText}>{item.name}</small>
             </span>
             <span className={styles.dim}>{size(item.bytes)}</span>
             <a
@@ -319,48 +319,6 @@ function Reports() {
   );
 }
 
-function AuditLog() {
-  const { t } = useTranslation();
-  const { data } = useAdminLog();
-  return (
-    <section className={`card ${styles.block} ${styles.full}`}>
-      <h2 className="label">{t("admin.auditTitle")}</h2>
-      {data?.length === 0 && (
-        <p className={styles.emptyBox}>{t("admin.auditEmpty")}</p>
-      )}
-      {!!data?.length && (
-        <div className={styles.scroll}>
-          <table className={`${styles.oddsTable} ${styles.textTable}`}>
-            <thead>
-              <tr>
-                <th scope="col">{t("admin.audit.when")}</th>
-                <th scope="col">{t("admin.audit.who")}</th>
-                <th scope="col">{t("admin.audit.what")}</th>
-                <th scope="col">{t("admin.audit.detail")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.slice(0, 30).map((entry) => (
-                <tr key={entry.id}>
-                  <td>{t("admin.agoShort", { time: ago(entry.createdAt) })}</td>
-                  <td>{entry.admin}</td>
-                  <td>
-                    {t(`admin.log.${entry.accion}`, {
-                      defaultValue: entry.accion,
-                    })}
-                    {entry.objetivo ? ` · ${target(entry.accion, entry.objetivo, t)}` : ""}
-                  </td>
-                  <td className={styles.wrapCell}>{entry.detalle ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
-  );
-}
-
 export function SystemTab() {
   const { t } = useTranslation();
   const { data, isError, refetch } = useSystem();
@@ -454,7 +412,7 @@ export function SystemTab() {
       <Switches />
       <Backups />
 
-      <section className={`card ${styles.block}`}>
+      <section className={`card ${styles.block} ${styles.span2}`}>
         <h2 className="label">{t("admin.slowRoutes")}</h2>
         {slow.length === 0 && (
           <p className={styles.emptyBox}>{t("admin.noTraffic")}</p>
@@ -511,14 +469,35 @@ export function SystemTab() {
         </ul>
       </section>
 
-      <AuditLog />
     </>
   );
 }
 
 /** The shop's entries name a style or a kind: shown by name, not by id. */
-function target(accion: string, objetivo: string, t: TFunction): string {
-  if (accion === "shop_item") return t(`styles.items.${objetivo}`, { defaultValue: objetivo });
+export function target(accion: string, objetivo: string, t: TFunction): string {
+  // A style taken out of the game keeps its id in the log: shown as a plain name.
+  if (accion === "shop_item") {
+    const plain = objetivo.split(".").pop() ?? objetivo;
+    return t(`styles.items.${objetivo}`, { defaultValue: plain.charAt(0).toUpperCase() + plain.slice(1) });
+  }
   if (accion === "shop_order") return t(`styles.kind.${objetivo}`, { defaultValue: objetivo });
+  if (accion === "export") return t(`admin.export.${objetivo}`, { defaultValue: objetivo });
+  if (accion === "flag_on" || accion === "flag_off")
+    return t(`admin.switch.${objetivo}.title`, { defaultValue: objetivo });
   return objetivo;
+}
+
+/** A style's change is saved as "price · oferta N · retirado": spelled out here. */
+export function detail(accion: string, detalle: string | null, t: TFunction): string {
+  if (!detalle) return "—";
+  if (accion !== "shop_item") return detalle;
+  const [price, ...rest] = detalle.split(" · ");
+  const offer = rest.find((part) => part.startsWith("oferta "));
+  return [
+    t("admin.shop.logPrice", { n: number(Number(price)) }),
+    offer && t("admin.shop.logOffer", { n: number(Number(offer.slice(7))) }),
+    rest.includes("retirado") ? t("admin.shop.off") : t("admin.shop.on"),
+  ]
+    .filter(Boolean)
+    .join(" · ");
 }

@@ -1,6 +1,6 @@
 // The whole API in one fetch handler, routed by pathname. server.ts serves it.
 import { DEFAULT_RULES } from '@bwf/engine'
-import { clientIp, isAdmin, isBanned } from '../lib/admin.js'
+import { clientIp, isAdmin, isBanned, roleOf } from '../lib/admin.js'
 import { record, recordError } from '../lib/metrics.js'
 import { isOn, maintenance } from '../lib/settings.js'
 import { auth, requireUser } from '../lib/auth.js'
@@ -59,6 +59,34 @@ import {
   listUsers,
   unbanIp,
 } from '../routes/admin.js'
+import {
+  closeSessions,
+  deleteEvent,
+  deleteNote,
+  dismissInbox,
+  endTest,
+  getAutomations,
+  getCalendar,
+  getCoinFlow,
+  getEvents,
+  getFeed,
+  getInbox,
+  getLive,
+  getSegments,
+  getTeam,
+  getTests,
+  postAutomation,
+  postEvent,
+  postMarks,
+  postNote,
+  postSegment,
+  postTeam,
+  postTest,
+  removeAvatar,
+  undoLog,
+  viewAsPlayer,
+  pushUser,
+} from '../routes/admin-tools.js'
 import {
   closePoll,
   deleteCampaign,
@@ -149,7 +177,8 @@ const routes: Routes = {
   '/api/me': {
     GET: async (request) => {
       const me = await requireUser(request)
-      return json({ ...me, admin: isAdmin(me.id) })
+      const role = roleOf(me.id)
+      return json({ ...me, admin: role !== null, role })
     },
   },
   '/api/profile': {
@@ -239,6 +268,27 @@ const routes: Routes = {
   '/api/admin/reports/delete': { POST: deleteReport },
   '/api/admin/export': { GET: getExport },
   '/api/admin/log': { GET: getAdminLog },
+  '/api/admin/log/undo': { POST: undoLog },
+  '/api/admin/inbox': { GET: getInbox },
+  '/api/admin/inbox/dismiss': { POST: dismissInbox },
+  '/api/admin/live': { GET: getLive },
+  '/api/admin/feed': { GET: getFeed },
+  '/api/admin/marks': { POST: postMarks },
+  '/api/admin/notes': { POST: postNote },
+  '/api/admin/notes/delete': { POST: deleteNote },
+  '/api/admin/users/sessions': { POST: closeSessions },
+  '/api/admin/users/avatar': { POST: removeAvatar },
+  '/api/admin/users/view': { GET: viewAsPlayer },
+  '/api/admin/users/push': { POST: pushUser },
+  '/api/admin/events': { GET: getEvents, POST: postEvent },
+  '/api/admin/events/delete': { POST: deleteEvent },
+  '/api/admin/tests': { GET: getTests, POST: postTest },
+  '/api/admin/tests/end': { POST: endTest },
+  '/api/admin/team': { GET: getTeam, POST: postTeam },
+  '/api/admin/automations': { GET: getAutomations, POST: postAutomation },
+  '/api/admin/calendar': { GET: getCalendar },
+  '/api/admin/economy/flow': { GET: getCoinFlow },
+  '/api/admin/segments': { GET: getSegments, POST: postSegment },
   // The notice the admins put on top of the app, for everyone.
   // Apps from before /api/notices.
   '/api/announcement': { GET: async () => json(legacyAnnouncement()) },

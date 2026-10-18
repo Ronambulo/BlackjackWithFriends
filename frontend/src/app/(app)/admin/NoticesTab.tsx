@@ -73,7 +73,7 @@ function Reach({ data }: { data: AdminNotices['audiences'] }) {
     [t('admin.reach.pushDevices'), number(data.pushDevices)],
   ]
   return (
-    <section className={`card ${styles.block}`}>
+    <section className={`card ${styles.block} ${styles.full}`}>
       <div className={styles.sectionHead}>
         <h2 className="label">{t('admin.reach.title')}</h2>
         <span className={styles.dim}>{t('admin.reach.hint')}</span>
@@ -182,7 +182,7 @@ function Notices({ data }: { data: AdminNotices }) {
   const { t } = useTranslation()
   const end = useEndNotice()
   return (
-    <section className={`card ${styles.block}`}>
+    <section className={`card ${styles.block} ${styles.span2}`}>
       <h2 className="label">{t('admin.noticesTitle')}</h2>
       {data.notices.length === 0 && <p className={styles.emptyBox}>{t('admin.noNotices')}</p>}
       <ul className={styles.banList}>
@@ -297,7 +297,7 @@ function NewCampaign({ reach }: { reach: Record<Audience, number> }) {
           <select className={styles.fieldInput} value={audience} onChange={(event) => setAudience(event.target.value as Audience)}>
             {AUDIENCES.filter((key) => key !== 'noPush').map((key) => (
               <option key={key} value={key}>
-                {t(`admin.audience.${key}`)} · {t('admin.devices', { count: reach[key] })}
+                {t(`admin.audience.${key}`)}
               </option>
             ))}
           </select>
@@ -331,7 +331,7 @@ function Campaigns({ data }: { data: AdminNotices }) {
   const { t } = useTranslation()
   const remove = useDeleteCampaign()
   return (
-    <section className={`card ${styles.block}`}>
+    <section className={`card ${styles.block} ${styles.span2}`}>
       <h2 className="label">{t('admin.campaignsTitle')}</h2>
       {data.campaigns.length === 0 && <p className={styles.emptyBox}>{t('admin.noCampaigns')}</p>}
       <ul className={styles.banList}>

@@ -39,7 +39,7 @@ export async function getAdminChallenges(request: Request): Promise<Response> {
 
 // POST /api/admin/challenges { ids: [easy, medium, hard] | null }: picks tomorrow's (null: back to the date's).
 export async function postAdminChallenges(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'dueno')
   const body = (await request.json().catch(() => null)) as { ids?: unknown } | null
   const ids = body?.ids
   if (ids !== null && !(Array.isArray(ids) && ids.every((id) => typeof id === 'string'))) throw new HttpError(400, 'Faltan los retos')

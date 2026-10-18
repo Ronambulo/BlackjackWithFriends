@@ -316,10 +316,92 @@ export const adminLog = sqliteTable(
     accion: text('accion').notNull(),
     objetivo: text('objetivo'),
     detalle: text('detalle'),
+    // What puts it back as it was (lib/undo.ts); null: it can't be undone.
+    deshacer: text('deshacer', { mode: 'json' }).$type<Undo>(),
+    deshecho: integer('deshecho', { mode: 'boolean' }).notNull().default(false),
     createdAt: createdAt(),
   },
   (t) => [index('admin_log_created_at_idx').on(t.createdAt)],
 )
+
+/** How to put an admin's change back (lib/undo.ts). */
+export type Undo =
+  | { kind: 'adjust'; userId: string; tipo: 'saldo' | 'monedas'; cantidad: number }
+  | { kind: 'unban'; ips: string[] }
+  | { kind: 'setting'; key: string; value: unknown }
+  | { kind: 'marks'; userId: string; etiquetas: string[]; hermanas: string[]; silenciadoHasta: number | null }
+  | { kind: 'deleteEvent'; id: number }
+  | { kind: 'deleteTest'; id: number }
+
+// ── Admin tools ─────────────────────────────────────────────────────────────
+
+/** What the admins write about a player, for each other: the player never sees it. */
+export const adminNotes = sqliteTable(
+  'admin_notes',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    // username of the admin
+    admin: text('admin').notNull(),
+    texto: text('texto').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('admin_notes_user_idx').on(t.userId, t.createdAt)],
+)
+
+/** Tags the admins put on a player, the accounts they know belong to the same person, and a chat silence. */
+export const playerMarks = sqliteTable('player_marks', {
+  userId: text('user_id')
+    .primaryKey()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  etiquetas: text('etiquetas', { mode: 'json' }).$type<string[]>().notNull().default([]),
+  // Ids of the player's other accounts ("hermanas"): kept on both sides.
+  hermanas: text('hermanas', { mode: 'json' }).$type<string[]>().notNull().default([]),
+  // Can't write in any chat until then.
+  silenciadoHasta: timestamp('silenciado_hasta'),
+  updatedAt: updatedAt(),
+})
+
+export const EVENT_KINDS = ['doble_paga', 'rebajas', 'tematico', 'precios'] as const
+export type EventKind = (typeof EVENT_KINDS)[number]
+
+/**
+ * Something the admins scheduled (lib/schedule.ts): double pay for a while, a sale on a kind of
+ * style, a themed day (only on the calendar), or the shop's prices scaled from a date on.
+ */
+export const adminEvents = sqliteTable(
+  'admin_events',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    tipo: text('tipo', { enum: EVENT_KINDS }).notNull(),
+    titulo: text('titulo').notNull(),
+    inicio: timestamp('inicio').notNull(),
+    // null: from then on
+    fin: timestamp('fin'),
+    // doble_paga: times the pay; rebajas: percent off; precios: percent of today's price.
+    valor: integer('valor'),
+    // rebajas: the kind of style on sale, null for all.
+    detalle: text('detalle'),
+    por: text('por').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('admin_events_inicio_idx').on(t.inicio)],
+)
+
+/** A shop style sold at another price to half the players, to see which sells better (lib/cosmetics.ts). */
+export const priceTests = sqliteTable('price_tests', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  estilo: text('estilo').notNull(),
+  // What group B pays; group A pays the usual price.
+  precioB: integer('precio_b').notNull(),
+  inicio: timestamp('inicio').notNull(),
+  // null while it runs
+  fin: timestamp('fin'),
+  por: text('por').notNull(),
+  createdAt: createdAt(),
+})
 
 export const ADJUSTMENT_KINDS = ['saldo', 'monedas'] as const
 export type AdjustmentKind = (typeof ADJUSTMENT_KINDS)[number]

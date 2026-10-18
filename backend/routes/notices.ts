@@ -303,7 +303,7 @@ export async function getAdminNotices(request: Request): Promise<Response> {
 
 // POST /api/admin/notices { texto, audiencia?, startsAt?, hours?, importante? }: a notice, now or later.
 export async function postNotice(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'moderador')
   const body = await readBody(request)
   const texto = textOf(body.texto, NOTICE_MAX, 'Texto')
   const audiencia = audienceOf(body.audiencia)
@@ -317,7 +317,7 @@ export async function postNotice(request: Request): Promise<Response> {
 
 // POST /api/admin/notices/end { id }: takes it down now; one that hadn't started yet goes altogether.
 export async function endNotice(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'moderador')
   const id = idOf((await readBody(request)).id)
   const d = db()
   const row = d.select().from(notices).where(eq(notices.id, id)).get()
@@ -346,7 +346,7 @@ function queueCampaign(por: string, campaign: { titulo: string; cuerpo: string; 
 
 // POST /api/admin/campaigns { titulo, cuerpo, url?, audiencia?, sendAt? }: a push, now or later.
 export async function postCampaign(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'moderador')
   const body = await readBody(request)
   const titulo = textOf(body.titulo, TITLE_MAX, 'Título')
   const cuerpo = textOf(body.cuerpo, BODY_MAX, 'Texto')
@@ -360,7 +360,7 @@ export async function postCampaign(request: Request): Promise<Response> {
 
 // POST /api/admin/campaigns/delete { id }: one that hasn't gone out yet.
 export async function deleteCampaign(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'moderador')
   const id = idOf((await readBody(request)).id)
   const d = db()
   const row = d.select().from(pushCampaigns).where(eq(pushCampaigns.id, id)).get()
@@ -406,7 +406,7 @@ export async function getAdminPolls(request: Request): Promise<Response> {
 
 // POST /api/admin/polls { pregunta, opciones, hours?, push? }: a new poll, and a push about it if asked.
 export async function postPoll(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'moderador')
   const body = await readBody(request)
   const pregunta = textOf(body.pregunta, QUESTION_MAX, 'Pregunta')
   const opciones = Array.isArray(body.opciones) ? body.opciones.map((option) => textOf(option, OPTION_MAX, 'Opción')) : []
@@ -424,7 +424,7 @@ export async function postPoll(request: Request): Promise<Response> {
 
 // POST /api/admin/polls/close { id }: no more answers; the results stay.
 export async function closePoll(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'moderador')
   const id = idOf((await readBody(request)).id)
   const row = db().update(polls).set({ endsAt: new Date() }).where(and(eq(polls.id, id), open(new Date()))).returning().get()
   if (!row) throw new HttpError(404, 'Ya está cerrada')
@@ -434,7 +434,7 @@ export async function closePoll(request: Request): Promise<Response> {
 
 // POST /api/admin/polls/delete { id }: the poll and its answers.
 export async function deletePoll(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'moderador')
   const id = idOf((await readBody(request)).id)
   const row = db().delete(polls).where(eq(polls.id, id)).returning().get()
   if (!row) throw new HttpError(404, 'No existe')
