@@ -77,6 +77,15 @@ export function useCeremony() {
   })
 }
 
+/** GET /api/ceremony/replay: the ceremony watched in the last hour, until `hasta`. */
+export function useCeremonyReplay() {
+  const user = useUser()
+  return useQuery({
+    queryKey: ['ceremony', 'replay', user.id],
+    queryFn: () => api<(Ceremony & { hasta: string }) | null>('/ceremony/replay'),
+  })
+}
+
 /** Watched or skipped: it won't show again, and the coins it gave show up. */
 export function useCeremonySeen() {
   const user = useUser()
@@ -87,6 +96,7 @@ export function useCeremonySeen() {
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: ['profile', user.id] })
       void queryClient.invalidateQueries({ queryKey: ['stats', user.id] })
+      void queryClient.invalidateQueries({ queryKey: ['ceremony', 'replay', user.id] })
     },
   })
 }

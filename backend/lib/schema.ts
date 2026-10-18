@@ -508,6 +508,8 @@ export const seasonResults = sqliteTable(
     mejorPuesto: integer('mejor_puesto'),
     // Whether they've watched that week's ceremony.
     vista: integer('vista', { mode: 'boolean' }).notNull().default(false),
+    // When they watched it: for a while after, it can be watched again.
+    vistaEn: timestamp('vista_en'),
   },
   (t) => [primaryKey({ columns: [t.semana, t.userId] }), index('season_results_user_id_idx').on(t.userId)],
 )

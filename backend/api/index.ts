@@ -114,7 +114,7 @@ import { getTable, postPlay } from '../routes/play.js'
 import { getDaily, getDailyPreview, getDailyRanking, postDaily, postDailySeen } from '../routes/daily.js'
 import { getPushKey, getPushPrefs, patchPushPrefs, postPushTest, postSubscribe, postUnsubscribe } from '../routes/push.js'
 import { getProfile, patchProfile, postAvatar } from '../routes/profile.js'
-import { getCeremony, getGroupSeasons, postCeremonySeen } from '../routes/season.js'
+import { getCeremony, getCeremonyReplay, getGroupSeasons, postCeremonySeen } from '../routes/season.js'
 import { getStats } from '../routes/stats.js'
 import { postReport } from '../routes/reports.js'
 
@@ -218,6 +218,7 @@ const routes: Routes = {
   '/api/group/history': { GET: getGroupHistory },
   '/api/group/seasons': { GET: getGroupSeasons },
   '/api/ceremony': { GET: getCeremony },
+  '/api/ceremony/replay': { GET: getCeremonyReplay },
   '/api/ceremony/seen': { POST: postCeremonySeen },
   '/api/group/leave': { POST: live(leaveGroup) },
   '/api/group/renew': { POST: live(renewCode) },

@@ -320,6 +320,9 @@ export interface Ceremony {
   otherGroups: number
 }
 
+/** How long after watching the ceremony it can be watched again. */
+export const REPLAY_MS = 60 * 60_000
+
 /** The newest closed week whose ceremony the player hasn't watched, if any. */
 export function pendingCeremony(userId: string): Ceremony | null {
   return db().transaction((tx) => {
@@ -329,42 +332,65 @@ export function pendingCeremony(userId: string): Ceremony | null {
       .where(and(eq(seasonResults.userId, userId), eq(seasonResults.vista, false)))
       .orderBy(desc(seasonResults.semana))
       .get()
-    if (!result) return null
-    // The group where the player did best, the biggest one on a tie.
-    const mine = tx
-      .select({
-        groupId: seasonStandings.groupId,
-        nombre: groups.nombre,
-        posicion: seasonStandings.posicion,
-        conPremios: seasonStandings.conPremios,
-        players: sql<number>`(select count(*) from ${seasonStandings} s
-          where s.semana = ${seasonStandings.semana} and s.group_id = ${seasonStandings.groupId})`,
-      })
-      .from(seasonStandings)
-      .innerJoin(groups, eq(groups.id, seasonStandings.groupId))
-      .where(and(eq(seasonStandings.semana, result.semana), eq(seasonStandings.userId, userId)))
-      .all()
-      .sort((a, b) => Number(b.conPremios) - Number(a.conPremios) || a.posicion - b.posicion || b.players - a.players)
-    const top = mine[0]
-    const week = top ? groupWeeks(tx, top.groupId, [result.semana])[0] : undefined
-    return {
-      semana: result.semana,
-      coins: result.monedas,
-      bestPlace: result.mejorPuesto,
-      stats: result.estadisticas,
-      group: top && week ? { ...week, id: top.groupId, nombre: top.nombre } : null,
-      otherGroups: Math.max(0, mine.length - 1),
-    }
+    return result ? buildCeremony(tx, userId, result) : null
   })
 }
 
+/** The ceremony the player watched in the last hour, to watch again until `hasta`. */
+export function recentCeremony(userId: string, now = new Date()): (Ceremony & { hasta: string }) | null {
+  return db().transaction((tx) => {
+    const result = tx
+      .select()
+      .from(seasonResults)
+      .where(and(eq(seasonResults.userId, userId), gte(seasonResults.vistaEn, new Date(now.getTime() - REPLAY_MS))))
+      .orderBy(desc(seasonResults.semana))
+      .get()
+    if (!result?.vistaEn) return null
+    return { ...buildCeremony(tx, userId, result), hasta: new Date(result.vistaEn.getTime() + REPLAY_MS).toISOString() }
+  })
+}
+
+function buildCeremony(tx: Tx, userId: string, result: typeof seasonResults.$inferSelect): Ceremony {
+  // The group where the player did best, the biggest one on a tie.
+  const mine = tx
+    .select({
+      groupId: seasonStandings.groupId,
+      nombre: groups.nombre,
+      posicion: seasonStandings.posicion,
+      conPremios: seasonStandings.conPremios,
+      players: sql<number>`(select count(*) from ${seasonStandings} s
+        where s.semana = ${seasonStandings.semana} and s.group_id = ${seasonStandings.groupId})`,
+    })
+    .from(seasonStandings)
+    .innerJoin(groups, eq(groups.id, seasonStandings.groupId))
+    .where(and(eq(seasonStandings.semana, result.semana), eq(seasonStandings.userId, userId)))
+    .all()
+    .sort((a, b) => Number(b.conPremios) - Number(a.conPremios) || a.posicion - b.posicion || b.players - a.players)
+  const top = mine[0]
+  const week = top ? groupWeeks(tx, top.groupId, [result.semana])[0] : undefined
+  return {
+    semana: result.semana,
+    coins: result.monedas,
+    bestPlace: result.mejorPuesto,
+    stats: result.estadisticas,
+    group: top && week ? { ...week, id: top.groupId, nombre: top.nombre } : null,
+    otherGroups: Math.max(0, mine.length - 1),
+  }
+}
+
 /** Marks the ceremony of that week, and any older one left unwatched, as watched. */
-export function ceremonySeen(userId: string, semana: string) {
-  db()
-    .update(seasonResults)
-    .set({ vista: true })
-    .where(and(eq(seasonResults.userId, userId), lte(seasonResults.semana, semana)))
-    .run()
+export function ceremonySeen(userId: string, semana: string, now = new Date()) {
+  db().transaction((tx) => {
+    // The clock to watch it again starts the first time only.
+    tx.update(seasonResults)
+      .set({ vistaEn: now })
+      .where(and(eq(seasonResults.userId, userId), eq(seasonResults.semana, semana), eq(seasonResults.vista, false)))
+      .run()
+    tx.update(seasonResults)
+      .set({ vista: true })
+      .where(and(eq(seasonResults.userId, userId), lte(seasonResults.semana, semana)))
+      .run()
+  })
 }
 
 /** The player's record over every closed week. */

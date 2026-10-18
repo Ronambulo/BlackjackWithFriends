@@ -446,7 +446,10 @@ export const es = {
   season: {
     label: 'Cierre de la semana',
     skip: 'Saltar',
-    tap: 'Toca para seguir',
+    back: 'Volver a la pantalla anterior',
+    replay: { title: 'Vuelve a ver el cierre de la semana', text: 'Disponible hasta las {{time}}' },
+    tap: 'Toca a la derecha para seguir',
+    tapBack: 'A la izquierda, atrás',
     over: '¡Se acabó la semana!',
     drum: 'Y el podio de {{group}} es…',
     drumAlone: 'Veamos cómo te ha ido…',

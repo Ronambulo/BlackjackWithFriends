@@ -12,6 +12,7 @@ import { useFriendsRanking } from '@/groups/useRankings'
 import { LeagueCard } from '@/league/LeagueCard'
 import { PollCard } from '@/polls/PollCard'
 import { useProfile } from '@/profile/useProfile'
+import { CeremonyReplayCard } from '@/season/Ceremony'
 import { ShareIcon } from '@/ui/icons'
 import { PullToRefresh } from '@/ui/PullToRefresh'
 import styles from './pages.module.css'
@@ -41,6 +42,8 @@ export default function HomePage() {
         <LeagueCard group={group} dayChange={mine?.dayChange} />
 
         <h2 className={`label ${styles.sectionLabel}`}>{t('home.today')}</h2>
+
+        <CeremonyReplayCard />
 
         <DailyCard />
 

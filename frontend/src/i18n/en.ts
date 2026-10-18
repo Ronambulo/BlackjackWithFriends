@@ -447,7 +447,10 @@ export const en: Messages = {
   season: {
     label: 'Week wrap-up',
     skip: 'Skip',
-    tap: 'Tap to continue',
+    back: 'Back to the previous screen',
+    replay: { title: 'Watch the week’s close again', text: 'Available until {{time}}' },
+    tap: 'Tap right to continue',
+    tapBack: 'Left to go back',
     over: 'The week is over!',
     drum: 'And the {{group}} podium is…',
     drumAlone: "Let's see how you did…",

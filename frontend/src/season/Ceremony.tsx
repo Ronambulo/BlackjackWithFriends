@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, type CSSProperties } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { useUser } from '@/auth/session-context'
 import { medal } from '@/groups/medal'
@@ -8,9 +9,9 @@ import { currentLanguage } from '@/i18n'
 import { formatNumber } from '@/lib/format'
 import { play } from '@/sound/sounds'
 import { Avatar } from '@/ui/Avatar'
-import { CrownIcon } from '@/ui/icons'
+import { ChevronLeftIcon, ChevronRightIcon, CrownIcon } from '@/ui/icons'
 import styles from './Ceremony.module.css'
-import { useCeremony, useCeremonySeen, type Ceremony as CeremonyData } from './useSeason'
+import { useCeremony, useCeremonyReplay, useCeremonySeen, type Ceremony as CeremonyData } from './useSeason'
 
 type Step = 'drum' | 'podium' | 'jokes' | 'coins' | 'week'
 
@@ -25,7 +26,42 @@ export function CeremonyGate({ paused }: { paused: boolean }) {
   return <Ceremony key={data.semana} ceremony={data} />
 }
 
-function Ceremony({ ceremony }: { ceremony: CeremonyData }) {
+/** For the first hour after watching it, a small card on the home screen plays it again. */
+export function CeremonyReplayCard() {
+  const { t } = useTranslation()
+  const lang = currentLanguage()
+  const { data, refetch } = useCeremonyReplay()
+  const [open, setOpen] = useState(false)
+  const hasta = data?.hasta
+
+  // Gone on the dot when the hour is up.
+  useEffect(() => {
+    if (!hasta) return
+    const timer = window.setTimeout(() => void refetch(), Math.max(0, new Date(hasta).getTime() - Date.now()) + 1000)
+    return () => clearTimeout(timer)
+  }, [hasta, refetch])
+
+  if (!data) return null
+  const until = new Intl.DateTimeFormat(lang, { hour: '2-digit', minute: '2-digit' }).format(new Date(data.hasta))
+  return (
+    <>
+      <button type="button" className={`card ${styles.replay}`} onClick={() => setOpen(true)}>
+        <span className={styles.replayIcon} aria-hidden="true">
+          <CrownIcon width={20} height={20} />
+        </span>
+        <span className={styles.replayBody}>
+          <span className={styles.replayTitle}>{t('season.replay.title')}</span>
+          <span className={styles.replayText}>{t('season.replay.text', { time: until })}</span>
+        </span>
+        <ChevronRightIcon className={styles.replayChevron} width={18} height={18} />
+      </button>
+      {/* On the body: the page's pull to refresh moves it, and that would carry a fixed overlay along. */}
+      {open && createPortal(<Ceremony ceremony={data} onDone={() => setOpen(false)} />, document.body)}
+    </>
+  )
+}
+
+function Ceremony({ ceremony, onDone }: { ceremony: CeremonyData; onDone?: () => void }) {
   const { t } = useTranslation()
   const seen = useCeremonySeen()
   const { group } = ceremony
@@ -36,14 +72,30 @@ function Ceremony({ ceremony }: { ceremony: CeremonyData }) {
 
   const [index, setIndex] = useState(0)
   const [revealed, setRevealed] = useState(0)
+  // Came back to this screen: it shows as it ended, without its sounds again.
+  const [returned, setReturned] = useState(false)
+  // Which half was just tapped, lit for a moment as in stories; the count replays it on every tap.
+  const [flash, setFlash] = useState<{ side: 'left' | 'right'; n: number } | null>(null)
   const step = steps[index]
   const places = group?.conPremios ? group.standings.slice(0, 3) : []
   const podiumDone = revealed >= places.length
 
-  const finish = () => seen.mutate(ceremony.semana)
+  // Watching it again only closes it.
+  const finish = () => (onDone ? onDone() : seen.mutate(ceremony.semana))
   const next = () => {
     if (step === 'podium' && !podiumDone) setRevealed(revealed + 1)
-    else if (index < steps.length - 1) setIndex(index + 1)
+    else if (index < steps.length - 1) {
+      setIndex(index + 1)
+      setReturned(false)
+    }
+  }
+  // The drumroll is only an intro: going back stops at the screen after it.
+  const canGoBack = index > 1
+  const back = () => {
+    if (!canGoBack) return
+    if (steps[index - 1] === 'podium') setRevealed(places.length)
+    setIndex(index - 1)
+    setReturned(true)
   }
 
   // The drumroll: chips falling faster and higher, then the podium.
@@ -67,16 +119,60 @@ function Ceremony({ ceremony }: { ceremony: CeremonyData }) {
   }, [step, podiumDone, revealed])
 
   useEffect(() => {
-    if (step !== 'podium' || revealed === 0) return
+    if (step !== 'podium' || revealed === 0 || returned) return
     play(revealed === places.length ? 'blackjack' : 'flip')
-  }, [step, revealed, places.length])
+  }, [step, revealed, places.length, returned])
 
   useEffect(() => {
-    if (step === 'coins' && ceremony.coins > 0) play('win')
-  }, [step, ceremony.coins])
+    if (step === 'coins' && ceremony.coins > 0 && !returned) play('win')
+  }, [step, ceremony.coins, returned])
 
   return (
-    <div className={styles.overlay} role="dialog" aria-modal="true" aria-label={t('season.label')} onClick={next}>
+    <div
+      className={styles.overlay}
+      role="dialog"
+      aria-modal="true"
+      aria-label={t('season.label')}
+      // Like stories: a tap on the left edge goes back, anywhere else goes on.
+      onClick={(event) => {
+        const left = canGoBack && event.clientX < event.currentTarget.clientWidth * 0.3
+        setFlash({ side: left ? 'left' : 'right', n: (flash?.n ?? 0) + 1 })
+        if (left) back()
+        else next()
+      }}
+    >
+      {/* One bar per screen, like stories: the ones seen full, the current one filling. */}
+      <div className={styles.bars} aria-hidden="true">
+        {steps.map((s, i) => (
+          <span key={s} className={styles.bar}>
+            {i <= index && (
+              <span
+                className={styles.barFill}
+                data-timed={i === index && s === 'drum'}
+                style={
+                  i === index && s === 'podium' && places.length > 0
+                    ? { transform: `scaleX(${revealed / places.length})` }
+                    : undefined
+                }
+              />
+            )}
+          </span>
+        ))}
+      </div>
+      {flash && step !== 'drum' && <span key={flash.n} className={styles.flash} data-side={flash.side} aria-hidden="true" />}
+      {canGoBack && (
+        <button
+          type="button"
+          className={styles.back}
+          aria-label={t('season.back')}
+          onClick={(event) => {
+            event.stopPropagation()
+            back()
+          }}
+        >
+          <ChevronLeftIcon width={18} height={18} />
+        </button>
+      )}
       <button
         type="button"
         className={styles.skip}
@@ -113,7 +209,12 @@ function Ceremony({ ceremony }: { ceremony: CeremonyData }) {
       </div>
 
       {step === 'podium' && podiumDone && places.length > 0 && <Confetti />}
-      {step !== 'week' && step !== 'drum' && <p className={styles.tap}>{t('season.tap')}</p>}
+      {step !== 'drum' && (
+        <p className={styles.tap}>
+          {canGoBack && <span>‹ {t('season.tapBack')}</span>}
+          {step !== 'week' && <span className={styles.tapNext}>{t('season.tap')} ›</span>}
+        </p>
+      )}
     </div>
   )
 }
