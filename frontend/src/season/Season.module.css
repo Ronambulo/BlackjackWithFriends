@@ -140,39 +140,116 @@
 /* ---------- Profile ---------- */
 
 .record {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin: 0;
   overflow: hidden;
   border: 1px solid rgb(255 255 255 / 0.07);
   border-radius: var(--radius);
   background: var(--layer-1);
 }
 
-.record div {
+.recordHero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-bottom: 1px solid rgb(255 255 255 / 0.06);
+}
+
+.recordHero[data-won='true'] {
+  background: radial-gradient(120% 140% at 0% 0%, rgb(242 193 78 / 0.16), transparent 60%);
+}
+
+.medal {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 50%;
+  background: var(--layer-2);
+  color: var(--text-dim);
+}
+
+.recordHero[data-won='true'] .medal {
+  border-color: rgb(242 193 78 / 0.45);
+  background: radial-gradient(circle at 35% 30%, rgb(242 193 78 / 0.35), rgb(242 193 78 / 0.1));
+  box-shadow: 0 0 24px rgb(242 193 78 / 0.25);
+  color: var(--accent);
+}
+
+.recordWon {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.recordBig {
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.recordHero[data-won='true'] .recordBig {
+  color: var(--accent);
+}
+
+.recordLabel {
+  color: var(--text-dim);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.recordRate {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.06);
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.recordRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+}
+
+.recordRow div {
   display: flex;
   flex-direction: column-reverse;
   align-items: center;
-  gap: 2px;
-  padding: 14px 4px;
+  gap: 4px;
+  padding: 12px 4px;
   border-right: 1px solid rgb(255 255 255 / 0.06);
 }
 
-.record div:last-child {
+.recordRow div:last-child {
   border-right: 0;
 }
 
-.record dt {
+.recordRow dt {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   color: var(--text-dim);
   font-size: 0.75rem;
   font-weight: 700;
 }
 
-.record dd {
+.recordRow dd {
   margin: 0;
-  font-size: 1.375rem;
+  font-size: 1.25rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
+}
+
+.recordRow [data-key='coins'] dt svg,
+.recordRow [data-key='coins'] dd {
+  color: var(--accent);
 }
 
 .trophies {
