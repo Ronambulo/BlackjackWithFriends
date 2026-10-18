@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { frameClass } from '@/cosmetics/themes'
 import { avatarColor } from './avatarColor'
 
@@ -40,33 +40,188 @@ export function Avatar({
     </span>
   )
   if (!ring) return avatar
+  const art = frame ? ART[frame] : undefined
   return (
     <span className={`${ring} ${className}`} style={{ '--frame-w': `${Math.max(2, Math.round(size * 0.07))}px`, ...style } as CSSProperties}>
+      {art?.back && <Art className="frame-art frame-art-back">{art.back}</Art>}
       {avatar}
-      {frame === 'marco.laurel' && <Laurel />}
+      {art?.front && <Art className={`frame-art ${art.spin ? 'frame-orbit' : ''}`}>{art.front}</Art>}
     </span>
   )
 }
 
-// Two branches of leaves up the sides, meeting at the top.
-const LEAVES = Array.from({ length: 7 }, (_, i) => 205 + i * 20)
-
-function Laurel() {
+/*
+  Frames that add something beyond the ring: drawn on a box 1.7 times the
+  avatar's size around it, where the avatar is the circle of radius 50 in the
+  middle and the ring reaches about 57. "back" goes behind the avatar and its
+  ring (ears, wings), "front" over them (a crown, a halo).
+*/
+function Art({ className, children }: { className: string; children: ReactNode }) {
   return (
-    <svg className="frame-leaves" viewBox="-60 -60 120 120" aria-hidden="true">
-      {[1, -1].map((side) =>
-        LEAVES.map((angle, i) => (
-          <ellipse
-            key={`${side}${angle}`}
-            rx="5"
-            ry="11"
-            fill={i % 2 ? '#3f8f4a' : '#5fb46a'}
-            stroke="#d9b24a"
-            strokeWidth="1"
-            transform={`scale(${side} 1) rotate(${angle}) translate(0 -52) rotate(28)`}
-          />
-        )),
-      )}
+    <svg className={className} viewBox="-85 -85 170 170" aria-hidden="true">
+      {children}
     </svg>
   )
+}
+
+/** A point at `r` from the middle, `deg` clockwise from the right. */
+const at = (r: number, deg: number) => {
+  const rad = (deg * Math.PI) / 180
+  return [r * Math.cos(rad), r * Math.sin(rad)] as const
+}
+
+const GOLD = (
+  <linearGradient id="frame-gold" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stopColor="#fff1b8" />
+    <stop offset="0.45" stopColor="#e2b33c" />
+    <stop offset="1" stopColor="#8a5f10" />
+  </linearGradient>
+)
+
+// A leaf pointing up from its stalk at (0, 0).
+const LEAF = 'M0 0C4.5 -5 4.5 -13 0 -19C-4.5 -13 -4.5 -5 0 0Z'
+
+/** One golden branch up the left side, from the bow at the bottom almost to the top, its leaves smaller as it climbs. */
+function laurelBranch() {
+  const leaves = []
+  for (let i = 0; i < 9; i++) {
+    const angle = 112 + i * 16
+    const [x, y] = at(61, angle)
+    const scale = 1.05 - i * 0.06
+    // Along the stem, leaning out and in by turns
+    const turn = angle + 180 + (i % 2 ? 38 : -30)
+    leaves.push(
+      <path key={i} d={LEAF} fill="url(#frame-gold)" stroke="#7a5208" strokeWidth="0.8" transform={`translate(${x} ${y}) rotate(${turn}) scale(${scale})`} />,
+    )
+  }
+  const [x0, y0] = at(61, 100)
+  const [x1, y1] = at(61, 252)
+  return (
+    <>
+      <path d={`M${x0} ${y0}A61 61 0 0 1 ${x1} ${y1}`} fill="none" stroke="#8a5f10" strokeWidth="2.2" strokeLinecap="round" />
+      {leaves}
+    </>
+  )
+}
+
+/** A five-petal flower. */
+function Flower({ x, y, r, petal, heart }: { x: number; y: number; r: number; petal: string; heart: string }) {
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      {[0, 72, 144, 216, 288].map((deg) => (
+        <ellipse key={deg} cy={-r * 0.55} rx={r * 0.45} ry={r * 0.6} transform={`rotate(${deg})`} fill={petal} stroke="rgb(0 0 0 / 0.12)" strokeWidth="0.5" />
+      ))}
+      <circle r={r * 0.3} fill={heart} />
+    </g>
+  )
+}
+
+const FLOWERS = ['#ff8fb1', '#ffd84a', '#ffffff', '#b99bff', '#ff8fb1', '#ffd84a', '#ffffff']
+
+/** A four-pointed sparkle. */
+const star = (x: number, y: number, r: number) =>
+  `M${x} ${y - r}Q${x} ${y} ${x + r} ${y}Q${x} ${y} ${x} ${y + r}Q${x} ${y} ${x - r} ${y}Q${x} ${y} ${x} ${y - r}Z`
+
+const ART: Record<string, { back?: ReactNode; front?: ReactNode; spin?: boolean }> = {
+  'marco.laurel': {
+    front: (
+      <>
+        <defs>{GOLD}</defs>
+        {laurelBranch()}
+        <g transform="scale(-1 1)">{laurelBranch()}</g>
+        {/* The ribbon tying the two branches at the bottom */}
+        <g transform="translate(0 62)">
+          <path d="M-3 2L-13 22L-8 19L-5 24L0 4ZM3 2L13 22L8 19L5 24L0 4Z" fill="#a8121f" />
+          <path d="M0 0C-8 -10 -20 -8 -18 0C-20 8 -8 10 0 0C8 10 20 8 18 0C20 -8 8 -10 0 0Z" fill="#d42a3a" stroke="#7a0a14" strokeWidth="1" />
+          <circle r="4" fill="#e8394a" stroke="#7a0a14" strokeWidth="1" />
+        </g>
+      </>
+    ),
+  },
+  'marco.corona': {
+    front: (
+      <g transform="rotate(-14)">
+        <defs>{GOLD}</defs>
+        <path
+          d="M-30 -53L-35 -76L-17 -64L0 -81L17 -64L35 -76L30 -53Z"
+          fill="url(#frame-gold)"
+          stroke="#7a5208"
+          strokeWidth="1.5"
+          strokeLinejoin="round"
+        />
+        <path d="M-31 -53Q0 -47 31 -53L31.8 -59Q0 -53 -31.8 -59Z" fill="#c9921f" stroke="#7a5208" strokeWidth="1" />
+        <circle cx="-35" cy="-76" r="3.2" fill="#fff1b8" stroke="#7a5208" />
+        <circle cx="0" cy="-81" r="3.4" fill="#fff1b8" stroke="#7a5208" />
+        <circle cx="35" cy="-76" r="3.2" fill="#fff1b8" stroke="#7a5208" />
+        <circle cx="0" cy="-63" r="4.6" fill="#d81e48" stroke="#7a0a14" />
+        <circle cx="-18" cy="-60" r="3.5" fill="#2a66db" stroke="#0a1a4f" />
+        <circle cx="18" cy="-60" r="3.5" fill="#14a86b" stroke="#033a24" />
+        <circle cx="-1.4" cy="-64.4" r="1.4" fill="#fff" opacity="0.8" />
+      </g>
+    ),
+  },
+  'marco.diablo': {
+    back: (
+      <>
+        <defs>
+          <linearGradient id="frame-horn" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stopColor="#8a0d0d" />
+            <stop offset="1" stopColor="#ff5a3a" />
+          </linearGradient>
+        </defs>
+        {[1, -1].map((side) => (
+          <path
+            key={side}
+            d="M-14 -42C-16 -62 -8 -78 6 -86C0 -72 2 -58 12 -45Z"
+            fill="url(#frame-horn)"
+            stroke="#4a0505"
+            strokeWidth="1.5"
+            transform={`scale(${side} 1) rotate(-34)`}
+          />
+        ))}
+        <path d="M30 40C52 60 70 52 72 36" fill="none" stroke="#b3121b" strokeWidth="4" strokeLinecap="round" />
+        <path d="M72 24L80 40L64 38Z" fill="#b3121b" stroke="#4a0505" strokeWidth="1.2" strokeLinejoin="round" />
+      </>
+    ),
+  },
+  'marco.angel': {
+    front: (
+      <>
+        <ellipse cy="-70" rx="30" ry="8" fill="none" stroke="#fff1b8" strokeWidth="9" opacity="0.35" />
+        <ellipse cy="-70" rx="30" ry="8" fill="none" stroke="#f2c14e" strokeWidth="4.5" />
+        <ellipse cy="-71" rx="28" ry="6.5" fill="none" stroke="#fff6d0" strokeWidth="1.2" />
+      </>
+    ),
+  },
+  'marco.flores': {
+    front: (
+      <>
+        {Array.from({ length: 14 }, (_, i) => {
+          const deg = i * (360 / 14) + 12
+          const [x, y] = at(57, deg)
+          return <path key={i} d={LEAF} fill={i % 2 ? '#3f8a30' : '#5aab44'} transform={`translate(${x} ${y}) rotate(${deg + 90 + (i % 2 ? 30 : -30)}) scale(0.62)`} />
+        })}
+        {Array.from({ length: 18 }, (_, i) => {
+          const deg = i * 20 - 90
+          // In and out of the ring by turns, so they overlap like a real wreath
+          const [x, y] = at(i % 2 ? 61 : 55, deg)
+          const petal = FLOWERS[i % FLOWERS.length]
+          return <Flower key={i} x={x} y={y} r={i % 3 ? 10 : 12} petal={petal} heart={petal === '#ffd84a' ? '#e08a1a' : '#ffd84a'} />
+        })}
+      </>
+    ),
+  },
+  'marco.orbita': {
+    spin: true,
+    front: (
+      <g>
+        <circle r="66" fill="none" stroke="rgb(190 210 255 / 0.55)" strokeWidth="1.2" strokeDasharray="3 5" />
+        <path d={star(...at(66, 200), 9)} fill="#fff6c8" />
+        <path d={star(...at(66, 320), 6)} fill="#b9e3ff" />
+        <path d={star(...at(66, 80), 7)} fill="#ffd6f5" />
+        <circle cx={at(66, 20)[0]} cy={at(66, 20)[1]} r="6" fill="#ff9a5a" />
+        <ellipse cx={at(66, 20)[0]} cy={at(66, 20)[1]} rx="10" ry="2.6" fill="none" stroke="#ffd9b0" strokeWidth="1.4" transform={`rotate(-20 ${at(66, 20)[0]} ${at(66, 20)[1]})`} />
+      </g>
+    ),
+  },
 }

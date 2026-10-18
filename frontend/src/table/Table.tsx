@@ -138,6 +138,8 @@ type ChipValue = (typeof STACK_VALUES)[number]
 /** A chip's colours, from the player's chip style (cosmetics/themes.ts). */
 const chipColors = (value: ChipValue) => ({
   face: `var(--chip${value}-face)`,
+  // The face with the style's drawing over the whole chip, if it has one
+  background: `var(--chip${value}-art, none) border-box center / 100% 100% no-repeat, var(--chip${value}-face)`,
   edge: `var(--chip${value}-edge)`,
   text: `var(--chip${value}-text)`,
   stripe: `var(--chip${value}-stripe)`,

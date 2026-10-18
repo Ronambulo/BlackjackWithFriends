@@ -25,7 +25,7 @@ export function PlayingCard({
   const turn = !card ? styles.faceDown : flipAt !== undefined ? styles.flip : ''
   return (
     <div
-      className={`${styles.slot} ${still ? styles.still : ''}`}
+      className={`${styles.slot} ${still ? styles.still : ''} ${card ? '' : styles.under}`}
       style={style}
       role="img"
       aria-label={card ? `${card.rank}${SUIT_SYMBOL[card.suit]}` : '?'}

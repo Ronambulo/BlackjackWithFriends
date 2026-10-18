@@ -62,6 +62,7 @@
 
 .cards {
   display: flex;
+  isolation: isolate;
   min-height: calc(var(--card-w) * 1.75);
   align-items: center;
 }

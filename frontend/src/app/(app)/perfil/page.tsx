@@ -24,9 +24,14 @@ export default function ProfilePage() {
     <div className={styles.page}>
       <div className={styles.headerRow}>
         <h1 className={styles.title}>{t('profile.title')}</h1>
-        <Link href="/ajustes" className={styles.iconButton} aria-label={t('profile.settings')}>
-          <GearIcon width={20} height={20} />
-        </Link>
+        <div className={styles.headerSide}>
+          <Link href="/estilos" className={styles.iconButton} aria-label={t('profile.styles')}>
+            <BrushIcon width={20} height={20} />
+          </Link>
+          <Link href="/ajustes" className={styles.iconButton} aria-label={t('profile.settings')}>
+            <GearIcon width={20} height={20} />
+          </Link>
+        </div>
       </div>
 
       <section className={styles.profileHead}>
