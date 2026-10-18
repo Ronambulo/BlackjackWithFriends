@@ -476,16 +476,26 @@ Al apostar, se toca sobre fichas de 5 / 10 / 25 / 100 / 500 / 1.000, cada valor 
 ### Cosméticos (catálogo y precios)
 ✅ Hechos (fase 10). El catálogo y los precios están en `backend/lib/cosmetics.ts`; el aspecto de cada estilo, en `frontend/src/cosmetics/themes.ts` (variables CSS que el marco de la app aplica a toda la app y que la tienda pone en cada vista previa). Solo se guarda en `user_cosmetics` lo comprado: lo gratis, lo de logros y lo de trofeos se calcula al vuelo. Lo que lleva cada jugador está en `profiles.estilos_equipados`; el marco viaja con su nombre en rankings y chat, así que lo ven los demás.
 
-El precio sube con lo que cambia el estilo. Un jugador activo saca unas 300-450 🪙 a la semana, así que un color cuesta una semana de juego y lo legendario es un objetivo de varios meses.
+El precio sube con lo que cambia el estilo. Lo que se gana a la semana:
+
+| Fuente | 🪙 por semana |
+|---|---|
+| Retos diarios (10 + 20 + 40 al día) | hasta 490; ~300 haciendo el fácil y el medio cada día y el difícil a veces |
+| Cierre de la semana (10 por jugar + 100 / 60 / 30 por el podio, el mejor puesto entre tus grupos) | 10-110; ~50 de media en un grupo de 5 |
+| Baraja del día (50 al 1º de cada grupo, al día siguiente) | hasta 350; ~70 de media en un grupo de 5 |
+| Logros (una sola vez) | ~750 en total |
+
+Un jugador activo saca unas **400 🪙 a la semana** y uno que lo hace todo y gana mucho, hasta ~950. Así, un color cuesta un par de días, un diseño una semana, lo legendario unas dos semanas y media y lo mítico, lo más difícil, un mes (menos de dos semanas como muy pronto). Todo el catálogo junto son unas 24.700 🪙.
 
 | Nivel | 🪙 | Tapete | Cartas (cara y forma) | Dorso | Fichas | Marco |
 |---|---|---|---|---|---|---|
 | Gratis | 0 | Verde casino | Clásicas | Rojo | Casino | Sin marco |
-| Color | 300 | Azul, Burdeos, Morado, Grafito, Turquesa, Coral, Oliva, Abismo, Musgo | Jumbo (índices grandes), Pastel, Ceniza | Azul, Verde, Negro, Morado, Abismo, Musgo | Retro | Bronce, Plata, Hierro, Cobre |
-| Estampado | 750 | Madera, Damasco, Cuero, Escocés, Topos, Riviera, Mármol, Vichy, Acero, Fibra de carbono, Bosque, Desierto | Cuatro colores, Vintage | Rombos, Retro, Carbono, Hojas | Pastel, Blanco y negro, Obsidiana, Bosque, Océano | Oro, Oro rosa, Cromo, Océano |
-| Diseño | 1.500 | Neón, Píxel, Atardecer, Aurora, Circuito, Lava, Nebulosa, Chapa, Obsidiana, Océano, Otoño | Noir, Neón, Pizarra, Sakura, Suerte y Cristal (como las de Balatro), Sangre, Acero, Bosque, Piedra | Art déco, Píxel, Tachuelas, Obsidiana | Neón, Gemas, Acero, Cobre | Neón, Arcoíris, Fuego, Hielo, Pinchos, Hiedra, Sombra |
-| Forma | 2.250 | | Redondas, Octógono, Hexágono | | | |
-| Legendario | 3.500 | Realeza, Holográfico, Montecarlo (con marquetería de oro) | Tarot (más alta, con su dorso), Dorada (con su dorso) | | Oro | Diamante |
+| Color | 100 | Azul, Burdeos, Morado, Grafito, Turquesa, Coral, Oliva, Abismo, Musgo | Pastel | Azul, Verde, Negro, Morado, Abismo, Musgo | Retro | Bronce, Plata, Hierro, Cobre |
+| Estampado | 200 | Madera, Escocés, Riviera, Mármol, Vichy | Cuatro colores (cada palo en una carta de su color), Vintage | Rombos, Retro, Carbono | Pastel, Blanco y negro, Obsidiana, Bosque, Océano | Oro, Oro rosa, Cromo, Océano |
+| Diseño | 400 | Píxel, Obsidiana, Ondas | Noir, Neón, Sakura (las clásicas en rosa, con flores), Sangre, Acero | Art déco, Píxel, Obsidiana | Neón, Industrial | Neón, Fuego, Hielo, Hiedra, Sombra |
+| Especial | 600 | Galaxia | Cristal (como las de Balatro) | Cristal | Píxel (sprites en `public/styles/fichas-pixel`; la de 1.000 es un payaso) | Arcoíris, y con adornos fuera del aro (`ui/Avatar.tsx`): Diablillo, Flores, Ángel, Órbita |
+| Legendario | 1.000 | Montecarlo (con marquetería de oro) | | | Gemas (talla esmeralda, un color por valor) | Diamante |
+| Mítico | 1.600 | Holográfico | | | | Corona |
 | Logro | | Medianoche (100 blackjacks) | | Kamikaze (all-in ganado) | | |
 | Trofeos | | Campeón (1 semana) | | | | Laurel (5 semanas) |
 

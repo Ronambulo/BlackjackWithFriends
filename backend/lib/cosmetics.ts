@@ -19,13 +19,19 @@ export interface Cosmetic {
 }
 
 // Prices go up with how much the style changes: a colour, a print, a whole
-// design, a special one, a legend, a myth. An active player makes some 300-450 coins a week.
-const COLOUR = 300
-const PRINT = 750
-const DESIGN = 1500
-const SPECIAL = 2250
-const LEGEND = 3500
-const MYTH = 5000
+// design, a special one, a legend, a myth. What a player makes a week:
+// challenges 10 + 20 + 40 a day (up to 490), the week's close 10 for playing
+// plus 100 / 60 / 30 for the podium, and 50 for each daily deck won in a group
+// (shared among its players, ~70 in a group of 5). An active player makes
+// some 400 a week, one who does everything up to ~950, plus ~750 once from
+// achievements. So a colour is a couple of days, a design a week, a legend
+// two and a half and a myth, the hardest, about a month.
+const COLOUR = 100
+const PRINT = 200
+const DESIGN = 400
+const SPECIAL = 600
+const LEGEND = 1000
+const MYTH = 1600
 
 const free = { from: 'gratis' } as const
 const shop = (precio: number) => ({ from: 'tienda', precio }) as const
