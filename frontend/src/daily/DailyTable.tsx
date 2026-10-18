@@ -66,6 +66,9 @@ export function DailyTable() {
   const settled = hand?.phase === 'settled' ? hand.settlement : null
   const showResult = Boolean(settled) && ready && !dealing
   const inPlay = hand !== null && hand.phase !== 'settled'
+  // The server already counts the hand that just settled; its square waits, glowing, for the dealer to finish.
+  const revealing = hand?.phase === 'settled' && !ready
+  const shownResults = revealing ? data.results.slice(0, -1) : data.results
   // The hand about to be dealt, or being played, 1 to 10.
   const current = Math.min(data.total, data.results.length + 1)
   const errorText = play.error ? t(play.error instanceof ApiError && play.error.status === 409 ? 'play.changed' : 'common.error') : null
@@ -79,7 +82,7 @@ export function DailyTable() {
           </Link>
           <div className={styles.heading}>
             <span className={styles.title}>{t('daily.title', { number: data.number })}</span>
-            <Progress results={data.results} total={data.total} current={inPlay || dealing ? data.results.length : -1} />
+            <Progress results={shownResults} total={data.total} current={inPlay || dealing || revealing ? shownResults.length : -1} />
           </div>
           <div className={table.shoe} aria-hidden="true" />
         </div>
