@@ -7,7 +7,7 @@ import { notifyChat } from '../lib/events.js'
 import { HttpError, json } from '../lib/http.js'
 import { pushMentions, pushMessage, pushReaction, type ChatContent } from '../lib/push.js'
 import { frameColumn } from '../lib/cosmetics.js'
-import { groupMembers, hands, messages, profiles, REACTIONS, reactions, user, type SharedHand, type SharedStats } from '../lib/schema.js'
+import { groupMembers, hands, messages, playerMarks, profiles, REACTIONS, reactions, user, type SharedHand, type SharedStats } from '../lib/schema.js'
 import { dailyShareText } from './daily.js'
 import { playerStats } from './stats.js'
 
@@ -36,6 +36,9 @@ const sent = new Map<string, number[]>()
 
 function throttle(userId: string) {
   const now = Date.now()
+  // Silenced from the admin panel (or an automation).
+  const until = db().select({ at: playerMarks.silenciadoHasta }).from(playerMarks).where(eq(playerMarks.userId, userId)).get()?.at
+  if (until && until.getTime() > now) throw new HttpError(403, 'No puedes escribir en el chat por ahora')
   const recent = (sent.get(userId) ?? []).filter((at) => now - at < RATE_WINDOW)
   if (recent.length >= RATE) throw new HttpError(429, 'Demasiados mensajes, espera un momento')
   recent.push(now)

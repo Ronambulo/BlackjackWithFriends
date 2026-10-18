@@ -3,7 +3,7 @@ import { requireUser } from '../lib/auth.js'
 import { db } from '../lib/db.js'
 import { HttpError, json } from '../lib/http.js'
 import { groupMembers } from '../lib/schema.js'
-import { ceremonySeen, groupWeeks, pendingCeremony } from '../lib/season.js'
+import { ceremonySeen, groupWeeks, pendingCeremony, recentCeremony } from '../lib/season.js'
 
 // How many past weeks a group's history shows.
 const HISTORY_WEEKS = 12
@@ -13,6 +13,12 @@ const WEEK = /^\d{4}-\d{2}-\d{2}$/
 export async function getCeremony(request: Request): Promise<Response> {
   const me = await requireUser(request)
   return json(pendingCeremony(me.id))
+}
+
+// GET /api/ceremony/replay: the ceremony watched in the last hour, to watch again; null otherwise.
+export async function getCeremonyReplay(request: Request): Promise<Response> {
+  const me = await requireUser(request)
+  return json(recentCeremony(me.id))
 }
 
 // POST /api/ceremony/seen { semana }: watched (or skipped), so it doesn't show again.

@@ -120,6 +120,20 @@
       "when": 1792335362872,
       "tag": "0016_notices_importante",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1792361202014,
+      "tag": "0017_admin_tools",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1792365285927,
+      "tag": "0018_ceremony_replay",
+      "breakpoints": true
     }
   ]
 }

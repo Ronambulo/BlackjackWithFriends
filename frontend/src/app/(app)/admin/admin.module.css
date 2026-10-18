@@ -257,16 +257,19 @@
 }
 
 .editNames {
-  display: grid;
-  grid-template-columns: 1fr 1fr auto;
-  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
   gap: 8px;
 }
 
-@media (width < 520px) {
-  .editNames {
-    grid-template-columns: 1fr;
-  }
+.editNames > * {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+
+.editNames > :global(.btn) {
+  flex: none;
 }
 
 .userActions :global(.btn) {
@@ -914,12 +917,8 @@
 
 .emptyBox {
   margin: 0;
-  padding: 18px;
-  border: 1px dashed rgb(255 255 255 / 0.12);
-  border-radius: 14px;
   color: var(--text-dim);
   font-size: 0.875rem;
-  text-align: center;
 }
 
 .full {
@@ -1081,7 +1080,7 @@
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  height: 170px;
+  height: 184px;
 }
 
 .column {
@@ -1114,11 +1113,12 @@
 
 .columnLabel {
   max-width: 100%;
-  overflow: hidden;
+  min-height: 2.4em;
   color: var(--text-dim);
   font-size: 0.6875rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .oddsTable {
@@ -1368,6 +1368,18 @@
   gap: 18px;
 }
 
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+/* The last card of a stacked column takes the height that is left. */
+.side > :last-child {
+  flex: 1;
+}
+
 .grid,
 .single {
   display: flex;
@@ -1511,8 +1523,22 @@
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-    gap: 20px;
+    /* Masonry: short rows, and each card takes as many as it is tall (see masonry.ts, which also
+       leaves the 20px between cards), so a short card doesn't leave a hole beside a tall one. */
+    grid-auto-rows: 4px;
+    grid-auto-flow: row dense;
+    column-gap: 20px;
+    row-gap: 0;
     align-items: start;
+    container: admin-grid / inline-size;
+  }
+
+  /* The sheet follows the list while it scrolls, and scrolls on its own when it is taller. */
+  .master > .sheet {
+    position: sticky;
+    top: 0;
+    max-height: calc(100dvh - 64px);
+    overflow-y: auto;
   }
 
   .single {
@@ -1565,8 +1591,33 @@
     grid-column: 1 / -1;
   }
 
+  /* Wide content (a chart, a table, a long form) takes two columns once there are two. */
+  @container admin-grid (width >= 700px) {
+    .grid > .span2 {
+      grid-column: span 2;
+    }
+  }
+
   .grid > .statusLine {
     justify-self: start;
+  }
+
+  .side {
+    gap: 20px;
+  }
+
+  /* A long ranking reads in two columns once the card is wide. */
+  @container admin-grid (width >= 700px) {
+    .topWide {
+      display: block;
+      columns: 2;
+      column-gap: 40px;
+    }
+
+    .topWide li {
+      break-inside: avoid;
+      padding-bottom: 10px;
+    }
   }
 
   .live {
@@ -1583,6 +1634,7 @@
 /* Notices, push campaigns and polls */
 
 .tilesFlat {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   border-radius: 12px;
 }
 
@@ -1696,13 +1748,26 @@
   }
 }
 
-/* Correcting someone's chips or coins by hand. */
+/* Correcting someone's chips or coins by hand: the fields wrap before they squeeze. */
 .adjust {
-  display: grid;
-  grid-template-columns: 15rem 1fr auto;
-  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
   gap: 8px;
   margin: 10px 0 6px;
+}
+
+.adjust > * {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.adjust > :first-child {
+  flex-basis: 15rem;
+}
+
+.adjust > :global(.btn) {
+  flex: none;
 }
 
 /* Give / take away, then the amount: phones type only digits in a numeric field. */
@@ -1740,11 +1805,6 @@
   color: var(--danger-soft);
 }
 
-@media (width < 520px) {
-  .adjust {
-    grid-template-columns: 1fr;
-  }
-}
 
 .bans .adjustRow {
   display: grid;
@@ -2238,9 +2298,23 @@
 /* Stats */
 
 .shopStats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 12px;
+  container-type: inline-size;
+}
+
+/* The three rankings side by side when each gets about 240px; one under another otherwise. */
+.shopRankings {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+@container (width >= 744px) {
+  .shopRankings {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .shopStatsWide,
@@ -2251,10 +2325,6 @@
   padding: 16px;
   border-radius: 16px;
   background: var(--layer-2);
-}
-
-.shopStatsWide {
-  grid-column: 1 / -1;
 }
 
 .shopBarRow {
@@ -2340,4 +2410,13 @@
   .shopBarRow > span:last-child {
     grid-column: 1 / -1;
   }
+}
+
+/* A coloured button that can't be pressed yet reads as grey, not as a faded call to action. */
+.main :global(.btn-primary:disabled),
+.main :global(.btn-danger:disabled) {
+  border-color: rgb(255 255 255 / 0.08);
+  background: var(--layer-2);
+  color: var(--text-dim);
+  opacity: 1;
 }

@@ -2,7 +2,8 @@ import { and, eq, gt, isNull, ne, or } from 'drizzle-orm'
 import { requireUser, type SessionUser } from './auth.js'
 import { db } from './db.js'
 import { HttpError } from './http.js'
-import { adminLog, ipBans, reviews, user } from './schema.js'
+import { adminLog, ipBans, reviews, user, type Undo } from './schema.js'
+import { getSetting } from './settings.js'
 
 // The app's own admins, by username (ADMIN_USERNAMES, comma separated), and the
 // banned addresses every request is checked against.
@@ -16,18 +17,54 @@ function adminNames(): Set<string> {
   )
 }
 
-export function isAdmin(userId: string): boolean {
-  const names = adminNames()
-  if (names.size === 0) return false
-  const row = db().select({ username: user.username }).from(user).where(eq(user.id, userId)).get()
-  return Boolean(row?.username && names.has(row.username.toLowerCase()))
+// Owners (ADMIN_USERNAMES) can do everything and hand out the other roles from the panel
+// (settings 'roles', by username): moderators look after players and give up to
+// MOD_LIMIT at a time; support only looks, writes notes and closes reports.
+export const ROLES = ['dueno', 'moderador', 'soporte'] as const
+export type Role = (typeof ROLES)[number]
+export const MOD_LIMIT = 500
+
+export function staffRoles(): Record<string, Exclude<Role, 'dueno'>> {
+  return getSetting<Record<string, Exclude<Role, 'dueno'>>>('roles') ?? {}
 }
 
-/** The signed-in user, if they're an admin; a 404 for anyone else, as if there were nothing here. */
-export async function requireAdmin(request: Request): Promise<SessionUser> {
+export function roleOfName(username: string | null | undefined): Role | null {
+  if (!username) return null
+  const lower = username.toLowerCase()
+  if (adminNames().has(lower)) return 'dueno'
+  return staffRoles()[lower] ?? null
+}
+
+export function ownerNames(): string[] {
+  return [...adminNames()]
+}
+
+export function roleOf(userId: string): Role | null {
+  const row = db().select({ username: user.username }).from(user).where(eq(user.id, userId)).get()
+  return roleOfName(row?.username)
+}
+
+export function isAdmin(userId: string): boolean {
+  return roleOf(userId) !== null
+}
+
+/** Whether `role` may do what needs `min`: owner > moderator > support. */
+export function allows(role: Role | null, min: Role): boolean {
+  return role !== null && ROLES.indexOf(role) <= ROLES.indexOf(min)
+}
+
+export type AdminUser = SessionUser & { role: Role }
+
+/**
+ * The signed-in user, if they're on the team with at least `min`; a 404 for anyone else, as if
+ * there were nothing here, and a 403 for someone on the team without enough.
+ */
+export async function requireAdmin(request: Request, min: Role = 'soporte'): Promise<AdminUser> {
   const me = await requireUser(request)
-  if (!isAdmin(me.id)) throw new HttpError(404, 'No existe')
-  return me
+  const role = roleOf(me.id)
+  if (!role) throw new HttpError(404, 'No existe')
+  if (!allows(role, min)) throw new HttpError(403, 'Tu rol no puede hacer eso')
+  return { ...me, role }
 }
 
 /** The player's address: Cloudflare's header first, then the first hop of x-forwarded-for. */
@@ -77,10 +114,16 @@ export function dropReview(userId: string, tipo: 'foto' | 'nombre') {
 }
 
 /** Writes down what an admin did, for the log in the panel. */
-export function logAction(admin: SessionUser, accion: string, objetivo: string | null = null, detalle: string | null = null) {
+export function logAction(
+  admin: SessionUser | { name: string },
+  accion: string,
+  objetivo: string | null = null,
+  detalle: string | null = null,
+  deshacer: Undo | null = null,
+) {
   db()
     .insert(adminLog)
-    .values({ admin: admin.name, accion, objetivo, detalle })
+    .values({ admin: admin.name, accion, objetivo, detalle, deshacer })
     .run()
 }
 

@@ -4,11 +4,16 @@
   aspect-ratio: var(--card-ratio, 5 / 7);
   perspective: 600px;
   transform: rotate(var(--tilt, -3deg));
-  animation: deal 0.42s cubic-bezier(0.2, 0.8, 0.3, 1) var(--deal-delay, 0s) both;
+  /* What the row grows by when this card joins it: a whole card for the first, the uncovered part after that */
+  --room: var(--card-w, 64px);
+  animation:
+    deal 0.42s cubic-bezier(0.2, 0.8, 0.3, 1) var(--deal-delay, 0s) both,
+    room 0.28s ease-in-out calc(var(--deal-delay, 0s) + 0.24s) both;
 }
 
 /* Cards overlap like on a real table, each one a little askew */
 .slot + .slot {
+  --room: calc(var(--card-w, 64px) * (1 + var(--overlap, -0.48)));
   margin-left: calc(var(--card-w, 64px) * var(--overlap, -0.48));
 }
 
@@ -23,6 +28,13 @@
 /* A card lying face down tucks under the one beside it, so the dealer's up card stays on top */
 .under {
   z-index: -1;
+}
+
+/* The card takes no room until it's about to land; then the ones already there slide over to make it */
+@keyframes room {
+  from {
+    margin-right: calc(var(--room) * -1);
+  }
 }
 
 /* From the shoe, top right of the felt */

@@ -3,10 +3,11 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAdjustAll, useEconomy, useSetRules, type Economy } from '@/admin/useAdmin'
-import { number, percent } from '@/admin/format'
+import { compact, number, percent } from '@/admin/format'
 import { ConfirmSheet } from '@/ui/ConfirmSheet'
 import { CoinsIcon } from '@/ui/icons'
 import styles from './admin.module.css'
+import { EconomyTools } from './EconomyTools'
 import { SignedAmount, signedAmount, type Sign } from './SignedAmount'
 
 const OUTCOMES = ['blackjack', 'win', 'push', 'lose', 'bust', 'surrender'] as const
@@ -100,7 +101,7 @@ function CoinsForAll({ players }: { players: number }) {
     )
 
   return (
-    <form className={`card ${styles.block}`} onSubmit={submit}>
+    <form className={`card ${styles.block} ${styles.span2}`} onSubmit={submit}>
       <div className={styles.headStack}>
         <h2 className="label">{t('admin.coinsAll.title')}</h2>
         <span className={styles.dim}>{t('admin.coinsAll.hint')}</span>
@@ -178,7 +179,7 @@ export function EconomyTab() {
   const hands = OUTCOMES.reduce((sum, key) => sum + data.outcomes[key], 0)
   const most = Math.max(1, ...data.histogram.map((bucket) => bucket.players))
   const range = (from: number, to: number | null) =>
-    to === null ? `${number(from)}+` : to === from + 1 ? number(from) : `${number(from)}–${number(to - 1)}`
+    to === null ? `${compact(from)}+` : to === from + 1 ? compact(from) : `${compact(from)}–${compact(to - 1)}`
   const broke = data.histogram.find((bucket) => bucket.from === 0)?.players ?? 0
 
   const kpis: { label: string; value: number; sub: string; coin?: boolean }[] = [
@@ -207,7 +208,10 @@ export function EconomyTab() {
         ))}
       </div>
 
-      <section className={`card ${styles.block}`}>
+      {/* Right after the first figures, so both rows sit together and nothing full-width cuts the wall below. */}
+      <EconomyTools />
+
+      <section className={`card ${styles.block} ${styles.span2}`}>
         <h2 className="label">{t('admin.balancesNow')}</h2>
         <div className={styles.columns}>
           {data.histogram.map((bucket) => (
@@ -224,7 +228,9 @@ export function EconomyTab() {
                 }
                 style={{ height: `${(bucket.players / most) * 120}px` }}
               />
-              <span className={styles.columnLabel}>{range(bucket.from, bucket.to)}</span>
+              <span className={styles.columnLabel} title={range(bucket.from, bucket.to)}>
+                {range(bucket.from, bucket.to)}
+              </span>
             </div>
           ))}
         </div>

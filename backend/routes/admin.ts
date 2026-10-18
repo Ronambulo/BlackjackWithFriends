@@ -2,7 +2,7 @@ import { readdirSync, statSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { and, count, desc, eq, inArray, or, sql } from 'drizzle-orm'
-import { activeBan, dropReview, forgetBans, isAdmin, logAction, requireAdmin, setUsername } from '../lib/admin.js'
+import { activeBan, dropReview, forgetBans, isAdmin, logAction, MOD_LIMIT, requireAdmin, setUsername } from '../lib/admin.js'
 import { forgetAuth } from '../lib/auth.js'
 import { backupDir, createBackup, listBackups, restoreBackup } from '../lib/backup.js'
 import { cosmeticStats, setShopItem, setShopOrder, setShopSale } from '../lib/cosmetics.js'
@@ -12,7 +12,7 @@ import { databasePath, db } from '../lib/db.js'
 import { notifyAll, notifyGroups } from '../lib/events.js'
 import { HttpError, json } from '../lib/http.js'
 import { pushReviewRejected } from '../lib/push.js'
-import { addDays, currentBalance, forgetRules, leagueClock, rollover, ruleChanges, rulesFor } from '../lib/league.js'
+import { addDays, currentBalance, forgetRules, leagueClock, madridMidnight, rollover, ruleChanges, rulesFor } from '../lib/league.js'
 import { forgetClosedWeeks } from '../lib/season.js'
 import { forgetClosedDays } from '../lib/daily.js'
 import {
@@ -25,6 +25,7 @@ import {
   hands,
   ipBans,
   pays,
+  playerMarks,
   profiles,
   reports,
   reviews,
@@ -33,6 +34,7 @@ import {
   type AdjustmentKind,
 } from '../lib/schema.js'
 import { deleteObject, keyOf, mediaPath } from '../lib/storage.js'
+import { lastMessages, playerExtras } from './admin-tools.js'
 import { removeMember } from './groups.js'
 
 // The admin screen: how the app is doing, and the players, to delete or shut out.
@@ -86,6 +88,11 @@ const dayFormat = new Intl.DateTimeFormat('en-CA', { timeZone: ZONE })
 const hourFormat = new Intl.DateTimeFormat('en-US', { timeZone: ZONE, weekday: 'short', hour: 'numeric', hourCycle: 'h23' })
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
+/** Midnight in Madrid of the day `ms` falls on. */
+function madridDayStart(ms: number): number {
+  return madridMidnight(dayFormat.format(ms)).getTime()
+}
+
 function shiftDay(day: string, days: number): string {
   const d = new Date(`${day}T00:00:00Z`)
   d.setUTCDate(d.getUTCDate() + days)
@@ -138,12 +145,18 @@ function period(rows: Played[], signups: number, before: Set<string>) {
   }
 }
 
-// GET /api/admin/stats
+const PERIODS = [1, 7, 28, 90]
+
+// GET /api/admin/stats?days=1|7|28|90: the figures for that many days against the same before.
 export async function getAdminStats(request: Request): Promise<Response> {
   await requireAdmin(request)
   const clock = leagueClock()
   const now = Date.now()
   const d = db()
+  const asked = Number(new URL(request.url).searchParams.get('days'))
+  const span = PERIODS.includes(asked) ? asked : 7
+  const windowDays = Math.max(WINDOW, span * 3)
+  const chartDays = Math.max(DAYS, span)
 
   const users = d.select({ id: user.id, at: sql<number>`${user.createdAt}` }).from(user).all()
   const inAGroup = d.select({ n: sql<number>`count(distinct ${groupMembers.userId})` }).from(groupMembers).get()?.n ?? 0
@@ -174,20 +187,23 @@ export async function getAdminStats(request: Request): Promise<Response> {
   const recent: Played[] = d
     .select({ userId: hands.userId, at: sql<number>`${hands.createdAt}`, bet: hands.apuesta, net: hands.neto })
     .from(hands)
-    .where(sql`${hands.createdAt} >= ${now - WINDOW * DAY}`)
+    .where(sql`${hands.createdAt} >= ${now - windowDays * DAY}`)
     .orderBy(hands.createdAt)
     .all()
   const between = (from: number, to: number) => recent.filter((row) => row.at >= now - from * DAY && row.at < now - to * DAY)
   const joined = (from: number, to: number) => users.filter((u) => u.at >= now - from * DAY && u.at < now - to * DAY).length
   const ids = (rows: Played[]) => new Set(rows.map((row) => row.userId))
-  const [w0, w1, w2] = [between(7, 0), between(14, 7), between(21, 14)]
-  const weeks = { current: period(w0, joined(7, 0), ids(w1)), previous: period(w1, joined(14, 7), ids(w2)) }
+  const [w0, w1, w2] = [between(span, 0), between(span * 2, span), between(span * 3, span * 2)]
+  const weeks = { current: period(w0, joined(span, 0), ids(w1)), previous: period(w1, joined(span * 2, span), ids(w2)) }
 
   // Hands, players, sign-ups and minutes per day.
-  const days = Array.from({ length: DAYS }, (_, i) => dayFormat.format(new Date(now - (DAYS - 1 - i) * DAY)))
+  const days = Array.from({ length: chartDays }, (_, i) => dayFormat.format(new Date(now - (chartDays - 1 - i) * DAY)))
   const perDay = new Map(days.map((day) => [day, { rows: [] as Played[], signups: 0 }]))
   for (const row of recent) perDay.get(dayFormat.format(row.at))?.rows.push(row)
-  for (const u of users) perDay.get(dayFormat.format(u.at))!.signups++
+  for (const u of users) {
+    const day = perDay.get(dayFormat.format(u.at))
+    if (day) day.signups++
+  }
   const activity = days.map((day) => {
     const { rows, signups } = perDay.get(day)!
     return { day, hands: rows.length, players: ids(rows).size, signups, minutes: Math.round(playTime(rows) / 60_000) }
@@ -303,6 +319,7 @@ export async function getAdminStats(request: Request): Promise<Response> {
 
   return json({
     now,
+    span,
     weekEndsAt: clock.weekEnd.getTime(),
     live: { ...live, lastHandAt },
     users: users.length,
@@ -413,11 +430,40 @@ export async function getModeration(request: Request): Promise<Response> {
   })
 }
 
-// GET /api/admin/users?q=: the newest players, or those whose username, name or IP matches.
+const SEGMENTS = ['new', 'risk', 'broke', 'whales'] as const
+type Segment = (typeof SEGMENTS)[number]
+// Who counts as at risk: played a fair bit, then went quiet for a few days.
+const RISK_HANDS = 20
+const RISK_FROM = 4 * DAY
+const RISK_TO = 14 * DAY
+// Coins held plus coins spent in the shop.
+const WHALE_COINS = 2000
+
+/** The condition for each built-in segment, on users left-joined with profiles. */
+function segmentWhere(segment: Segment, clock: ReturnType<typeof leagueClock>, now: number) {
+  const lastHand = sql`(select max(h.created_at) from hands h where h.user_id = ${user.id})`
+  switch (segment) {
+    case 'new':
+      return sql`${user.createdAt} >= ${now - 7 * DAY}`
+    case 'risk':
+      return sql`(select count(*) from hands h where h.user_id = ${user.id}) >= ${RISK_HANDS} and ${lastHand} between ${now - RISK_TO} and ${now - RISK_FROM}`
+    case 'broke':
+      return sql`${profiles.semana} = ${clock.weekStart} and ${profiles.saldo} = 0`
+    case 'whales':
+      return sql`coalesce(${profiles.monedas}, 0) + (select coalesce(sum(c.monedas), 0) from user_cosmetics c where c.user_id = ${user.id}) >= ${WHALE_COINS}`
+  }
+}
+
+// GET /api/admin/users?q=&segment=&tag=: the newest players, or those whose username, name or
+// IP matches, in a segment or with a tag.
 export async function listUsers(request: Request): Promise<Response> {
   await requireAdmin(request)
-  const q = new URL(request.url).searchParams.get('q')?.trim().toLowerCase() ?? ''
+  const params = new URL(request.url).searchParams
+  const q = params.get('q')?.trim().toLowerCase() ?? ''
+  const segment = SEGMENTS.find((s) => s === params.get('segment')) ?? null
+  const tag = params.get('tag')?.trim().toUpperCase() || null
   const clock = leagueClock()
+  const now = Date.now()
   const d = db()
   const lastSeen = sql<number | null>`(select max(s.updated_at) from sessions s where s.user_id = ${user.id})`
   const lastIp = sql<string | null>`(select s.ip_address from sessions s where s.user_id = ${user.id} order by s.updated_at desc limit 1)`
@@ -430,35 +476,63 @@ export async function listUsers(request: Request): Promise<Response> {
       avatarUrl: profiles.avatarUrl,
       createdAt: sql<number>`${user.createdAt}`,
       lastSeen,
+      lastHand: sql<number | null>`(select max(h.created_at) from hands h where h.user_id = ${user.id})`,
       ip: lastIp,
       hands: sql<number>`(select count(*) from hands h where h.user_id = ${user.id})`,
       groups: sql<number>`(select count(*) from group_members m where m.user_id = ${user.id})`,
       balance: sql<number | null>`case when ${profiles.id} is null then null else ${currentBalance(clock)} end`,
       monedas: profiles.monedas,
+      etiquetas: sql<string | null>`${playerMarks.etiquetas}`,
+      silenciadoHasta: sql<number | null>`${playerMarks.silenciadoHasta}`,
     })
     .from(user)
     .leftJoin(profiles, eq(profiles.id, user.id))
+    .leftJoin(playerMarks, eq(playerMarks.userId, user.id))
     .where(
-      q
-        ? or(
-            sql`lower(${user.username}) like ${pattern} escape '\\'`,
-            sql`lower(${profiles.nombre}) like ${pattern} escape '\\'`,
-            sql`exists (select 1 from sessions s where s.user_id = ${user.id} and s.ip_address like ${pattern} escape '\\')`,
-          )
-        : undefined,
+      and(
+        q
+          ? or(
+              sql`lower(${user.username}) like ${pattern} escape '\\'`,
+              sql`lower(${profiles.nombre}) like ${pattern} escape '\\'`,
+              sql`exists (select 1 from sessions s where s.user_id = ${user.id} and s.ip_address like ${pattern} escape '\\')`,
+            )
+          : undefined,
+        segment ? segmentWhere(segment, clock, now) : undefined,
+        tag ? sql`exists (select 1 from json_each(${playerMarks.etiquetas}) t where t.value = ${tag})` : undefined,
+      ),
     )
     .orderBy(desc(user.createdAt))
     .limit(USERS_LIMIT)
     .all()
   const total = d.select({ n: count() }).from(user).get()?.n ?? 0
+  const segments = Object.fromEntries(
+    SEGMENTS.map((s) => [
+      s,
+      d.select({ n: count() }).from(user).leftJoin(profiles, eq(profiles.id, user.id)).where(segmentWhere(s, clock, now)).get()?.n ?? 0,
+    ]),
+  )
+  // Every tag in use, with how many players have it.
+  const tags = d
+    .select({ tag: sql<string>`t.value`, n: count() })
+    .from(sql`${playerMarks}, json_each(${playerMarks.etiquetas}) t`)
+    .groupBy(sql`t.value`)
+    .orderBy(desc(count()))
+    .all()
   const banned = new Set(d.select({ ip: ipBans.ip }).from(ipBans).all().map((row) => row.ip))
   return json({
     total,
-    users: rows.map((row) => ({ ...row, admin: isAdmin(row.id), banned: Boolean(row.ip && banned.has(row.ip)) })),
+    segments,
+    tags,
+    users: rows.map(({ etiquetas, silenciadoHasta, ...row }) => ({
+      ...row,
+      etiquetas: etiquetas ? (JSON.parse(etiquetas) as string[]) : [],
+      silenced: Boolean(silenciadoHasta && silenciadoHasta > now),
+      admin: isAdmin(row.id),
+      banned: Boolean(row.ip && banned.has(row.ip)),
+    })),
   })
 }
 
-// Balance ranges in the economy histogram: from (included) to (excluded), null for no limit.
 const BALANCE_BUCKETS: [number, number | null][] = [
   [0, 1],
   [1, 500],
@@ -528,15 +602,16 @@ export async function getAdminShop(request: Request): Promise<Response> {
 
 // POST /api/admin/shop/item { id, precio, oferta, retirado }: null puts a price back as it was.
 export async function postShopItem(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'dueno')
   const body = await readBody(request)
-  logAction(me, 'shop_item', String(body.id), setShopItem(body.id, body))
+  const before = getSetting('shop') ?? null
+  logAction(me, 'shop_item', String(body.id), setShopItem(body.id, body), { kind: 'setting', key: 'shop', value: before })
   return json({ ok: true })
 }
 
 // POST /api/admin/shop/order { tipo, ids }
 export async function postShopOrder(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'dueno')
   const body = await readBody(request)
   logAction(me, 'shop_order', setShopOrder(body.tipo, body.ids))
   return json({ ok: true })
@@ -544,9 +619,10 @@ export async function postShopOrder(request: Request): Promise<Response> {
 
 // POST /api/admin/shop/sale { rebaja }: a percentage off everything, 0 to end it.
 export async function postShopSale(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'dueno')
   const body = await readBody(request)
-  logAction(me, 'shop_sale', null, `${setShopSale(body.rebaja)} %`)
+  const before = getSetting('shop') ?? null
+  logAction(me, 'shop_sale', null, `${setShopSale(body.rebaja)} %`, { kind: 'setting', key: 'shop', value: before })
   return json({ ok: true })
 }
 
@@ -710,7 +786,24 @@ export async function getUserDetail(request: Request): Promise<Response> {
     .orderBy(desc(adjustments.id))
     .limit(SESSIONS_LIMIT)
     .all()
+  // Chips won or lost each day for two weeks, for the chart (the adjustments mark the drops).
+  const chartFrom = now - (DAYS - 1) * DAY
+  const chart = Array.from({ length: DAYS }, (_, i) => ({ day: dayFormat.format(new Date(chartFrom + i * DAY)), net: 0, hands: 0 }))
+  const chartDay = new Map(chart.map((c) => [c.day, c]))
+  for (const row of d
+    .select({ at: sql<number>`${hands.createdAt}`, net: hands.neto })
+    .from(hands)
+    .where(and(eq(hands.userId, id), sql`${hands.createdAt} >= ${madridDayStart(chartFrom)}`))
+    .all()) {
+    const day = chartDay.get(dayFormat.format(row.at))
+    if (!day) continue
+    day.hands++
+    day.net += row.net ?? 0
+  }
   return json({
+    ...playerExtras(id),
+    chart,
+    messages: lastMessages(id),
     adjustments: fixes,
     sessions: sessions.map((s) => ({ ...s, banned: Boolean(s.ip && banned.has(s.ip)) })),
     sharedWith,
@@ -730,7 +823,7 @@ function userId(value: unknown): string {
 
 // POST /api/admin/users/delete { id }: deletes the account and everything that hangs from it.
 export async function deleteUser(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'dueno')
   const id = userId((await readBody(request)).id)
   if (id === me.id || isAdmin(id)) throw new HttpError(400, 'No se puede borrar a un administrador')
   const d = db()
@@ -784,7 +877,7 @@ export async function listBans(request: Request): Promise<Response> {
 // POST /api/admin/bans { ip | userId | username, motivo?, hours? }: shuts out an address, or every
 // address a player has signed in from (and signs them out everywhere). No hours: for good.
 export async function banIp(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'moderador')
   const body = await readBody(request)
   const motivo = typeof body.motivo === 'string' && body.motivo.trim() ? body.motivo.trim().slice(0, 200) : null
   const d = db()
@@ -835,13 +928,13 @@ export async function banIp(request: Request): Promise<Response> {
       .run()
   }
   forgetBans()
-  logAction(me, 'ban', target, [hours ? `${hours} h` : 'para siempre', motivo].filter(Boolean).join(' · '))
+  logAction(me, 'ban', target, [hours ? `${hours} h` : 'para siempre', motivo].filter(Boolean).join(' · '), ips.length ? { kind: 'unban', ips } : null)
   return json({ ok: true, ips })
 }
 
 // POST /api/admin/bans/delete { ip }
 export async function unbanIp(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'moderador')
   const ip = (await readBody(request)).ip
   if (typeof ip !== 'string') throw new HttpError(400, 'IP no válida')
   db().delete(ipBans).where(eq(ipBans.ip, ip)).run()
@@ -853,7 +946,7 @@ export async function unbanIp(request: Request): Promise<Response> {
 // POST /api/admin/reviews { userId, tipo, ok }: a new name or photo looked at. ok keeps it; otherwise
 // the photo goes (back to initials) or the name goes back to the username.
 export async function decideReview(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'moderador')
   const body = await readBody(request)
   const id = userId(body.userId)
   const tipo = body.tipo === 'foto' || body.tipo === 'nombre' ? body.tipo : null
@@ -898,7 +991,7 @@ function withMates(id: string) {
 
 // POST /api/admin/users/rename { id, nombre?, username? }: puts right a player's name or username.
 export async function renameUser(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'moderador')
   const body = await readBody(request)
   const id = userId(body.id)
   const d = db()
@@ -932,15 +1025,16 @@ export async function getAdminSettings(request: Request): Promise<Response> {
 
 // POST /api/admin/flags { flag, on }
 export async function postFlag(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'dueno')
   const body = await readBody(request)
   if (typeof body.flag !== 'string' || !(body.flag in FLAGS) || typeof body.on !== 'boolean') {
     throw new HttpError(400, 'Interruptor no válido')
   }
   const flag = body.flag as Flag
+  const before = getSetting(`flag.${flag}`) ?? null
   // Back to the default is stored as nothing.
   setSetting(`flag.${flag}`, body.on === FLAGS[flag] ? null : body.on)
-  logAction(me, body.on ? 'flag_on' : 'flag_off', flag)
+  logAction(me, body.on ? 'flag_on' : 'flag_off', flag, null, { kind: 'setting', key: `flag.${flag}`, value: before })
   return json(flags())
 }
 
@@ -953,7 +1047,7 @@ function chips(value: unknown, min: number): number {
 
 // POST /api/admin/rules { startBalance, dailyPay }: from next Monday, so the week in play keeps its rules.
 export async function postRules(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'dueno')
   const body = await readBody(request)
   const rules = { saldoInicial: chips(body.startBalance, 1), pagaDiaria: chips(body.dailyPay, 0) }
   const semana = addDays(leagueClock().weekStart, 7)
@@ -965,12 +1059,12 @@ export async function postRules(request: Request): Promise<Response> {
 
 // GET /api/admin/backups: the copies of the database. POST: one more, now.
 export async function getBackups(request: Request): Promise<Response> {
-  await requireAdmin(request)
+  await requireAdmin(request, 'dueno')
   return json(listBackups())
 }
 
 export async function postBackup(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'dueno')
   const name = await createBackup()
   logAction(me, 'backup', name)
   return json(listBackups())
@@ -978,7 +1072,7 @@ export async function postBackup(request: Request): Promise<Response> {
 
 // GET /api/admin/backups/download?name=…: one of the copies; without a name, a new one taken now.
 export async function downloadBackup(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'dueno')
   const asked = new URL(request.url).searchParams.get('name')
   const name = asked ?? (await createBackup())
   if (!listBackups().some((backup) => backup.name === name)) throw new HttpError(404, 'No existe')
@@ -1003,19 +1097,23 @@ export async function getAdminLog(request: Request): Promise<Response> {
         accion: adminLog.accion,
         objetivo: adminLog.objetivo,
         detalle: adminLog.detalle,
+        undoable: sql<boolean>`${adminLog.deshacer} is not null`,
+        deshecho: adminLog.deshecho,
         createdAt: sql<number>`${adminLog.createdAt}`,
       })
       .from(adminLog)
       .orderBy(desc(adminLog.id))
-      .limit(100)
-      .all(),
+      .limit(200)
+      .all()
+      // SQLite answers the "is not null" with 0 or 1.
+      .map((row) => ({ ...row, undoable: Boolean(row.undoable) })),
   )
 }
 
 // POST /api/admin/backups/restore { name }: puts that copy back as the database. One of how
 // things are now is taken first. Whoever signed in after the copy was made has to sign in again.
 export async function postRestore(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'dueno')
   const name = (await readBody(request)).name
   if (typeof name !== 'string') throw new HttpError(400, 'Copia no válida')
   // The push keys may be newer than the copy: devices signed up with them must keep working.
@@ -1041,7 +1139,7 @@ const ADJUST_MAX = 1_000_000
 // POST /api/admin/users/adjust { id, tipo, cantidad, motivo }: adds (or takes away) chips this week, or coins.
 // The day's change in the ranking moves with it, so it doesn't look like a win.
 export async function adjustUser(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'moderador')
   const body = await readBody(request)
   const id = userId(body.id)
   if (!ADJUSTMENT_KINDS.includes(body.tipo as AdjustmentKind)) throw new HttpError(400, 'Tipo no válido')
@@ -1050,6 +1148,7 @@ export async function adjustUser(request: Request): Promise<Response> {
   if (typeof cantidad !== 'number' || !Number.isInteger(cantidad) || cantidad === 0 || Math.abs(cantidad) > ADJUST_MAX) {
     throw new HttpError(400, 'Cantidad no válida')
   }
+  if (me.role !== 'dueno' && Math.abs(cantidad) > MOD_LIMIT) throw new HttpError(403, `Tu rol da como mucho ${MOD_LIMIT} de una vez`)
   const motivo = typeof body.motivo === 'string' ? body.motivo.trim() : ''
   if (motivo.length < 3 || motivo.length > 200) throw new HttpError(400, 'Falta el motivo')
   const d = db()
@@ -1076,7 +1175,7 @@ export async function adjustUser(request: Request): Promise<Response> {
     }
     tx.insert(adjustments).values({ userId: id, tipo, cantidad, motivo, por: me.name }).run()
   })
-  logAction(me, `adjust_${tipo}`, `@${target.n}`, `${cantidad > 0 ? '+' : ''}${cantidad} · ${motivo}`)
+  logAction(me, `adjust_${tipo}`, `@${target.n}`, `${cantidad > 0 ? '+' : ''}${cantidad} · ${motivo}`, { kind: 'adjust', userId: id, tipo, cantidad })
   notifyGroups(withMates(id))
   return json({ ok: true })
 }
@@ -1084,7 +1183,7 @@ export async function adjustUser(request: Request): Promise<Response> {
 // POST /api/admin/users/adjust-all { cantidad, motivo }: gives every player coins, or takes them
 // away; whoever has fewer than that is left at zero. Each one gets its own line in their history.
 export async function adjustAll(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'dueno')
   const body = await readBody(request)
   const cantidad = body.cantidad
   if (typeof cantidad !== 'number' || !Number.isInteger(cantidad) || cantidad === 0 || Math.abs(cantidad) > ADJUST_MAX) {
@@ -1114,7 +1213,7 @@ export async function adjustAll(request: Request): Promise<Response> {
 
 // POST /api/admin/maintenance { on, message? }: closes the app to players (admins still get in).
 export async function postMaintenance(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'dueno')
   const body = await readBody(request)
   if (typeof body.on !== 'boolean') throw new HttpError(400, 'Cuerpo no válido')
   const message = typeof body.message === 'string' ? body.message.trim().slice(0, 200) || null : null
@@ -1168,7 +1267,7 @@ export async function resolveReport(request: Request): Promise<Response> {
 
 // POST /api/admin/reports/delete { id }
 export async function deleteReport(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'moderador')
   const id = reportId((await readBody(request)).id)
   db().delete(reports).where(eq(reports.id, id)).run()
   logAction(me, 'report_delete', `#${id}`)
@@ -1203,7 +1302,7 @@ const cardsText = (cards: { rank: string; suit: string }[]) => cards.map((card) 
 // GET /api/admin/export?what=players|days|hands: the players, every day the app has been played,
 // or every hand anyone has played, as CSV.
 export async function getExport(request: Request): Promise<Response> {
-  const me = await requireAdmin(request)
+  const me = await requireAdmin(request, 'moderador')
   const what = new URL(request.url).searchParams.get('what')
   const d = db()
   if (what === 'players') {

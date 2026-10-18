@@ -1,0 +1,1 @@
+ALTER TABLE `season_results` ADD `vista_en` integer;

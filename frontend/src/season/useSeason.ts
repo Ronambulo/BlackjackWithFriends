@@ -7,8 +7,10 @@ import { api } from '@/lib/api'
 // Closed weeks: every Monday the API ranks each group, hands out coins and
 // trophies, and keeps the joke prizes. The ceremony shows the player theirs once.
 
-export const JOKE_PRIZES = ['blackjacks', 'biggestBet', 'worstStreak', 'hands', 'insurances'] as const
+export const JOKE_PRIZES = ['blackjacks', 'biggestBet', 'worstStreak', 'hands', 'insurances', 'bestStreak', 'bestWin', 'wins', 'pushes', 'doubles', 'splits', 'busts', 'surrenders', 'dealerBlackjacks'] as const
 export type JokePrize = (typeof JOKE_PRIZES)[number]
+/** Coins for each joke prize won where the group gives prizes (backend/lib/season.ts). */
+export const JOKE_COINS = 20
 
 export interface SeasonStats {
   hands: number
@@ -21,6 +23,16 @@ export interface SeasonStats {
   biggestBet: number
   worstStreak: number
   insurances: number
+  /** Wins in a row, at most; a push doesn't break it. */
+  bestStreak: number
+  /** Hands doubled. */
+  doubles: number
+  /** Rounds split. */
+  splits: number
+  busts: number
+  surrenders: number
+  /** Rounds where the dealer had blackjack. */
+  dealerBlackjacks: number
 }
 
 export interface WeekStanding {
@@ -77,6 +89,15 @@ export function useCeremony() {
   })
 }
 
+/** GET /api/ceremony/replay: the ceremony watched in the last hour, until `hasta`. */
+export function useCeremonyReplay() {
+  const user = useUser()
+  return useQuery({
+    queryKey: ['ceremony', 'replay', user.id],
+    queryFn: () => api<(Ceremony & { hasta: string }) | null>('/ceremony/replay'),
+  })
+}
+
 /** Watched or skipped: it won't show again, and the coins it gave show up. */
 export function useCeremonySeen() {
   const user = useUser()
@@ -87,6 +108,7 @@ export function useCeremonySeen() {
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: ['profile', user.id] })
       void queryClient.invalidateQueries({ queryKey: ['stats', user.id] })
+      void queryClient.invalidateQueries({ queryKey: ['ceremony', 'replay', user.id] })
     },
   })
 }

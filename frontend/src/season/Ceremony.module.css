@@ -22,7 +22,7 @@
 
 .skip {
   position: absolute;
-  top: calc(env(safe-area-inset-top) + 14px);
+  top: calc(env(safe-area-inset-top) + 26px);
   right: 16px;
   padding: 8px 14px;
   border: 1px solid var(--border);
@@ -32,6 +32,84 @@
   font: inherit;
   font-size: 0.9rem;
   font-weight: 700;
+}
+
+.back {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 26px);
+  left: 16px;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-dim);
+}
+
+/* ---------- Stories: a bar per screen and the tapped side lighting up ---------- */
+
+.bars {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 10px);
+  right: 12px;
+  left: 12px;
+  display: flex;
+  gap: 4px;
+}
+
+.bar {
+  flex: 1;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 22%, transparent);
+}
+
+.barFill {
+  display: block;
+  height: 100%;
+  background: var(--text);
+  transform-origin: left;
+  transition: transform 0.35s ease;
+  animation: barIn 0.35s ease;
+}
+
+/* The drumroll moves on by itself: its bar fills in the time it lasts. */
+.barFill[data-timed='true'] {
+  animation: barIn 2.4s linear;
+}
+
+@keyframes barIn {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.flash {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 30%;
+  pointer-events: none;
+  animation: flash 0.3s ease-out forwards;
+}
+
+.flash[data-side='left'] {
+  left: 0;
+  background: linear-gradient(to right, color-mix(in srgb, var(--text) 6%, transparent), transparent 70%);
+}
+
+.flash[data-side='right'] {
+  right: 0;
+  background: linear-gradient(to left, color-mix(in srgb, var(--text) 6%, transparent), transparent 70%);
+}
+
+@keyframes flash {
+  to {
+    opacity: 0;
+  }
 }
 
 .stage {
@@ -84,11 +162,19 @@
 
 .tap {
   position: absolute;
+  right: 20px;
   bottom: calc(env(safe-area-inset-bottom) + 20px);
+  left: 20px;
+  display: flex;
+  justify-content: space-between;
   margin: 0;
   color: var(--text-dim);
   font-size: 0.85rem;
   animation: pulse 1.6s ease-in-out infinite;
+}
+
+.tapNext {
+  margin-left: auto;
 }
 
 /* ---------- Drumroll: three chips bouncing faster ---------- */
@@ -225,7 +311,7 @@
 
 .joke {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: auto 1fr auto;
   gap: 2px 12px;
   padding: 14px 16px;
   border: 1px solid var(--border);
@@ -240,6 +326,21 @@
   background: rgb(242 193 78 / 0.1);
 }
 
+.jokeFaces {
+  display: flex;
+  grid-row: span 2;
+  align-self: center;
+}
+
+.jokeFaces > * {
+  border: 2px solid var(--layer-1);
+  border-radius: 999px;
+}
+
+.jokeFaces > * + * {
+  margin-left: -14px;
+}
+
 .jokeTitle {
   color: var(--accent);
   font-weight: 800;
@@ -247,6 +348,7 @@
 
 .jokeWho {
   grid-row: 2;
+  grid-column: 2;
   overflow: hidden;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -254,12 +356,22 @@
 }
 
 .jokeValue {
-  grid-row: span 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  grid-row: 1 / span 2;
+  grid-column: 3;
   align-self: center;
   color: var(--text-dim);
   font-size: 0.85rem;
   font-weight: 700;
   text-align: right;
+}
+
+.jokeReward {
+  color: var(--accent);
+  font-weight: 800;
 }
 
 /* ---------- Coins ---------- */
@@ -380,4 +492,50 @@
   .confetti {
     display: none;
   }
+}
+
+/* The home screen's card to watch it again, for an hour */
+.replay {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding-block: 12px;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.replayIcon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+}
+
+.replayBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.replayTitle {
+  font-weight: 800;
+}
+
+.replayText {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.replayChevron {
+  flex: none;
+  color: var(--text-dim);
 }

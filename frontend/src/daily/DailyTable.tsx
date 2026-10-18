@@ -23,10 +23,13 @@ export function DailyTable() {
   const { data, isPending, isError, refetch } = useDaily()
   const play = useDailyPlay()
   const dealing = play.isPending && play.variables.action === 'deal'
-  const hand = dealing ? null : (data?.hand ?? null)
-  const { schedule, ready } = useDealTiming(hand)
   // Finished in this visit: the last hand stays on the felt until the player asks for the results.
-  const [finishing, setFinishing] = useState(false)
+  const [dismissed, setDismissed] = useState(false)
+  const finishing = Boolean(play.data?.done) && !dismissed
+  // While the results show, there's no felt: no hand to deal again and make heard behind them.
+  const results = Boolean(data?.done) && !finishing
+  const hand = dealing || results ? null : (data?.hand ?? null)
+  const { schedule, ready } = useDealTiming(hand)
 
   const [shownChips, setShownChips] = useState<number | null>(null)
   if (ready && data && shownChips !== data.chips) setShownChips(data.chips)
@@ -49,12 +52,12 @@ export function DailyTable() {
       </div>
     )
   }
-  if (data.done && !finishing) return <DailyResults daily={data} />
+  if (results) return <DailyResults daily={data} />
 
   const busy = play.isPending || !ready
   const fmt = (n: number) => formatNumber(n, lang)
   const send = (action: 'deal' | Action) =>
-    play.mutate({ action, version: data.version }, { onSuccess: (state) => state.done && setFinishing(true) })
+    play.mutate({ action, version: data.version }, { onSuccess: () => setDismissed(false) })
   const act = (action: Action) => {
     if (action === 'double' || action === 'split') playSound(action)
     send(action)
@@ -63,6 +66,9 @@ export function DailyTable() {
   const settled = hand?.phase === 'settled' ? hand.settlement : null
   const showResult = Boolean(settled) && ready && !dealing
   const inPlay = hand !== null && hand.phase !== 'settled'
+  // The server already counts the hand that just settled; its square waits, glowing, for the dealer to finish.
+  const revealing = hand?.phase === 'settled' && !ready
+  const shownResults = revealing ? data.results.slice(0, -1) : data.results
   // The hand about to be dealt, or being played, 1 to 10.
   const current = Math.min(data.total, data.results.length + 1)
   const errorText = play.error ? t(play.error instanceof ApiError && play.error.status === 409 ? 'play.changed' : 'common.error') : null
@@ -76,7 +82,7 @@ export function DailyTable() {
           </Link>
           <div className={styles.heading}>
             <span className={styles.title}>{t('daily.title', { number: data.number })}</span>
-            <Progress results={data.results} total={data.total} current={inPlay || dealing ? data.results.length : -1} />
+            <Progress results={shownResults} total={data.total} current={inPlay || dealing || revealing ? shownResults.length : -1} />
           </div>
           <div className={table.shoe} aria-hidden="true" />
         </div>
@@ -107,7 +113,7 @@ export function DailyTable() {
             {!hand && data.results.length === 0 && <p className={table.note}>{t('daily.intro', { total: data.total, start: fmt(data.start) })}</p>}
             <div className={table.row}>
               {data.done ? (
-                <button className={`${table.gold} ${table.wide}`} onClick={() => setFinishing(false)}>
+                <button className={`${table.gold} ${table.wide}`} onClick={() => setDismissed(true)}>
                   {t('daily.seeResults')}
                 </button>
               ) : (

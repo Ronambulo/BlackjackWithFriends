@@ -49,7 +49,7 @@ function NewPoll() {
   }
 
   return (
-    <form className={`card ${styles.block}`} onSubmit={submit}>
+    <form className={`card ${styles.block} ${styles.span2}`} onSubmit={submit}>
       <div className={styles.sectionHead}>
         <h2 className="label">{t('admin.pollNew')}</h2>
         <span className={styles.dim}>{t('admin.pollHint')}</span>
