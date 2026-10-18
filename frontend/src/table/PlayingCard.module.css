@@ -20,6 +20,11 @@
   animation: none;
 }
 
+/* A card lying face down tucks under the one beside it, so the dealer's up card stays on top */
+.under {
+  z-index: -1;
+}
+
 /* From the shoe, top right of the felt */
 @keyframes deal {
   from {
@@ -85,15 +90,23 @@
   backdrop-filter: var(--card-blur, none);
 }
 
+/* A style can give each suit a card of its own; most leave it to --card-face */
+.face[data-suit='S'] {
+  background: var(--card-face-s, var(--card-face, #fbfaf6));
+}
+
 .face[data-suit='H'] {
+  background: var(--card-face-h, var(--card-face, #fbfaf6));
   color: var(--card-red, #c3243a);
 }
 
 .face[data-suit='D'] {
+  background: var(--card-face-d, var(--card-face, #fbfaf6));
   color: var(--card-diamond, var(--card-red, #c3243a));
 }
 
 .face[data-suit='C'] {
+  background: var(--card-face-c, var(--card-face, #fbfaf6));
   color: var(--card-club, var(--card-ink, #16181c));
 }
 
@@ -127,10 +140,17 @@
 .back {
   transform: rotateY(180deg);
   border: calc(var(--card-w, 64px) * 0.06) solid var(--card-back-edge, #fbfaf6);
+  box-shadow:
+    var(--card-back-frame, 0 0 0 transparent),
+    0 6px 14px rgb(0 0 0 / 0.35),
+    0 0 0 1px rgb(0 0 0 / 0.08);
+  backdrop-filter: var(--card-back-blur, none);
   background: var(
     --card-back,
     repeating-linear-gradient(45deg, rgb(255 255 255 / 0.12) 0 3px, transparent 3px 8px),
     repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.12) 0 3px, transparent 3px 8px),
     #8e1d2c
   );
+  /* A see-through edge shows the back under it instead of repeating it */
+  background-origin: var(--card-back-origin, padding-box);
 }

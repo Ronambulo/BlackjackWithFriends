@@ -20,7 +20,8 @@ import styles from './styles.module.css'
 
 const SHOWN_CHIPS = [5, 25, 100, 500] as const
 
-const DEALER: (Card | null)[] = [null, { rank: '7', suit: 'C' }]
+// As at the table: the up card, then the hole card tucked under it
+const DEALER: (Card | null)[] = [{ rank: '7', suit: 'C' }, null]
 const PLAYER: Card[] = [
   { rank: 'A', suit: 'H' },
   { rank: 'K', suit: 'S' },

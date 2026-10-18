@@ -4,6 +4,10 @@
   gap: 18px;
 }
 
+.sectionLabel {
+  margin: 6px 2px -4px;
+}
+
 .tight {
   gap: 14px;
 }

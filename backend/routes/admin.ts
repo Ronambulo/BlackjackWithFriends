@@ -14,6 +14,7 @@ import { HttpError, json } from '../lib/http.js'
 import { pushReviewRejected } from '../lib/push.js'
 import { addDays, currentBalance, forgetRules, leagueClock, rollover, ruleChanges, rulesFor } from '../lib/league.js'
 import { forgetClosedWeeks } from '../lib/season.js'
+import { forgetClosedDays } from '../lib/daily.js'
 import {
   ADJUSTMENT_KINDS,
   adjustments,
@@ -1027,6 +1028,7 @@ export async function postRestore(request: Request): Promise<Response> {
   forgetBans()
   forgetRules()
   forgetClosedWeeks()
+  forgetClosedDays()
   if (vapid && !getSetting('push.vapid')) setSetting('push.vapid', vapid)
   logAction(me, 'restore', name, before)
   // Every open app reads everything again.

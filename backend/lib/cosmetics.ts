@@ -19,12 +19,19 @@ export interface Cosmetic {
 }
 
 // Prices go up with how much the style changes: a colour, a print, a whole
-// design, a new card shape. An active player makes some 300-450 coins a week.
-const COLOUR = 300
-const PRINT = 750
-const DESIGN = 1500
-const SHAPE = 2250
-const LEGEND = 3500
+// design, a special one, a legend, a myth. What a player makes a week:
+// challenges 10 + 20 + 40 a day (up to 490), the week's close 10 for playing
+// plus 100 / 60 / 30 for the podium, and 50 for each daily deck won in a group
+// (shared among its players, ~70 in a group of 5). An active player makes
+// some 400 a week, one who does everything up to ~950, plus ~750 once from
+// achievements. So a colour is a couple of days, a design a week, a legend
+// two and a half and a myth, the hardest, about a month.
+const COLOUR = 100
+const PRINT = 200
+const DESIGN = 400
+const SPECIAL = 600
+const LEGEND = 1000
+const MYTH = 1600
 
 const free = { from: 'gratis' } as const
 const shop = (precio: number) => ({ from: 'tienda', precio }) as const
@@ -42,31 +49,16 @@ export const COSMETICS: readonly Cosmetic[] = [
   { id: 'tapete.abismo', tipo: 'tapete', source: shop(COLOUR) },
   { id: 'tapete.musgo', tipo: 'tapete', source: shop(COLOUR) },
   { id: 'tapete.madera', tipo: 'tapete', source: shop(PRINT) },
-  { id: 'tapete.damasco', tipo: 'tapete', source: shop(PRINT) },
-  { id: 'tapete.cuero', tipo: 'tapete', source: shop(PRINT) },
   { id: 'tapete.escoces', tipo: 'tapete', source: shop(PRINT) },
-  { id: 'tapete.topos', tipo: 'tapete', source: shop(PRINT) },
   { id: 'tapete.riviera', tipo: 'tapete', source: shop(PRINT) },
   { id: 'tapete.marmol', tipo: 'tapete', source: shop(PRINT) },
   { id: 'tapete.vichy', tipo: 'tapete', source: shop(PRINT) },
-  { id: 'tapete.acero', tipo: 'tapete', source: shop(PRINT) },
-  { id: 'tapete.carbono', tipo: 'tapete', source: shop(PRINT) },
-  { id: 'tapete.bosque', tipo: 'tapete', source: shop(PRINT) },
-  { id: 'tapete.desierto', tipo: 'tapete', source: shop(PRINT) },
-  { id: 'tapete.neon', tipo: 'tapete', source: shop(DESIGN) },
   { id: 'tapete.pixel', tipo: 'tapete', source: shop(DESIGN) },
-  { id: 'tapete.atardecer', tipo: 'tapete', source: shop(DESIGN) },
-  { id: 'tapete.aurora', tipo: 'tapete', source: shop(DESIGN) },
-  { id: 'tapete.circuito', tipo: 'tapete', source: shop(DESIGN) },
-  { id: 'tapete.lava', tipo: 'tapete', source: shop(DESIGN) },
-  { id: 'tapete.nebulosa', tipo: 'tapete', source: shop(DESIGN) },
-  { id: 'tapete.chapa', tipo: 'tapete', source: shop(DESIGN) },
   { id: 'tapete.obsidiana', tipo: 'tapete', source: shop(DESIGN) },
-  { id: 'tapete.oceano', tipo: 'tapete', source: shop(DESIGN) },
-  { id: 'tapete.otono', tipo: 'tapete', source: shop(DESIGN) },
-  { id: 'tapete.realeza', tipo: 'tapete', source: shop(LEGEND) },
-  { id: 'tapete.holografico', tipo: 'tapete', source: shop(LEGEND) },
+  { id: 'tapete.ondas', tipo: 'tapete', source: shop(DESIGN) },
+  { id: 'tapete.cosmos', tipo: 'tapete', source: shop(SPECIAL) },
   { id: 'tapete.montecarlo', tipo: 'tapete', source: shop(LEGEND) },
+  { id: 'tapete.holografico', tipo: 'tapete', source: shop(MYTH) },
   { id: 'tapete.medianoche', tipo: 'tapete', source: { from: 'logro', logro: 'blackjack100' } },
   { id: 'tapete.campeon', tipo: 'tapete', source: { from: 'trofeo', trofeos: 1 } },
 
@@ -80,34 +72,22 @@ export const COSMETICS: readonly Cosmetic[] = [
   { id: 'dorso.rombos', tipo: 'dorso', source: shop(PRINT) },
   { id: 'dorso.retro', tipo: 'dorso', source: shop(PRINT) },
   { id: 'dorso.carbono', tipo: 'dorso', source: shop(PRINT) },
-  { id: 'dorso.hojas', tipo: 'dorso', source: shop(PRINT) },
   { id: 'dorso.artdeco', tipo: 'dorso', source: shop(DESIGN) },
   { id: 'dorso.pixel', tipo: 'dorso', source: shop(DESIGN) },
-  { id: 'dorso.tachuelas', tipo: 'dorso', source: shop(DESIGN) },
   { id: 'dorso.obsidiana', tipo: 'dorso', source: shop(DESIGN) },
+  { id: 'dorso.cristal', tipo: 'dorso', source: shop(SPECIAL) },
   { id: 'dorso.kamikaze', tipo: 'dorso', source: { from: 'logro', logro: 'allIn' } },
 
   { id: 'cartas.clasicas', tipo: 'cartas', source: free },
-  { id: 'cartas.jumbo', tipo: 'cartas', source: shop(COLOUR) },
   { id: 'cartas.pastel', tipo: 'cartas', source: shop(COLOUR) },
-  { id: 'cartas.ceniza', tipo: 'cartas', source: shop(COLOUR) },
   { id: 'cartas.cuatro', tipo: 'cartas', source: shop(PRINT) },
   { id: 'cartas.vintage', tipo: 'cartas', source: shop(PRINT) },
   { id: 'cartas.noir', tipo: 'cartas', source: shop(DESIGN) },
   { id: 'cartas.neon', tipo: 'cartas', source: shop(DESIGN) },
-  { id: 'cartas.pizarra', tipo: 'cartas', source: shop(DESIGN) },
   { id: 'cartas.sakura', tipo: 'cartas', source: shop(DESIGN) },
-  { id: 'cartas.suerte', tipo: 'cartas', source: shop(DESIGN) },
-  { id: 'cartas.cristal', tipo: 'cartas', source: shop(DESIGN) },
   { id: 'cartas.sangre', tipo: 'cartas', source: shop(DESIGN) },
   { id: 'cartas.acero', tipo: 'cartas', source: shop(DESIGN) },
-  { id: 'cartas.bosque', tipo: 'cartas', source: shop(DESIGN) },
-  { id: 'cartas.piedra', tipo: 'cartas', source: shop(DESIGN) },
-  { id: 'cartas.redondas', tipo: 'cartas', source: shop(SHAPE) },
-  { id: 'cartas.octogono', tipo: 'cartas', source: shop(SHAPE) },
-  { id: 'cartas.hexagono', tipo: 'cartas', source: shop(SHAPE) },
-  { id: 'cartas.tarot', tipo: 'cartas', source: shop(LEGEND) },
-  { id: 'cartas.dorada', tipo: 'cartas', source: shop(LEGEND) },
+  { id: 'cartas.cristal', tipo: 'cartas', source: shop(SPECIAL) },
 
   { id: 'fichas.casino', tipo: 'fichas', source: free },
   { id: 'fichas.retro', tipo: 'fichas', source: shop(COLOUR) },
@@ -117,10 +97,9 @@ export const COSMETICS: readonly Cosmetic[] = [
   { id: 'fichas.bosque', tipo: 'fichas', source: shop(PRINT) },
   { id: 'fichas.oceano', tipo: 'fichas', source: shop(PRINT) },
   { id: 'fichas.neon', tipo: 'fichas', source: shop(DESIGN) },
-  { id: 'fichas.gemas', tipo: 'fichas', source: shop(DESIGN) },
   { id: 'fichas.acero', tipo: 'fichas', source: shop(DESIGN) },
-  { id: 'fichas.cobre', tipo: 'fichas', source: shop(DESIGN) },
-  { id: 'fichas.oro', tipo: 'fichas', source: shop(LEGEND) },
+  { id: 'fichas.pixel', tipo: 'fichas', source: shop(SPECIAL) },
+  { id: 'fichas.joyas', tipo: 'fichas', source: shop(LEGEND) },
 
   { id: 'marco.ninguno', tipo: 'marco', source: free },
   { id: 'marco.bronce', tipo: 'marco', source: shop(COLOUR) },
@@ -132,13 +111,17 @@ export const COSMETICS: readonly Cosmetic[] = [
   { id: 'marco.cromo', tipo: 'marco', source: shop(PRINT) },
   { id: 'marco.oceano', tipo: 'marco', source: shop(PRINT) },
   { id: 'marco.neon', tipo: 'marco', source: shop(DESIGN) },
-  { id: 'marco.arcoiris', tipo: 'marco', source: shop(DESIGN) },
   { id: 'marco.fuego', tipo: 'marco', source: shop(DESIGN) },
   { id: 'marco.hielo', tipo: 'marco', source: shop(DESIGN) },
-  { id: 'marco.pinchos', tipo: 'marco', source: shop(DESIGN) },
   { id: 'marco.hiedra', tipo: 'marco', source: shop(DESIGN) },
   { id: 'marco.sombra', tipo: 'marco', source: shop(DESIGN) },
+  { id: 'marco.arcoiris', tipo: 'marco', source: shop(SPECIAL) },
+  { id: 'marco.diablo', tipo: 'marco', source: shop(SPECIAL) },
+  { id: 'marco.flores', tipo: 'marco', source: shop(SPECIAL) },
+  { id: 'marco.angel', tipo: 'marco', source: shop(SPECIAL) },
+  { id: 'marco.orbita', tipo: 'marco', source: shop(SPECIAL) },
   { id: 'marco.diamante', tipo: 'marco', source: shop(LEGEND) },
+  { id: 'marco.corona', tipo: 'marco', source: shop(MYTH) },
   { id: 'marco.laurel', tipo: 'marco', source: { from: 'trofeo', trofeos: 5 } },
 ]
 

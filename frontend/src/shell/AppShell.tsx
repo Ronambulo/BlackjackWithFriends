@@ -6,7 +6,7 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useIsAdmin } from '@/admin/useAdmin'
 import { WhatsNewBar } from '@/changelog/WhatsNewBar'
-import { themeStyle } from '@/cosmetics/themes'
+import { DAILY_FELT, themeStyle } from '@/cosmetics/themes'
 import { currentLanguage } from '@/i18n'
 import { InstallBanner } from '@/install/InstallBanner'
 import { useMaintenance } from '@/maintenance/useMaintenance'
@@ -20,6 +20,7 @@ import { useReportDevice } from '@/push/device'
 import { useUnread } from '@/social/useChat'
 import { CardsIcon, ChatIcon, GearIcon, GroupIcon, HomeIcon, UserIcon } from '@/ui/icons'
 import { AnnouncementBar } from './AnnouncementBar'
+import { ImportantGate } from './ImportantGate'
 import { rememberScreen } from './lastScreen'
 import styles from './AppShell.module.css'
 
@@ -56,6 +57,8 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
   }, [pathname, router])
   // The table is played on a full-screen felt.
   const felted = pathname.startsWith('/jugar')
+  // The daily deck has a felt of its own that no one can buy.
+  const daily = pathname.startsWith('/jugar/baraja')
 
   // The content is what scrolls, not the page, so Next can't reset it on navigation.
   const content = useRef<HTMLElement>(null)
@@ -65,7 +68,7 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
   }, [pathname])
 
   return (
-    <div className={`${styles.shell} ${felted ? styles.felted : ''}`} style={themeStyle(profile.estilos)}>
+    <div className={`${styles.shell} ${felted ? styles.felted : ''}`} style={daily ? { ...themeStyle(profile.estilos), ...DAILY_FELT } : themeStyle(profile.estilos)}>
       {/* iOS 27 paints the status bar from a fixed element at the top; without it the edge is blurred */}
       <div className={styles.statusTint} aria-hidden="true" />
       <header className={styles.topbar}>
@@ -92,6 +95,7 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
       {!felted && <InstallBanner />}
       {/* Never in the middle of a hand: it waits until they leave the table. */}
       <CeremonyGate paused={felted} />
+      <ImportantGate paused={felted} />
 
       <nav className={styles.tabbar} aria-label="Menú">
         {TABS.map(({ href, key, Icon }) => {

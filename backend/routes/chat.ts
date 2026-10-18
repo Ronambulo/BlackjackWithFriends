@@ -8,6 +8,7 @@ import { HttpError, json } from '../lib/http.js'
 import { pushMentions, pushMessage, pushReaction, type ChatContent } from '../lib/push.js'
 import { frameColumn } from '../lib/cosmetics.js'
 import { groupMembers, hands, messages, profiles, REACTIONS, reactions, user, type SharedHand, type SharedStats } from '../lib/schema.js'
+import { dailyShareText } from './daily.js'
 import { playerStats } from './stats.js'
 
 // The chats: one global, open to every player, and one per group. Players write text
@@ -238,15 +239,17 @@ function targets(wanted: unknown, userId: string): (string | null)[] {
   return found
 }
 
-// POST /api/chat/share { handId, chats } or { stats: 'week' | 'total', chats }: publishes a
-// finished hand of the player's, or their numbers, in the chats they pick ('global' and/or
-// their groups). A hand goes to each chat once; the stats are worked out here, never taken
-// from the app, and can be published again as they change.
+// POST /api/chat/share { handId, chats }, { stats: 'week' | 'total', chats } or { daily: true, chats }:
+// publishes a finished hand of the player's, their numbers or today's daily deck line, in the
+// chats they pick ('global' and/or their groups). A hand goes to each chat once; the stats and
+// the line are worked out here, never taken from the app, and can be published again.
 export async function share(request: Request): Promise<Response> {
   const me = await requireUser(request)
   const body = await readBody(request)
-  let content: { mano: SharedHand; handId: string } | { estadisticas: SharedStats }
-  if (body.stats === 'week' || body.stats === 'total') {
+  let content: { mano: SharedHand; handId: string } | { estadisticas: SharedStats } | { texto: string }
+  if (body.daily === true) {
+    content = { texto: dailyShareText(me.id) }
+  } else if (body.stats === 'week' || body.stats === 'total') {
     const stats = playerStats(me.id)[body.stats]
     if (stats.hands === 0) throw new HttpError(400, 'Aún no has jugado')
     const { streak: _, ...numbers } = stats
@@ -275,7 +278,7 @@ export async function share(request: Request): Promise<Response> {
   for (const groupId of chats) {
     markRead(groupId, me.id)
     notifyChat(groupId)
-    pushMessage(me.id, groupId, 'mano' in content ? { mano: true } : { estadisticas: true })
+    pushMessage(me.id, groupId, 'texto' in content ? { texto: content.texto } : 'mano' in content ? { mano: true } : { estadisticas: true })
   }
   return json({ chats: chats.map((g) => g ?? GLOBAL) })
 }

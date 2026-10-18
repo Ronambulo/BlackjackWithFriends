@@ -10,7 +10,7 @@ import { ApiError } from '@/lib/api'
 import { formatNumber } from '@/lib/format'
 import { ShareSheet } from '@/social/ShareSheet'
 import { play as playSound, preloadSounds, type Sound } from '@/sound/sounds'
-import { CheckIcon, MinusIcon, PlusIcon, ShareIcon, SplitIcon } from '@/ui/icons'
+import { CheckIcon, FlagIcon, HandIcon, PlusIcon, ShareIcon, SplitIcon } from '@/ui/icons'
 import { PlayingCard } from './PlayingCard'
 import { useClearFinishedHand, useClearFinishedHandOnLeave, usePlay, useTable, type HandView } from './useTable'
 import styles from './Table.module.css'
@@ -78,7 +78,7 @@ function buildSchedule(prev: HandView | null, next: HandView | null): Schedule {
   return { delays, flipAt, done }
 }
 
-function useDealTiming(hand: HandView | null) {
+export function useDealTiming(hand: HandView | null) {
   // Each new state of the hand is compared with the one before it (adjusting state during render).
   const [current, setCurrent] = useState(() => ({ hand, schedule: buildSchedule(null, hand) }))
   let { schedule } = current
@@ -128,7 +128,7 @@ function valueText(value: HandValue, final = false): string {
   return !final && value.soft && value.total < 21 ? `${value.total} / ${value.total - 10}` : String(value.total)
 }
 
-function signed(n: number, lang: ReturnType<typeof currentLanguage>): string {
+export function signed(n: number, lang: ReturnType<typeof currentLanguage>): string {
   if (n === 0) return '±0'
   return `${n > 0 ? '+' : '−'}${formatNumber(Math.abs(n), lang)}`
 }
@@ -138,6 +138,8 @@ type ChipValue = (typeof STACK_VALUES)[number]
 /** A chip's colours, from the player's chip style (cosmetics/themes.ts). */
 const chipColors = (value: ChipValue) => ({
   face: `var(--chip${value}-face)`,
+  // The face with the style's drawing over the whole chip, if it has one
+  background: `var(--chip${value}-art, none) border-box center / 100% 100% no-repeat, var(--chip${value}-face)`,
   edge: `var(--chip${value}-edge)`,
   text: `var(--chip${value}-text)`,
   stripe: `var(--chip${value}-stripe)`,
@@ -191,7 +193,10 @@ export function Table() {
   if (ready && table && shownChips !== table.chips) setShownChips(table.chips)
   const chips = table ? (ready ? table.chips : (shownChips ?? table.chips)) - (pendingBet ?? 0) : 0
 
-  const [bet, setBet] = useState(0)
+  // Each chip (or Repeat, Max, x2) as it went down, so a tap on the spot takes the last one back
+  const [added, setAdded] = useState<number[]>([])
+  const bet = added.reduce((sum, amount) => sum + amount, 0)
+  const raiseBet = (amount: number) => amount > 0 && setAdded((a) => [...a, amount])
   const [lastBet, setLastBet] = useState(readLastBet)
 
   // The recordings are tiny: fetch them as soon as the table opens.
@@ -236,7 +241,7 @@ export function Table() {
   const deal = (amount: number) => {
     setLastBet(amount)
     saveLastBet(amount)
-    setBet(0)
+    setAdded([])
     play.mutate({ action: 'bet', bet: amount })
   }
   const act = (action: Action) => {
@@ -246,9 +251,13 @@ export function Table() {
   }
   // The most you can put down: the table's limit, or everything you have if it's less.
   const limit = Math.min(table.maxBet, table.chips)
+  const undoChip = () => {
+    playSound('chip')
+    setAdded((a) => a.slice(0, -1))
+  }
   const addToBet = (value: number) => {
     playSound('chip')
-    setBet((b) => Math.min(b + value, limit))
+    raiseBet(Math.min(bet + value, limit) - bet)
   }
 
   const settled = hand?.phase === 'settled' ? hand.settlement : null
@@ -268,7 +277,13 @@ export function Table() {
         ) : (
           <div className={styles.idle}>
             <FeltPrint />
-            <div className={styles.spot}>{(pendingBet ?? bet) > 0 && <BetStack amount={pendingBet ?? bet} />}</div>
+            {pendingBet === null && bet > 0 ? (
+              <button type="button" className={`${styles.spot} ${styles.spotUndo}`} aria-label={t('play.undoChip')} onClick={undoChip}>
+                <BetStack amount={bet} chips={added.toReversed().flatMap(chipsFor)} />
+              </button>
+            ) : (
+              <div className={styles.spot}>{pendingBet !== null && <BetStack amount={pendingBet} />}</div>
+            )}
             <p className={styles.spotLabel}>
               {t('play.yourBet')} · {t('play.betLimits', { min: fmt(table.minBet), max: fmt(table.maxBet) })}
             </p>
@@ -298,7 +313,7 @@ export function Table() {
           </>
         )}
 
-        {!hand && table.chips >= table.minBet && (
+        {!hand && pendingBet === null && table.chips >= table.minBet && (
           <>
             <div className={styles.chipRow}>
               {CHIP_VALUES.filter((value) => value <= table.maxBet).map((value) => (
@@ -317,19 +332,19 @@ export function Table() {
             <div className={styles.row}>
               {bet > 0 ? (
                 <>
-                  <button className={styles.wood} disabled={busy} onClick={() => setBet(0)}>
+                  <button className={styles.wood} disabled={busy} onClick={() => setAdded([])}>
                     {t('play.clear')}
                   </button>
-                  <button className={styles.wood} disabled={busy || bet * 2 > limit} onClick={() => setBet(bet * 2)}>
+                  <button className={styles.wood} disabled={busy || bet * 2 > limit} onClick={() => raiseBet(bet)}>
                     {t('play.double')}
                   </button>
                 </>
               ) : (
                 <>
-                  <button className={styles.wood} disabled={busy || !canRepeat} onClick={() => setBet(lastBet)}>
+                  <button className={styles.wood} disabled={busy || !canRepeat} onClick={() => raiseBet(lastBet)}>
                     {t('play.repeat')}
                   </button>
-                  <button className={styles.wood} disabled={busy} onClick={() => setBet(limit)}>
+                  <button className={styles.wood} disabled={busy} onClick={() => raiseBet(limit)}>
                     {t('play.maxBet')}
                   </button>
                 </>
@@ -339,57 +354,13 @@ export function Table() {
                 disabled={busy || bet < table.minBet || bet > limit}
                 onClick={() => deal(bet)}
               >
-                {t(pendingBet === null ? 'play.deal' : 'play.dealing')}
+                {t('play.deal')}
               </button>
             </div>
           </>
         )}
 
-        {hand?.phase === 'insurance' && (
-          <>
-            <p className={styles.note}>
-              {t('play.insuranceQuestion')}
-              <br />
-              <small>{t('play.insuranceCost', { amount: fmt(Math.floor(hand.hands[0].bet / 2)) })}</small>
-            </p>
-            <div className={styles.row}>
-              <button className={styles.wood} disabled={busy || !hand.actions.includes('insurance')} onClick={() => act('insurance')}>
-                {t('play.actions.insurance')}
-              </button>
-              <button className={styles.gold} disabled={busy} onClick={() => act('noInsurance')}>
-                {t('play.actions.noInsurance')}
-              </button>
-            </div>
-          </>
-        )}
-
-        {hand?.phase === 'player' && (
-          <>
-            <div className={styles.actions}>
-              {(['hit', 'stand', 'double', 'split'] as const).map((action) => (
-                <button
-                  key={action}
-                  type="button"
-                  className={`${styles.action} ${action === 'hit' ? styles.actionGold : ''}`}
-                  disabled={busy || !hand.actions.includes(action)}
-                  onClick={() => act(action)}
-                >
-                  <span className={styles.actionIcon}>{ACTION_ICON[action]}</span>
-                  {t(`play.actions.${action}`)}
-                </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              className={styles.textButton}
-              hidden={!hand.actions.includes('surrender')}
-              disabled={busy}
-              onClick={() => act('surrender')}
-            >
-              {t('play.actions.surrender')}
-            </button>
-          </>
-        )}
+        <HandControls hand={hand} pendingBet={pendingBet} busy={busy} act={act} />
 
         {settled && showResult && (
           <>
@@ -407,6 +378,83 @@ export function Table() {
         )}
       </section>
     </div>
+  )
+}
+
+/** What can be done with the hand in play: insurance, or the moves (also while a new hand is on its way). */
+export function HandControls({
+  hand,
+  pendingBet,
+  busy,
+  act,
+}: {
+  hand: HandView | null
+  pendingBet: number | null
+  busy: boolean
+  act: (action: Action) => void
+}) {
+  const { t } = useTranslation()
+  const lang = currentLanguage()
+  const fmt = (n: number) => formatNumber(n, lang)
+  return (
+    <>
+      {hand?.phase === 'insurance' && (
+        <>
+          <p className={styles.note}>
+            {t('play.insuranceQuestion')}
+            <br />
+            <small>{t('play.insuranceCost', { amount: fmt(Math.floor(hand.hands[0].bet / 2)) })}</small>
+          </p>
+          <div className={styles.row}>
+            <button className={styles.wood} disabled={busy || !hand.actions.includes('insurance')} onClick={() => act('insurance')}>
+              {t('play.actions.insurance')}
+            </button>
+            <button className={styles.gold} disabled={busy} onClick={() => act('noInsurance')}>
+              {t('play.actions.noInsurance')}
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Also while a new hand is on its way, so the betting chips don't flash up in between */}
+      {(hand?.phase === 'player' || pendingBet !== null) && (
+        <>
+          {/* The less common moves, each with what it costs or gives back */}
+          <div className={styles.extras}>
+            {(['double', 'split', 'surrender'] as const).map((action) => {
+              const bet = hand ? (hand.hands[hand.activeHand]?.bet ?? 0) : (pendingBet ?? 0)
+              return (
+                <button
+                  key={action}
+                  type="button"
+                  className={`${styles.extra} ${action === 'surrender' ? styles.extraLoss : ''}`}
+                  disabled={hand !== null && !hand.actions.includes(action)}
+                  onClick={() => !busy && act(action)}
+                >
+                  {ACTION_ICON[action]}
+                  <span className={styles.extraName}>{t(`play.actions.${action}`)}</span>
+                  <span className={styles.extraCost}>{action === 'surrender' ? `−${fmt(Math.ceil(bet / 2))}` : `+${fmt(bet)}`}</span>
+                </button>
+              )
+            })}
+          </div>
+          <div className={styles.moves}>
+            {(['stand', 'hit'] as const).map((action) => (
+              <button
+                key={action}
+                type="button"
+                className={`${styles.move} ${action === 'hit' ? styles.moveHit : ''}`}
+                disabled={hand !== null && !hand.actions.includes(action)}
+                onClick={() => !busy && act(action)}
+              >
+                {ACTION_ICON[action]}
+                {t(`play.actions.${action}`)}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </>
   )
 }
 
@@ -441,28 +489,29 @@ function PublishButton({ handId }: { handId: string }) {
   )
 }
 
-const ACTION_ICON: Record<'hit' | 'stand' | 'double' | 'split', ReactNode> = {
-  hit: <PlusIcon strokeWidth={2.6} />,
-  stand: <MinusIcon strokeWidth={2.4} />,
-  double: 'x2',
-  split: <SplitIcon strokeWidth={2.4} />,
+const ACTION_ICON: Record<'hit' | 'stand' | 'double' | 'split' | 'surrender', ReactNode> = {
+  hit: <PlusIcon width={22} height={22} strokeWidth={2.8} />,
+  stand: <HandIcon width={22} height={22} strokeWidth={2.2} />,
+  double: <span aria-hidden="true">×2</span>,
+  split: <SplitIcon width={16} height={16} strokeWidth={2.4} />,
+  surrender: <FlagIcon width={15} height={15} strokeWidth={2.2} />,
 }
 
-function soundFor(hand: HandView): Sound {
+export function soundFor(hand: HandView): Sound {
   const settlement = hand.settlement!
   if (settlement.hands.some((h) => h.outcome === 'blackjack')) return 'blackjack'
   const tone = netTone(settlement.net)
   return tone === 'push' ? 'push' : tone
 }
 
-function netTone(net: number): 'win' | 'lose' | 'push' {
+export function netTone(net: number): 'win' | 'lose' | 'push' {
   return net > 0 ? 'win' : net < 0 ? 'lose' : 'push'
 }
 
 // ── The felt ────────────────────────────────────────────────────────────────
 
 /** The payout and rules printed on the cloth, along an arc. */
-function FeltPrint({ compact = false }: { compact?: boolean }) {
+export function FeltPrint({ compact = false, payout, rules }: { compact?: boolean; payout?: string; rules?: string }) {
   const { t } = useTranslation()
   const arcId = `arc${useId().replace(/[^\w-]/g, '')}`
   return (
@@ -471,44 +520,54 @@ function FeltPrint({ compact = false }: { compact?: boolean }) {
       <path d="M18 42 Q195 144 372 42" fill="none" stroke="var(--felt-print, rgb(242 193 78))" strokeOpacity="0.35" strokeWidth="1.5" />
       <text className={styles.printPayout}>
         <textPath href={`#${arcId}`} startOffset="50%" textAnchor="middle">
-          {t('play.payout')}
+          {payout ?? t('play.payout')}
         </textPath>
       </text>
       <text className={styles.printRules} x="195" y="116" textAnchor="middle">
-        {t('play.rules').toUpperCase()}
+        {(rules ?? t('play.rules')).toUpperCase()}
       </text>
     </svg>
   )
 }
 
 /** A stack of chips for an amount, the top one showing the total. */
-function BetStack({ amount, small = false }: { amount: number; small?: boolean }) {
+export function BetStack({ amount, chips, small = false }: { amount: number; chips?: ChipValue[]; small?: boolean }) {
   const lang = currentLanguage()
-  const [top, ...rest] = chipsFor(amount)
+  // `chips` is the order they went down in, the newest on top; otherwise the biggest goes on top
+  const [top, ...rest] = (chips ?? chipsFor(amount))
     .slice(0, 7)
     .map(chipColors)
   if (!top) return null
   const u = small ? 2 : 4
-  const shadow = [
-    `0 ${u}px 0 ${top.edge}`,
-    ...rest.flatMap((c, i) => [`0 ${2 * u * (i + 1)}px 0 ${c.face}`, `0 ${2 * u * (i + 1) + u}px 0 ${c.edge}`]),
-  ]
+  // Each chip's darker side, unless the style draws its chips flat (pixel art)
+  const rim = (edge: string) => `0 calc(var(--chip-rim, 1) * ${u}px) 0 ${edge}`
   const depth = 2 * u * rest.length + u
   const style: CSSProperties = {
-    background: top.face,
+    background: top.background,
     color: top.text,
     borderColor: top.stripe,
-    boxShadow: shadow.join(', '),
-    transform: `translateY(${-depth / 2}px)`,
+    boxShadow: rim(top.edge),
   }
   return (
-    <span className={`${styles.stack} ${small ? styles.stackSmall : ''}`} style={style} role="img" aria-label={formatNumber(amount, lang)}>
-      {chipLabel(amount, lang)}
+    <span className={styles.stackWrap} style={{ transform: `translateY(${-depth / 2}px)` }} role="img" aria-label={formatNumber(amount, lang)}>
+      {/* The chips underneath, whole, so a sprite's own edge shows on the side; the deepest first */}
+      {rest
+        .map((c, i) => (
+          <span
+            key={i}
+            className={styles.stackLayer}
+            style={{ background: c.background, boxShadow: rim(c.edge), translate: `0 ${2 * u * (i + 1)}px` }}
+          />
+        ))
+        .reverse()}
+      <span className={`${styles.stack} ${small ? styles.stackSmall : ''}`} style={style}>
+        {chipLabel(amount, lang)}
+      </span>
     </span>
   )
 }
 
-function FeltHand({ hand, schedule, ready }: { hand: HandView; schedule: Schedule; ready: boolean }) {
+export function FeltHand({ hand, schedule, ready }: { hand: HandView; schedule: Schedule; ready: boolean }) {
   const { t } = useTranslation()
   const lang = currentLanguage()
   const settled = hand.settlement

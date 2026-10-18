@@ -97,16 +97,18 @@ function NewNotice() {
   const [audience, setAudience] = useState<Audience>('all')
   const [start, setStart] = useState<string | null>(null)
   const [hours, setHours] = useState<number | null>(24)
+  const [important, setImportant] = useState(false)
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
     if (!text.trim()) return
     publish.mutate(
-      { texto: text.trim(), audiencia: audience, startsAt: at(start), hours },
+      { texto: text.trim(), audiencia: audience, startsAt: at(start), hours, importante: important },
       {
         onSuccess: () => {
           setText('')
           setStart(null)
+          setImportant(false)
         },
       },
     )
@@ -153,6 +155,10 @@ function NewNotice() {
           </select>
         </label>
       </div>
+      <label className={styles.checkRow}>
+        <input type="checkbox" checked={important} onChange={(event) => setImportant(event.target.checked)} />
+        {t('admin.noticeImportant')}
+      </label>
       {text.trim() && (
         <div className={styles.formField}>
           {t('admin.noticeLooks')}
@@ -189,7 +195,9 @@ function Notices({ data }: { data: AdminNotices }) {
                 {t(`admin.noticeState.${state}`)}
               </span>
               <span className={styles.userName}>
-                <b className={styles.wrapText}>{notice.texto}</b>
+                <b className={styles.wrapText}>
+                  {notice.importante && <span className={styles.sev}>{t('admin.noticeImportantBadge')}</span>} {notice.texto}
+                </b>
                 <small>
                   {t(`admin.audience.${notice.audiencia}`)} · {date(notice.startsAt)} →{' '}
                   {notice.expiresAt ? date(notice.expiresAt) : t('admin.noticeUntilRemoved')} · {notice.por}

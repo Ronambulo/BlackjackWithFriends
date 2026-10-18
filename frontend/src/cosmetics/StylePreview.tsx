@@ -11,7 +11,7 @@ import { themeStyle, type CosmeticKind, type Equipped } from './themes'
 /** A chip in the colours of the chips worn around it. */
 export function Chip({ value, small = false }: { value: number; small?: boolean }) {
   const style = {
-    background: `var(--chip${value}-face)`,
+    background: `var(--chip${value}-art, none) border-box center / 100% 100% no-repeat, var(--chip${value}-face)`,
     borderColor: `var(--chip${value}-stripe)`,
     color: `var(--chip${value}-text)`,
     boxShadow: `0 ${small ? 2 : 3}px 0 var(--chip${value}-edge)`,
@@ -47,7 +47,7 @@ export function StylePreview({
       {tipo === 'cartas' && <PlayingCard card={{ rank: 'A', suit: 'H' }} still />}
       {tipo === 'dorso' && <PlayingCard card={null} still />}
       {tipo === 'fichas' && [5, 25, 100].map((value) => <Chip key={value} value={value} small />)}
-      {tipo === 'marco' && <Avatar seed={user.id} name={profile?.nombre ?? ''} src={profile?.avatar_url} size={44} frame={id} />}
+      {tipo === 'marco' && <Avatar seed={user.id} name={profile?.nombre ?? ''} src={profile?.avatar_url} size={40} frame={id} />}
     </span>
   )
 }

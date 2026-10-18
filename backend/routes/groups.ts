@@ -20,7 +20,7 @@ const CODE_LENGTH = 10
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'
 
 /** A long random invite code (about 58 bits), unbiased. */
-function newCode(): string {
+export function newCode(): string {
   let code = ''
   const limit = 256 - (256 % CODE_ALPHABET.length)
   while (code.length < CODE_LENGTH) {

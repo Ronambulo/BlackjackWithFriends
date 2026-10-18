@@ -10,7 +10,10 @@ import sheet from '@/ui/ConfirmSheet.module.css'
 import { GLOBAL, useShare, type Shared } from './useChat'
 import styles from './ShareSheet.module.css'
 
-/** Picks the chats a finished hand or the stats go to: the global one and/or the player's groups. */
+const PUBLISH_TITLE = { hand: 'social.publishTitle', stats: 'social.publishStatsTitle', daily: 'daily.publishTitle' } as const
+const PUBLISH_TEXT = { hand: 'social.publishText', stats: 'social.publishStatsText', daily: 'daily.publishText' } as const
+
+/** Picks the chats a finished hand, the stats or the daily deck's line go to: the global one and/or the player's groups. */
 export function ShareSheet({
   what,
   onClose,
@@ -25,7 +28,7 @@ export function ShareSheet({
   const { data: groups } = useGroups()
   const current = useCurrentGroup()
   const share = useShare()
-  const kind = 'handId' in what ? 'hand' : 'stats'
+  const kind = 'handId' in what ? 'hand' : 'daily' in what ? 'daily' : 'stats'
   // The group in view to start with; the global chat if there's none.
   const [picked, setPicked] = useState<Set<string>>(() => new Set([current?.id ?? GLOBAL]))
 
@@ -63,9 +66,9 @@ export function ShareSheet({
           <SheetIcon tone="accent">{kind === 'hand' ? <ShareIcon /> : <ChatIcon />}</SheetIcon>
         </div>
         <h2 id={`${id}-title`} className={sheet.title}>
-          {t(kind === 'hand' ? 'social.publishTitle' : 'social.publishStatsTitle')}
+          {t(PUBLISH_TITLE[kind])}
         </h2>
-        <p className={sheet.text}>{t(kind === 'hand' ? 'social.publishText' : 'social.publishStatsText')}</p>
+        <p className={sheet.text}>{t(PUBLISH_TEXT[kind])}</p>
 
         <ul className={styles.list}>
           {options.map((option) => {

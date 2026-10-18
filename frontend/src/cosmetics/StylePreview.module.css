@@ -6,9 +6,13 @@
   width: 34px;
   height: 34px;
   border: 4px dashed;
-  border-radius: 50%;
+  font-family: var(--chip-font, inherit);
+  padding-bottom: var(--chip-lift, 0px);
+  border-radius: var(--chip-radius, 50%);
+  image-rendering: pixelated;
   font-size: 0.7rem;
-  font-weight: 800;
+  font-weight: var(--chip-weight, 800);
+  text-shadow: var(--chip-halo, none);
 }
 
 .chipSmall {
@@ -31,6 +35,8 @@
   height: 72px;
   border-radius: 12px;
   background: var(--layer-2);
+  /* A face-down card tucks under its neighbours; here it must stay above the swatch */
+  isolation: isolate;
 }
 
 .preview :global(.frame),

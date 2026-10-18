@@ -195,6 +195,42 @@ export const pays = sqliteTable(
   (t) => [index('pays_user_id_idx').on(t.userId, t.createdAt)],
 )
 
+/** The daily deck (lib/daily.ts): one seed a day, so everyone gets the same cards. */
+export const dailyDecks = sqliteTable('daily_decks', {
+  // 'YYYY-MM-DD', Madrid time
+  dia: text('dia').primaryKey(),
+  semilla: text('semilla').notNull(),
+  // When the day's prizes went out; null until the day is over and closed.
+  premiada: timestamp('premiada'),
+  createdAt: createdAt(),
+})
+
+/** A player's go at a daily deck: virtual chips, nothing to do with the league balance. */
+export const dailyRuns = sqliteTable(
+  'daily_runs',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    dia: text('dia').notNull(),
+    fichas: integer('fichas').notNull(),
+    // One letter per finished hand: w won, l lost, p push.
+    resultados: text('resultados').notNull().default(''),
+    // The hand being played, or the last one.
+    ronda: text('ronda', { mode: 'json' }).$type<RoundState>(),
+    version: integer('version').notNull().default(0),
+    terminada: timestamp('terminada'),
+    // For the shared link (/r/<codigo>), once it's over.
+    codigo: text('codigo').unique(),
+    // Coins it won (1st of the day in a group), and when the player saw that they had.
+    premio: integer('premio'),
+    premioVisto: timestamp('premio_visto'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.dia] }), index('daily_runs_dia_idx').on(t.dia, t.fichas)],
+)
+
 export const GROUP_ROLES = ['admin', 'miembro'] as const
 export type GroupRole = (typeof GROUP_ROLES)[number]
 
@@ -533,6 +569,8 @@ export const notices = sqliteTable('notices', {
   audiencia: text('audiencia', { enum: AUDIENCES }).notNull().default('all'),
   startsAt: timestamp('starts_at').notNull(),
   expiresAt: timestamp('expires_at'),
+  // Shown as a dialog when the app opens, not as the strip on top.
+  importante: integer('importante', { mode: 'boolean' }).notNull().default(false),
   // username of the admin
   por: text('por').notNull(),
   createdAt: createdAt(),

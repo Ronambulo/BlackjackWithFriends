@@ -60,9 +60,11 @@ Separarlas es clave: gastar en la tienda **nunca** te baja en el ranking.
 ### Baraja del día
 - Todos los jugadores juegan **las mismas cartas** ese día (una sola semilla para todos), así que tu partida cuenta en todos tus grupos.
 - **10 manos**, saldo virtual de 1.000 aparte de la liga y la misma apuesta fija de 100 por mano, para que solo cuenten las decisiones.
-- Clasificación diaria propia en cada grupo. Premio para el 1º del día: **+500 fichas** en tu saldo, como mucho una vez al día aunque seas 1º en varios grupos, y solo en grupos donde hayan jugado la baraja al menos 2 personas.
+- Clasificación diaria propia en cada grupo. Premio para el 1º del día: **+50 monedas** para estilos (no fichas: no mueve la liga), como mucho una vez al día aunque seas 1º en varios grupos, y solo en grupos donde hayan jugado la baraja al menos 2 personas. Se dan al día siguiente, con la tabla del día ya cerrada, y la app lo cuenta en una ventana al abrirla.
 - Al terminar, puedes compartir el resultado en el grupo, estilo Wordle: `🃏 Baraja del día #42 · +650 · 🟩🟩🟥🟩⬜🟩🟥🟩🟩🟩`.
 - Hasta que acabas tus 10 manos no ves las de los demás, para que nadie te haga spoiler.
+- Si te quedas sin fichas para la apuesta antes de la 10ª mano, la baraja termina ahí.
+- ✅ **Hecha** (fase 9): `backend/lib/daily.ts` y `backend/routes/daily.ts`, en `/jugar/baraja` y con su tarjeta en Inicio. La semilla se crea al vuelo la primera vez que alguien la pide (y a las 00:00 de Madrid) y se guarda en `daily_decks`; cada mano sale de `semilla:n`, así que la mano n es igual para todos aunque cada uno la juegue distinto. Las partidas van en `daily_runs` (una por jugador y día, con su `version` y la mano en curso), aparte de `hands`, para que no cuenten en la liga, los retos ni las estadísticas. El día se cierra a medianoche (o en la primera petición del día siguiente): el 1º de cada grupo con al menos 2 partidas terminadas gana `DAILY_PRIZE` (50) monedas (los empates también), apuntadas en `daily_runs.premio`; al día siguiente la app lo enseña en una ventana hasta que el jugador la cierra (`POST /api/daily/seen`, `premio_visto`). La mesa de la baraja lleva un tapete propio (`DAILY_FELT` en `cosmetics/themes.ts`, petróleo con palos dibujados) que no está en la tienda, para que se note que no es la mesa de la liga, y en Inicio su icono es la carta por defecto con el número de la baraja en lugar del valor. Al acabar sale la línea para compartir fuera (con el enlace `/r/<código>` y su imagen) o publicar en el chat.
 
 ### Retos y logros
 - **Retos diarios**: 3 al día, iguales para todos los jugadores (p. ej. "gana 3 manos seguidas", "haz un split ganador", "gana con 5 cartas"). Cada uno da 🪙 **monedas** (no fichas) para gastar en estilos: son un logro personal, así que no cuentan para la liga ni mueven el ranking. Uno fácil (10 🪙), uno medio (20 🪙) y uno difícil (40 🪙), sacados de un catálogo de 25 según la fecha, salvo que un admin los elija. Cada reto tiene un tipo (volumen, victorias, rachas, dobles…) y los tres del día son siempre de tipos distintos; cada nivel rota en rondas barajadas, así que un reto no vuelve hasta que han salido los demás de su nivel; el progreso sale de las manos resueltas del día (hora de Madrid) y cambian a medianoche. La cantidad se ajusta en la beta.
@@ -262,12 +264,24 @@ erDiagram
   hands {
     uuid id PK
     uuid user_id
-    text modo "prueba | liga | baraja_del_dia"
+    text modo "prueba | liga"
     bigint apuesta
     jsonb ronda "estado completo con el mazo, solo servidor"
     text fase "insurance | player | settled"
     int version
     bigint neto
+  }
+  daily_runs {
+    uuid user_id PK
+    date dia PK
+    int fichas "las de la baraja, aparte de la liga"
+    text resultados "una letra por mano: w l p"
+    jsonb ronda "la mano en curso"
+    int version
+    bool terminada
+    text codigo "para /r/<codigo>"
+    int premio "monedas ganadas al cerrar el día"
+    timestamp premio_visto "cuando la app se lo enseñó"
   }
   user_cosmetics {
     uuid user_id PK,FK
@@ -372,7 +386,7 @@ Barra inferior con 5 pestañas. El botón central **Jugar** es más grande. Arri
 
 ### Pantallas
 
-**Inicio (resumen del grupo)**
+**Inicio (resumen del grupo)**: de arriba abajo, tu saldo y puesto, luego "Para hoy" (Baraja del día, encuesta si hay y retos del día) y después tus amigos de la semana.
 ```
 ┌─────────────────────────────┐
 │ Los del Curro ▾      🪙 240 │
@@ -447,7 +461,7 @@ Al apostar, se toca sobre fichas de 5 / 10 / 25 / 100 / 500 / 1.000, cada valor 
 - **Moderación**: **cola de revisión** de fotos y nombres nuevos (tabla `reviews`; se ven ya mientras tanto; "Rechazar" quita la foto o devuelve el nombre al usuario); comportamiento raro (rachas, ritmo de bot, cuentas en cadena) con "Bloquear…" e "Ignorar"; cuentas que comparten conexión; **bloqueos con caducidad** (24 h, 7 días, 30 días o para siempre), por IP o por `@usuario`, con motivo y quién lo puso.
 - **Economía**: fichas en juego, paga repartida, lo que se queda la casa, monedas; saldos actuales por tramos; resultados vistos frente a los esperados; **reglas editables** (saldo inicial y paga diaria, tabla `economy_rules`): un cambio se guarda para el lunes siguiente y la semana en curso no se toca.
 - **Liga**: la temporada en curso con su cuenta atrás (la semana 1 es la de la primera mano jugada), los grupos de la semana y los **retos diarios** (los de hoy con cuántos los han completado y un selector para los de mañana, que vuelven a los de la fecha con un botón).
-- **Avisos y notificaciones**: a quién llegamos (jugadores de los últimos 30 días por plataforma, con la app instalada o solo en el navegador, con notificaciones y cuántos dispositivos); **avisos** que salen arriba en la app (tabla `notices`), ahora o programados, durante 24 h, 7 días o hasta quitarlos, con cuántos los han visto y cuántos los cerraron (`notice_views`); y **notificaciones push** (tabla `push_campaigns`), ahora o programadas, con título, texto y la pantalla que abren, y cuántos dispositivos las recibieron. Cada aviso o notificación va a una audiencia: todos, iPhone/iPad, Android, ordenador, con la app instalada, sin ella, con notificaciones o sin ellas (esta última solo para avisos). Cada dispositivo dice lo que es al abrir la app (`POST /api/devices`, tabla `devices`); los avisos se filtran en el propio dispositivo y las notificaciones en el servidor, solo a quien tiene activado el tipo "Novedades".
+- **Avisos y notificaciones**: a quién llegamos (jugadores de los últimos 30 días por plataforma, con la app instalada o solo en el navegador, con notificaciones y cuántos dispositivos); **avisos** que salen arriba en la app (tabla `notices`), ahora o programados, durante 24 h, 7 días o hasta quitarlos (los marcados como **importantes**, `notices.importante`, salen en una ventana al abrir la app en vez de en la franja de arriba, después de la ceremonia de la semana y nunca en la mesa), con cuántos los han visto y cuántos los cerraron (`notice_views`); y **notificaciones push** (tabla `push_campaigns`), ahora o programadas, con título, texto y la pantalla que abren, y cuántos dispositivos las recibieron. Cada aviso o notificación va a una audiencia: todos, iPhone/iPad, Android, ordenador, con la app instalada, sin ella, con notificaciones o sin ellas (esta última solo para avisos). Cada dispositivo dice lo que es al abrir la app (`POST /api/devices`, tabla `devices`); los avisos se filtran en el propio dispositivo y las notificaciones en el servidor, solo a quien tiene activado el tipo "Novedades".
 - **Encuestas**: preguntas de 2 a 6 respuestas (tablas `polls` y `poll_votes`), con plantillas sobre las reglas (límite por mano, paga diaria, fichas de la semana, duración de la liga), abiertas 24 h, 3 días, 7 días o hasta cerrarlas, y con notificación push opcional; los resultados y la participación frente a los jugadores activos, y botones para cerrar y borrar.
 - **Sistema**: estado general, tiempo encendido, latencia p95 y errores (en memoria, desde el último arranque), base de datos, fotos y última copia; **interruptores** (altas nuevas, mesa abierta, unirse a grupos; tabla `settings`); **copias de seguridad** diarias de la base de datos (se guardan las 14 últimas), "Hacer copia ahora" y **descargar** la base de datos (una copia nueva o cualquiera de las guardadas) y **restaurar** una copia guardada (antes se hace una copia de cómo está, y quien entró después tiene que volver a entrar); **avisos de fallos** de los jugadores, con "Resuelto", "Reabrir" y "Borrar"; **modo mantenimiento** con un mensaje opcional: la API responde 503 a todo salvo a los admins, el estado (`/api/status`) y el propio panel, los jugadores ven una pantalla de "Volvemos enseguida" que se abre sola al terminar y los admins una franja roja arriba; rutas más lentas, errores recientes y el **registro de lo que hacen los admins** (tabla `admin_log`).
 - **Tienda**: los estilos en una cuadrícula por tipo (Tapetes, Dorsos, Cartas, Fichas, Marcos), en el orden de la tienda, con filtros (todos, a la venta, retirados, con oferta) y una pestaña de **Estadísticas** (monedas por tipo, los más vendidos, los más llevados y los que más monedas han dado, y cuántos a la venta no ha comprado nadie). Al pulsar un estilo se abre una ventana (una hoja desde abajo en el móvil) para **cambiar el precio** o volver al de serie, ponerle una **oferta** (más barata que el precio), **moverlo** antes o después (el gratis va siempre primero) y **ponerlo a la venta o retirarlo**. Todos los estilos de la tienda **salen retirados** hasta que un admin los pone a la venta; los gratis, los de logros y los de trofeos no se pueden retirar. Quien tiene un estilo retirado lo conserva y puede llevarlo; comprarlo responde 410, y un precio que ha cambiado mientras mirabas, 409. Una **rebaja** en toda la tienda (un porcentaje, como mucho un 90 %) se gana a las ofertas solo si deja el precio más bajo. Se guarda en `settings` (`shop`), encima del catálogo del código, así que un estilo nuevo aparece solo (retirado). La pestaña del panel va en la dirección (`?tab=`), así que al recargar se queda donde estabas.
@@ -462,16 +476,26 @@ Al apostar, se toca sobre fichas de 5 / 10 / 25 / 100 / 500 / 1.000, cada valor 
 ### Cosméticos (catálogo y precios)
 ✅ Hechos (fase 10). El catálogo y los precios están en `backend/lib/cosmetics.ts`; el aspecto de cada estilo, en `frontend/src/cosmetics/themes.ts` (variables CSS que el marco de la app aplica a toda la app y que la tienda pone en cada vista previa). Solo se guarda en `user_cosmetics` lo comprado: lo gratis, lo de logros y lo de trofeos se calcula al vuelo. Lo que lleva cada jugador está en `profiles.estilos_equipados`; el marco viaja con su nombre en rankings y chat, así que lo ven los demás.
 
-El precio sube con lo que cambia el estilo. Un jugador activo saca unas 300-450 🪙 a la semana, así que un color cuesta una semana de juego y lo legendario es un objetivo de varios meses.
+El precio sube con lo que cambia el estilo. Lo que se gana a la semana:
+
+| Fuente | 🪙 por semana |
+|---|---|
+| Retos diarios (10 + 20 + 40 al día) | hasta 490; ~300 haciendo el fácil y el medio cada día y el difícil a veces |
+| Cierre de la semana (10 por jugar + 100 / 60 / 30 por el podio, el mejor puesto entre tus grupos) | 10-110; ~50 de media en un grupo de 5 |
+| Baraja del día (50 al 1º de cada grupo, al día siguiente) | hasta 350; ~70 de media en un grupo de 5 |
+| Logros (una sola vez) | ~750 en total |
+
+Un jugador activo saca unas **400 🪙 a la semana** y uno que lo hace todo y gana mucho, hasta ~950. Así, un color cuesta un par de días, un diseño una semana, lo legendario unas dos semanas y media y lo mítico, lo más difícil, un mes (menos de dos semanas como muy pronto). Todo el catálogo junto son unas 24.700 🪙.
 
 | Nivel | 🪙 | Tapete | Cartas (cara y forma) | Dorso | Fichas | Marco |
 |---|---|---|---|---|---|---|
 | Gratis | 0 | Verde casino | Clásicas | Rojo | Casino | Sin marco |
-| Color | 300 | Azul, Burdeos, Morado, Grafito, Turquesa, Coral, Oliva, Abismo, Musgo | Jumbo (índices grandes), Pastel, Ceniza | Azul, Verde, Negro, Morado, Abismo, Musgo | Retro | Bronce, Plata, Hierro, Cobre |
-| Estampado | 750 | Madera, Damasco, Cuero, Escocés, Topos, Riviera, Mármol, Vichy, Acero, Fibra de carbono, Bosque, Desierto | Cuatro colores, Vintage | Rombos, Retro, Carbono, Hojas | Pastel, Blanco y negro, Obsidiana, Bosque, Océano | Oro, Oro rosa, Cromo, Océano |
-| Diseño | 1.500 | Neón, Píxel, Atardecer, Aurora, Circuito, Lava, Nebulosa, Chapa, Obsidiana, Océano, Otoño | Noir, Neón, Pizarra, Sakura, Suerte y Cristal (como las de Balatro), Sangre, Acero, Bosque, Piedra | Art déco, Píxel, Tachuelas, Obsidiana | Neón, Gemas, Acero, Cobre | Neón, Arcoíris, Fuego, Hielo, Pinchos, Hiedra, Sombra |
-| Forma | 2.250 | | Redondas, Octógono, Hexágono | | | |
-| Legendario | 3.500 | Realeza, Holográfico, Montecarlo (con marquetería de oro) | Tarot (más alta, con su dorso), Dorada (con su dorso) | | Oro | Diamante |
+| Color | 100 | Azul, Burdeos, Morado, Grafito, Turquesa, Coral, Oliva, Abismo, Musgo | Pastel | Azul, Verde, Negro, Morado, Abismo, Musgo | Retro | Bronce, Plata, Hierro, Cobre |
+| Estampado | 200 | Madera, Escocés, Riviera, Mármol, Vichy | Cuatro colores (cada palo en una carta de su color), Vintage | Rombos, Retro, Carbono | Pastel, Blanco y negro, Obsidiana, Bosque, Océano | Oro, Oro rosa, Cromo, Océano |
+| Diseño | 400 | Píxel, Obsidiana, Ondas | Noir, Neón, Sakura (las clásicas en rosa, con flores), Sangre, Acero | Art déco, Píxel, Obsidiana | Neón, Industrial | Neón, Fuego, Hielo, Hiedra, Sombra |
+| Especial | 600 | Galaxia | Cristal (como las de Balatro) | Cristal | Píxel (sprites en `public/styles/fichas-pixel`; la de 1.000 es un payaso) | Arcoíris, y con adornos fuera del aro (`ui/Avatar.tsx`): Diablillo, Flores, Ángel, Órbita |
+| Legendario | 1.000 | Montecarlo (con marquetería de oro) | | | Gemas (talla esmeralda, un color por valor) | Diamante |
+| Mítico | 1.600 | Holográfico | | | | Corona |
 | Logro | | Medianoche (100 blackjacks) | | Kamikaze (all-in ganado) | | |
 | Trofeos | | Campeón (1 semana) | | | | Laurel (5 semanas) |
 
@@ -574,7 +598,7 @@ Cada fase termina con algo usable y desplegado.
 | 6 | 🟡 Social | ✅ Chat global y por grupo con reacciones, respuestas y publicar manos y estadísticas. Falta: feed y mensajes a una persona |
 | 7 | ✅ Notificaciones push | Suscripción por dispositivo, preferencias por tipo en Ajustes y envíos (paga, adelantamientos, menciones, cierre, ceremonia y moderación) |
 | 8 | ✅ Retos y logros | Retos diarios en Inicio con aviso en la mesa al completarlos y gestión en Administración; dan monedas para estilos, nunca fichas |
-| 9 | Baraja del día | Semilla diaria, 10 manos, clasificación y compartir (con su vista previa `/r/…`) |
+| 9 | ✅ Baraja del día | Semilla diaria, 10 manos, clasificación y compartir (con su vista previa `/r/…`) |
 | 10 | ✅ Estilos y tienda | Sistema de temas para la mesa, colección, tienda y selector; en Administración, los cosméticos más usados y comprados |
 | 11 | Juice y pulido | Más sonidos (los básicos de la mesa ya están), más animaciones, vibración, accesibilidad y rendimiento |
 | 12 | Beta con amigos | Probar con un grupo real, ajustar la economía y corregir errores |
@@ -591,7 +615,7 @@ Para empezar a probar con amigos de verdad bastan las fases 1–5 (incluida la 4
 | Apuesta mínima / máxima | 10 / 500 fichas por mano |
 | Quien entra a mitad de semana | Saldo inicial + todas las pagas de los días ya transcurridos |
 | Cierre de semana | Domingo 23:59, hora de Madrid |
-| Baraja del día | 10 manos con apuesta fija; el 1º del día gana +500 fichas en la liga |
+| Baraja del día | 10 manos con apuesta fija; el 1º del día gana +50 monedas para estilos, al día siguiente |
 | Saldo | Uno por jugador, común a todos sus grupos; los grupos son clasificaciones |
 | Premios en monedas | 100 / 60 / 30 para el podio, 10 por haber jugado; solo cuenta tu mejor puesto y el grupo necesita al menos 2 personas que hayan jugado |
 | Premio de los retos diarios | Monedas para estilos, no fichas: los retos son personales y no deben dar ventaja en la liga |

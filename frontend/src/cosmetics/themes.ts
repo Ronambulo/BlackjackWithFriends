@@ -35,6 +35,73 @@ const felt = (background: string, bar: string, print = 'rgb(242 193 78)'): Vars 
   '--felt-print': print,
 })
 
+/** An SVG drawing as a CSS image. */
+const svg = (width: number, height: number, body: string) =>
+  `url("data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}' viewBox='0 0 ${width} ${height}'>${body}</svg>`,
+  )}")`
+
+/** Soft colour bands, one wave over the next, from the top down. */
+const bands = (colours: string[]) => {
+  const step = 600 / colours.length
+  return svg(
+    1000,
+    600,
+    colours
+      .map((colour, i) => {
+        const y = i * step - 20
+        const lift = i % 2 ? 26 : -22
+        return `<path d='M0 ${y} C250 ${y + lift} 450 ${y - lift} 700 ${y + lift / 2} S900 ${y - lift} 1000 ${y} V600 H0 Z' fill='${colour}'/>`
+      })
+      .join(''),
+  )
+}
+
+/** The same random numbers every time, so a drawing doesn't change between renders. */
+const seeded = (seed: number) => () => (seed = (seed * 16807) % 2147483647) / 2147483647
+
+/** Clouds of coloured gas across the felt, with a dark lane of dust and stars all over. */
+function galaxy() {
+  const random = seeded(29)
+  const stars = Array.from({ length: 260 }, () => {
+    const r = (0.35 + random() ** 3 * 1.4).toFixed(2)
+    return `<circle cx='${(random() * 1000).toFixed(0)}' cy='${(random() * 600).toFixed(0)}' r='${r}' fill='#fff' opacity='${(0.35 + random() * 0.65).toFixed(2)}'/>`
+  }).join('')
+  const glints = [
+    [180, 120],
+    [830, 90],
+    [620, 470],
+    [90, 430],
+    [900, 380],
+  ]
+    .map(
+      ([x, y]) =>
+        `<g stroke='#fff' stroke-linecap='round' opacity='0.9'><path d='M${x - 7} ${y}h14M${x} ${y - 7}v14' stroke-width='0.8'/></g><circle cx='${x}' cy='${y}' r='1.8' fill='#fff'/>`,
+    )
+    .join('')
+  return svg(
+    1000,
+    600,
+    `<defs>${[
+      ['p', '#6a2bd1', 0.7],
+      ['k', '#d0408f', 0.6],
+      ['u', '#2b5bd1', 0.55],
+      ['c', '#ffd9f2', 0.75],
+      ['d', '#070418', 0.6],
+    ]
+      .map(([id, colour, opacity]) => `<radialGradient id='${id}'><stop offset='0' stop-color='${colour}' stop-opacity='${opacity}'/><stop offset='1' stop-color='${colour}' stop-opacity='0'/></radialGradient>`)
+      .join('')}</defs>` +
+      `<g transform='rotate(-14 500 300)'>` +
+      `<ellipse cx='300' cy='270' rx='400' ry='190' fill='url(#p)'/>` +
+      `<ellipse cx='690' cy='320' rx='340' ry='160' fill='url(#k)'/>` +
+      `<ellipse cx='520' cy='230' rx='380' ry='120' fill='url(#u)'/>` +
+      `<ellipse cx='500' cy='300' rx='200' ry='80' fill='url(#c)'/>` +
+      `<ellipse cx='480' cy='316' rx='400' ry='26' fill='url(#d)'/></g>` +
+      stars +
+      glints,
+  )
+}
+
 const TAPETES: Record<string, Vars> = {
   'tapete.verde': felt(lit('#14834c', '#0c5a34', '#073a22'), '#0b5231'),
   'tapete.azul': felt(lit('#2468b5', '#13407a', '#0a254a'), '#103869'),
@@ -50,23 +117,6 @@ const TAPETES: Record<string, Vars> = {
     '#4a2e17',
     'rgb(255 222 160)',
   ),
-  'tapete.damasco': felt(
-    [
-      'radial-gradient(circle at 50% 50%, rgb(242 193 78 / 0.13) 0 3px, transparent 3.5px) 0 0 / 34px 34px',
-      'radial-gradient(ellipse 7px 12px at 50% 50%, rgb(242 193 78 / 0.08) 0 100%, transparent 100%) 17px 17px / 34px 34px',
-      lit('#1c6b63', '#0f4741', '#072723'),
-    ].join(', '),
-    '#0c3d38',
-  ),
-  'tapete.neon': felt(
-    [
-      'linear-gradient(rgb(255 46 196 / 0.14) 1px, transparent 1px) 0 0 / 30px 30px',
-      'linear-gradient(90deg, rgb(0 229 255 / 0.14) 1px, transparent 1px) 0 0 / 30px 30px',
-      lit('#2a1257', '#130a2c', '#07040f'),
-    ].join(', '),
-    '#0e0822',
-    'rgb(255 79 216)',
-  ),
   'tapete.pixel': felt(
     [
       lit('rgb(255 255 255 / 0.08)', 'transparent', 'rgb(0 0 0 / 0.35)'),
@@ -75,18 +125,12 @@ const TAPETES: Record<string, Vars> = {
     '#145c33',
     'rgb(255 225 77)',
   ),
-  'tapete.turquesa': felt(lit('#1ba3a0', '#0f6f6d', '#073f3e'), '#0b5c5a'),
-  // Leather, with a stitched seam just inside the edge.
-  'tapete.cuero': felt(
-    [
-      'linear-gradient(90deg, transparent 10px, rgb(255 226 180 / 0.35) 10px 11px, transparent 11px) 0 0 / 100% 100% no-repeat',
-      'repeating-linear-gradient(180deg, transparent 0 4px, rgb(0 0 0 / 0.5) 4px 7px) 10px 0 / 1px 100% no-repeat',
-      'radial-gradient(rgb(0 0 0 / 0.08) 1px, transparent 1.5px) 0 0 / 5px 5px',
-      lit('#a4542e', '#6e3218', '#3d190a'),
-    ].join(', '),
-    '#552612',
-    'rgb(255 214 160)',
+  'tapete.cosmos': felt(
+    [lit('transparent', 'rgb(0 0 0 / 0.1)', 'rgb(0 0 0 / 0.45)'), `${galaxy()} center / cover`, '#070418'].join(', '),
+    '#0d0824',
+    'rgb(230 210 255)',
   ),
+  'tapete.turquesa': felt(lit('#1ba3a0', '#0f6f6d', '#073f3e'), '#0b5c5a'),
   'tapete.escoces': felt(
     [
       'repeating-linear-gradient(90deg, rgb(0 0 0 / 0.28) 0 18px, transparent 18px 36px, rgb(242 193 78 / 0.22) 36px 38px, transparent 38px 54px)',
@@ -94,27 +138,6 @@ const TAPETES: Record<string, Vars> = {
       lit('#b0313a', '#7c1d26', '#470c13'),
     ].join(', '),
     '#5f1820',
-  ),
-  // A synthwave sunset: a striped sun sinking into a grid.
-  'tapete.atardecer': felt(
-    [
-      'linear-gradient(90deg, rgb(255 79 216 / 0.22) 1px, transparent 1px) 0 100% / 34px 38% repeat-x',
-      'radial-gradient(circle at 50% 62%, #ffcf5c 0 18%, #ff6b8b 30%, transparent 31%) 0 0 / 100% 62% no-repeat',
-      'linear-gradient(#2a0f4f, #561a6b 45%, #ff6b8b 62%, #1a0a33 62%, #0c0620)',
-    ].join(', '),
-    '#2a0f4f',
-    'rgb(255 207 92)',
-  ),
-  // Royal blue velvet with gold fleurs.
-  'tapete.realeza': felt(
-    [
-      'radial-gradient(circle at 50% 40%, rgb(242 193 78 / 0.3) 0 2px, transparent 2.5px) 0 0 / 40px 40px',
-      'radial-gradient(ellipse 3px 8px at 50% 60%, rgb(242 193 78 / 0.18) 0 100%, transparent 100%) 0 0 / 40px 40px',
-      'radial-gradient(circle at 50% 40%, rgb(242 193 78 / 0.14) 0 1.5px, transparent 2px) 20px 20px / 40px 40px',
-      lit('#3a3fb8', '#1d2178', '#0b0d3d'),
-    ].join(', '),
-    '#171a5e',
-    'rgb(255 214 102)',
   ),
   'tapete.medianoche': felt(
     [
@@ -131,15 +154,6 @@ const TAPETES: Record<string, Vars> = {
   'tapete.campeon': felt(lit('#c9921f', '#8a5f10', '#4a3006'), '#6e4c0c', 'rgb(255 244 200)'),
   'tapete.coral': felt(lit('#e0705a', '#b24a39', '#6e2a1f'), '#8e3b2d', 'rgb(255 236 210)'),
   'tapete.oliva': felt(lit('#7d8a3c', '#566126', '#2f3613'), '#454e1d'),
-  'tapete.topos': felt(
-    [
-      'radial-gradient(circle, rgb(255 255 255 / 0.11) 0 4px, transparent 4.5px) 0 0 / 22px 22px',
-      'radial-gradient(circle, rgb(255 255 255 / 0.11) 0 4px, transparent 4.5px) 11px 11px / 22px 22px',
-      lit('#2a3f78', '#18264d', '#0b1229'),
-    ].join(', '),
-    '#141f40',
-    'rgb(255 236 210)',
-  ),
   // Beach awning stripes.
   'tapete.riviera': felt(
     [
@@ -170,50 +184,6 @@ const TAPETES: Record<string, Vars> = {
     '#721c1c',
     'rgb(255 236 210)',
   ),
-  'tapete.aurora': felt(
-    [
-      'radial-gradient(ellipse 80% 26% at 30% 22%, rgb(46 229 157 / 0.5), transparent 70%)',
-      'radial-gradient(ellipse 70% 22% at 70% 38%, rgb(124 92 255 / 0.45), transparent 70%)',
-      'radial-gradient(ellipse 60% 18% at 50% 12%, rgb(46 229 200 / 0.3), transparent 70%)',
-      'linear-gradient(#0a2236, #04101c)',
-    ].join(', '),
-    '#081a2a',
-    'rgb(170 255 220)',
-  ),
-  // A circuit board: green traces with a solder point at every crossing.
-  'tapete.circuito': felt(
-    [
-      'radial-gradient(circle, rgb(57 255 136 / 0.55) 0 2px, transparent 2.5px) -20px -20px / 40px 40px',
-      'linear-gradient(90deg, rgb(57 255 136 / 0.16) 1px, transparent 1px) 0 0 / 40px 40px',
-      'linear-gradient(rgb(57 255 136 / 0.12) 1px, transparent 1px) 0 0 / 40px 40px',
-      lit('#0f3d2a', '#08261a', '#03120c'),
-    ].join(', '),
-    '#06201a',
-    'rgb(120 255 170)',
-  ),
-  'tapete.lava': felt(
-    [
-      'radial-gradient(ellipse 30% 7% at 25% 62%, rgb(255 90 20 / 0.6), transparent 70%)',
-      'radial-gradient(ellipse 26% 5% at 72% 30%, rgb(255 140 30 / 0.55), transparent 70%)',
-      'radial-gradient(ellipse 22% 5% at 60% 84%, rgb(255 60 20 / 0.5), transparent 70%)',
-      lit('#3a1a14', '#1f0d0a', '#0d0504'),
-    ].join(', '),
-    '#1a0b08',
-    'rgb(255 170 90)',
-  ),
-  'tapete.nebulosa': felt(
-    [
-      'radial-gradient(1.5px 1.5px at 15% 25%, #fff, transparent)',
-      'radial-gradient(1px 1px at 82% 14%, #fff, transparent)',
-      'radial-gradient(1px 1px at 56% 78%, #fff, transparent)',
-      'radial-gradient(1.5px 1.5px at 90% 70%, #fff, transparent)',
-      'radial-gradient(ellipse 50% 40% at 35% 45%, rgb(214 64 160 / 0.5), transparent 70%)',
-      'radial-gradient(ellipse 45% 35% at 70% 60%, rgb(64 120 230 / 0.45), transparent 70%)',
-      '#0a0618',
-    ].join(', '),
-    '#120a28',
-    'rgb(230 210 255)',
-  ),
   // Iridescent like a foil card, toned down so the cards still read.
   'tapete.holografico': felt(
     [
@@ -239,53 +209,6 @@ const TAPETES: Record<string, Vars> = {
   // Dark, metal and nature
   'tapete.abismo': felt(lit('#2a2236', '#151020', '#07050c'), '#110c1a', 'rgb(190 170 230)'),
   'tapete.musgo': felt(lit('#4f6b3a', '#324722', '#1a2711'), '#2a3b1c', 'rgb(220 230 170)'),
-  'tapete.acero': felt(
-    [
-      'repeating-linear-gradient(90deg, rgb(255 255 255 / 0.05) 0 1px, transparent 1px 3px)',
-      'linear-gradient(115deg, transparent 30%, rgb(255 255 255 / 0.12) 45%, transparent 60%)',
-      lit('#6b737c', '#454b52', '#24282c'),
-    ].join(', '),
-    '#33383d',
-    'rgb(230 236 242)',
-  ),
-  'tapete.carbono': felt(
-    [
-      'radial-gradient(ellipse 90% 60% at 50% 38%, rgb(255 255 255 / 0.08), rgb(0 0 0 / 0.5))',
-      'conic-gradient(from 45deg, #1d1f22 25%, #2a2d31 0 50%, #1d1f22 0 75%, #2a2d31 0) 0 0 / 8px 8px',
-    ].join(', '),
-    '#17191c',
-    'rgb(210 216 224)',
-  ),
-  // Shade from the leaves above, with a few patches of sun.
-  'tapete.bosque': felt(
-    [
-      'radial-gradient(ellipse 22% 14% at 20% 30%, rgb(255 240 160 / 0.1), transparent 70%)',
-      'radial-gradient(ellipse 18% 12% at 74% 66%, rgb(255 240 160 / 0.08), transparent 70%)',
-      'radial-gradient(ellipse 30% 18% at 70% 20%, rgb(0 20 5 / 0.35), transparent 70%)',
-      'radial-gradient(ellipse 26% 16% at 30% 78%, rgb(0 20 5 / 0.3), transparent 70%)',
-      lit('#2e6b3a', '#1b4524', '#0b2412'),
-    ].join(', '),
-    '#163a1e',
-    'rgb(230 220 160)',
-  ),
-  'tapete.desierto': felt(
-    [
-      'repeating-linear-gradient(170deg, rgb(255 255 255 / 0.07) 0 2px, transparent 2px 22px)',
-      lit('#d6a35e', '#a8723a', '#6a4220'),
-    ].join(', '),
-    '#7e5228',
-    'rgb(255 245 220)',
-  ),
-  // Diamond tread plate, the floor of a workshop.
-  'tapete.chapa': felt(
-    [
-      'linear-gradient(45deg, transparent 44%, rgb(255 255 255 / 0.2) 45% 55%, transparent 56%) 0 0 / 14px 14px',
-      'linear-gradient(-45deg, transparent 44%, rgb(255 255 255 / 0.2) 45% 55%, transparent 56%) 7px 7px / 14px 14px',
-      lit('#5d646c', '#3a3f45', '#1c1f22'),
-    ].join(', '),
-    '#2c3035',
-    'rgb(230 236 242)',
-  ),
   // Volcanic glass: near black, with a violet sheen.
   'tapete.obsidiana': felt(
     [
@@ -296,31 +219,19 @@ const TAPETES: Record<string, Vars> = {
     '#0b0910',
     'rgb(200 180 255)',
   ),
-  // Deep water with light rippling through from above.
-  'tapete.oceano': felt(
-    [
-      'radial-gradient(ellipse 34% 5% at 28% 26%, rgb(140 230 255 / 0.2), transparent 70%)',
-      'radial-gradient(ellipse 28% 4% at 70% 40%, rgb(140 230 255 / 0.16), transparent 70%)',
-      'radial-gradient(ellipse 30% 4% at 44% 70%, rgb(140 230 255 / 0.12), transparent 70%)',
-      'linear-gradient(180deg, rgb(120 220 255 / 0.12), transparent 40%)',
-      lit('#0f6c8c', '#0a4460', '#03192a'),
-    ].join(', '),
-    '#07364d',
-    'rgb(200 245 255)',
-  ),
-  'tapete.otono': felt(
-    [
-      'radial-gradient(ellipse 7px 4px at 18% 24%, rgb(214 98 32 / 0.85) 0 100%, transparent 100%)',
-      'radial-gradient(ellipse 4px 7px at 80% 18%, rgb(232 170 40 / 0.8) 0 100%, transparent 100%)',
-      'radial-gradient(ellipse 6px 4px at 64% 72%, rgb(176 48 30 / 0.8) 0 100%, transparent 100%)',
-      'radial-gradient(ellipse 5px 7px at 30% 80%, rgb(232 170 40 / 0.7) 0 100%, transparent 100%)',
-      'radial-gradient(ellipse 7px 5px at 90% 86%, rgb(214 98 32 / 0.75) 0 100%, transparent 100%)',
-      'radial-gradient(ellipse 4px 6px at 48% 12%, rgb(176 48 30 / 0.7) 0 100%, transparent 100%)',
-      lit('#5a4a2a', '#3b2f19', '#1e170b'),
-    ].join(', '),
-    '#2f2513',
-    'rgb(255 214 140)',
-  ),
+  // Warm-to-teal waves, like a retro sunset; its light bands need a shadow under the writing.
+  'tapete.ondas': {
+    ...felt(
+      [
+        lit('transparent', 'rgb(0 0 0 / 0.08)', 'rgb(0 0 0 / 0.35)'),
+        `${bands(['#e0846c', '#c96a5e', '#a35a52', '#8c4648', '#b8554e', '#e06e5c', '#ed9a6e', '#f3c07a', '#e9d48a', '#b7c08e', '#7fa88c', '#5e8f86'])} center / cover`,
+        '#8c4648',
+      ].join(', '),
+      '#5b3236',
+      'rgb(255 236 210)',
+    ),
+    '--felt-shadow': 'rgb(70 25 30 / 0.7)',
+  },
 }
 
 // ── Card backs ──────────────────────────────────────────────────────────────
@@ -372,22 +283,6 @@ const DORSOS: Record<string, Vars> = {
   'dorso.abismo': back(cross('#241a33')),
   'dorso.musgo': back(cross('#3c5a2a')),
   'dorso.carbono': back('conic-gradient(from 45deg, #1d1f22 25%, #2c2f33 0 50%, #1d1f22 0 75%, #2c2f33 0) 0 0 / 6px 6px', '#9aa3ad'),
-  'dorso.hojas': back(
-    [
-      'radial-gradient(ellipse 5px 3px at 30% 30%, #6fae4b 0 100%, transparent 100%) 0 0 / 14px 14px',
-      'radial-gradient(ellipse 3px 5px at 70% 70%, #4f8f37 0 100%, transparent 100%) 0 0 / 14px 14px',
-      '#1f3d1a',
-    ].join(', '),
-    '#e8f0d8',
-  ),
-  // Black leather with steel studs.
-  'dorso.tachuelas': back(
-    [
-      'radial-gradient(circle at 35% 35%, #f4f6f8 0 1px, #9aa3ad 1.5px, #3a3f45 3px, transparent 3.5px) 0 0 / 10px 10px',
-      '#111214',
-    ].join(', '),
-    '#9aa3ad',
-  ),
   'dorso.obsidiana': back(
     [
       'linear-gradient(125deg, transparent 30%, rgb(170 130 255 / 0.25) 45%, transparent 60%)',
@@ -396,18 +291,61 @@ const DORSOS: Record<string, Vars> = {
     ].join(', '),
     '#6f5aa8',
   ),
+  // The glass card itself, clear, with no frame and nothing printed on it.
+  'dorso.cristal': {
+    ...back(
+      [
+        'linear-gradient(115deg, transparent 18%, rgb(255 255 255 / 0.55) 22%, transparent 30%, transparent 58%, rgb(255 255 255 / 0.3) 62%, transparent 66%)',
+        'linear-gradient(160deg, rgb(225 245 255 / 0.55), rgb(170 215 240 / 0.35))',
+      ].join(', '),
+      'transparent',
+    ),
+    '--card-back-origin': 'border-box',
+    '--card-back-blur': 'blur(3px) saturate(1.4)',
+  },
 }
 
 // ── Card faces and shapes ───────────────────────────────────────────────────
 
+/** Light falling on a coloured card from the top left. */
+const CARD_SHEEN = 'linear-gradient(155deg, rgb(255 255 255 / 0.2), transparent 45%, rgb(0 0 0 / 0.12))'
+
+/** A five-petal cherry blossom. */
+const blossom = (x: number, y: number, r: number) =>
+  `<g transform='translate(${x} ${y})'>` +
+  [0, 72, 144, 216, 288]
+    .map((deg) => `<ellipse cy='${-r * 0.55}' rx='${r * 0.42}' ry='${r * 0.58}' transform='rotate(${deg})' fill='#f9b3c9'/>`)
+    .join('') +
+  `<circle r='${r * 0.32}' fill='#e5668f'/><circle r='${r * 0.13}' fill='#ffd36b'/></g>`
+
+/** Two cherry branches across the corners the indices leave free, on a 50 × 70 card. */
+function blossoms() {
+  const branch =
+    `<path d='M52 17 C45 14 41 9 33 1 M42 10 C44 6 47 4 50 3' fill='none' stroke='#8a5a4a' stroke-width='1.1' stroke-linecap='round'/>` +
+    blossom(41, 9, 4.6) +
+    blossom(34, 3, 3.4) +
+    blossom(48, 14, 3) +
+    `<circle cx='49' cy='3.4' r='1.3' fill='#f48fb1'/>` +
+    `<ellipse cx='30' cy='12' rx='1.1' ry='0.7' fill='#f9b3c9' transform='rotate(30 30 12)'/>`
+  return svg(50, 70, `${branch}<g transform='rotate(180 25 35)'>${branch}</g>`)
+}
+
 /*
   --card-ink: spades (and clubs, unless --card-club); --card-red: hearts (and
-  diamonds, unless --card-diamond). Sizes are fractions of the card's width.
+  diamonds, unless --card-diamond); --card-face-s/h/d/c: one suit's own card.
+  Sizes are fractions of the card's width.
 */
 const CARTAS: Record<string, Vars> = {
   'cartas.clasicas': {},
-  'cartas.jumbo': { '--card-index': '0.34', '--card-pip': '0.42' },
-  'cartas.cuatro': { '--card-diamond': '#1f63c6', '--card-club': '#1d8a3e' },
+  // Each suit on a card of its own colour, so the suit reads at a glance.
+  'cartas.cuatro': {
+    '--card-face-s': `${CARD_SHEEN}, #262a33`,
+    '--card-face-h': `${CARD_SHEEN}, #c8283a`,
+    '--card-face-d': `${CARD_SHEEN}, #1f63c6`,
+    '--card-face-c': `${CARD_SHEEN}, #1d8a3e`,
+    '--card-ink': '#fff',
+    '--card-red': '#fff',
+  },
   'cartas.vintage': {
     '--card-face': '#f3e6c8',
     '--card-ink': '#2b2118',
@@ -437,38 +375,11 @@ const CARTAS: Record<string, Vars> = {
     '--card-club': '#4f9a86',
     '--card-frame': 'inset 0 0 0 3px #fff7f0, inset 0 0 0 4px #f1d9e2',
   },
-  'cartas.pizarra': {
-    '--card-face': 'radial-gradient(ellipse at 30% 20%, #3c4a44, #26302c 70%)',
-    '--card-ink': '#eef0e8',
-    '--card-red': '#ffb3a7',
-    '--card-font': '"Segoe Print", "Bradley Hand", "Comic Sans MS", cursive',
-    '--card-glow': '0 0 1px rgb(255 255 255 / 0.6)',
-    '--card-frame': 'inset 0 0 0 3px #6b4a2b, inset 0 0 0 4px #8a6440',
-  },
+  // The classic deck in pink, with a cherry branch in bloom in two corners.
   'cartas.sakura': {
-    '--card-face': [
-      'radial-gradient(ellipse 5px 3px at 20% 30%, rgb(244 143 177 / 0.35) 0 100%, transparent 100%)',
-      'radial-gradient(ellipse 4px 6px at 75% 65%, rgb(244 143 177 / 0.3) 0 100%, transparent 100%)',
-      'radial-gradient(ellipse 5px 4px at 40% 85%, rgb(244 143 177 / 0.25) 0 100%, transparent 100%)',
-      '#fff4f7',
-    ].join(', '),
-    '--card-ink': '#3a2a3f',
-    '--card-red': '#d4386e',
-    '--card-frame': 'inset 0 0 0 3px #fff4f7, inset 0 0 0 4px #f4b6cb',
-  },
-  // After Balatro's lucky cards: a warm face scattered with clovers and glints.
-  'cartas.suerte': {
-    '--card-face': [
-      'radial-gradient(circle at 22% 26%, rgb(255 214 77 / 0.75) 0 1.5px, transparent 2px)',
-      'radial-gradient(circle at 78% 72%, rgb(255 214 77 / 0.75) 0 1.5px, transparent 2px)',
-      'radial-gradient(circle at 70% 22%, rgb(255 255 255 / 0.9) 0 1px, transparent 1.5px)',
-      'radial-gradient(circle at 50% 50%, rgb(76 175 80 / 0.16) 0 3px, transparent 3.5px) 0 0 / 14px 14px',
-      'radial-gradient(circle at 50% 50%, rgb(76 175 80 / 0.1) 0 2px, transparent 2.5px) 7px 7px / 14px 14px',
-      'linear-gradient(160deg, #fffbe6, #f1f7d6)',
-    ].join(', '),
-    '--card-ink': '#1d3a1f',
-    '--card-red': '#c8283a',
-    '--card-frame': 'inset 0 0 0 2.5px #fffbe6, inset 0 0 0 4px #4caf50, inset 0 0 12px rgb(255 214 77 / 0.45)',
+    '--card-face': `${blossoms()} center / 100% 100% no-repeat, #fff3f6`,
+    '--card-ink': '#16181c',
+    '--card-red': '#d23a62',
   },
   // After Balatro's glass cards: see-through, with a sheen across it.
   'cartas.cristal': {
@@ -481,70 +392,6 @@ const CARTAS: Record<string, Vars> = {
     '--card-red': '#c11d4a',
     '--card-glow': '0 0 2px rgb(255 255 255 / 0.9)',
     '--card-frame': 'inset 0 0 0 1.5px rgb(255 255 255 / 0.8), inset 0 0 10px rgb(255 255 255 / 0.45)',
-  },
-  // Round cards are a real thing: the corners sit further in.
-  'cartas.redondas': {
-    '--card-ratio': '1',
-    '--card-radius': '0.5',
-    '--card-corner-y': '16%',
-    '--card-corner-x': '20%',
-    '--card-index': '0.2',
-    '--card-pip': '0.42',
-    '--card-frame': 'inset 0 0 0 4px #fbfaf6, inset 0 0 0 5px rgb(0 0 0 / 0.14)',
-  },
-  'cartas.octogono': {
-    '--card-radius': '0',
-    '--card-clip': 'polygon(22% 0, 78% 0, 100% 16%, 100% 84%, 78% 100%, 22% 100%, 0 84%, 0 16%)',
-    '--card-corner-y': '13%',
-    '--card-corner-x': '13%',
-    '--card-index': '0.2',
-    '--card-frame': 'inset 0 0 0 2px rgb(0 0 0 / 0.1)',
-  },
-  'cartas.hexagono': {
-    '--card-radius': '0',
-    '--card-clip': 'polygon(50% 0, 100% 15%, 100% 85%, 50% 100%, 0 85%, 0 15%)',
-    '--card-corner-y': '17%',
-    '--card-corner-x': '11%',
-    '--card-index': '0.2',
-    '--card-pip': '0.44',
-    '--card-frame': 'inset 0 0 0 2px rgb(0 0 0 / 0.1)',
-  },
-  'cartas.tarot': {
-    '--card-ratio': '4 / 7',
-    '--card-radius': '0.08',
-    '--card-face': '#1e1336',
-    '--card-ink': '#f1d58a',
-    '--card-red': '#ff9fb2',
-    '--card-font': 'Georgia, "Times New Roman", serif',
-    '--card-corner-y': '7%',
-    '--card-corner-x': '13%',
-    '--card-frame': 'inset 0 0 0 3px #1e1336, inset 0 0 0 4.5px #c9a24a, inset 0 0 18px rgb(201 162 74 / 0.3)',
-    '--card-back': [
-      'radial-gradient(circle at 50% 50%, transparent 0 18%, rgb(201 162 74 / 0.7) 18.5% 20%, transparent 20.5%)',
-      'repeating-conic-gradient(from 0deg at 50% 50%, rgb(201 162 74 / 0.22) 0 6deg, transparent 6deg 30deg)',
-      '#1e1336',
-    ].join(', '),
-    '--card-back-edge': '#c9a24a',
-  },
-  // Gold foil, black ink, and a matching black-and-gold back.
-  'cartas.dorada': {
-    '--card-face': 'linear-gradient(135deg, #fff1b8 0%, #e2b33c 35%, #fff4cc 50%, #c9921f 70%, #f6dc7a 100%)',
-    '--card-ink': '#1d1505',
-    '--card-red': '#8a1020',
-    '--card-font': 'Georgia, "Times New Roman", serif',
-    '--card-frame': 'inset 0 0 0 3px rgb(255 255 255 / 0.25), inset 0 0 0 4px rgb(90 60 10 / 0.5)',
-    '--card-back': [
-      'repeating-linear-gradient(45deg, rgb(226 179 60 / 0.35) 0 1px, transparent 1px 7px)',
-      'repeating-linear-gradient(-45deg, rgb(226 179 60 / 0.35) 0 1px, transparent 1px 7px)',
-      '#14110a',
-    ].join(', '),
-    '--card-back-edge': '#e2b33c',
-  },
-  'cartas.ceniza': {
-    '--card-face': '#d9d9d6',
-    '--card-ink': '#1f2023',
-    '--card-red': '#8e2230',
-    '--card-frame': 'inset 0 0 0 3px #d9d9d6, inset 0 0 0 4px #9a9a96',
   },
   // Black with a red that glows, for the metalheads.
   'cartas.sangre': {
@@ -564,32 +411,6 @@ const CARTAS: Record<string, Vars> = {
     '--card-red': '#9a1222',
     '--card-frame': 'inset 0 0 0 2px rgb(255 255 255 / 0.5), inset 0 0 0 3px rgb(0 0 0 / 0.25)',
   },
-  'cartas.bosque': {
-    '--card-face': [
-      'radial-gradient(ellipse 6px 3px at 18% 80%, rgb(79 143 55 / 0.3) 0 100%, transparent 100%)',
-      'radial-gradient(ellipse 3px 6px at 82% 20%, rgb(79 143 55 / 0.3) 0 100%, transparent 100%)',
-      'linear-gradient(170deg, #f4f1e1, #e5ead2)',
-    ].join(', '),
-    '--card-ink': '#1f3320',
-    '--card-red': '#a63a1e',
-    '--card-diamond': '#c46a1b',
-    '--card-club': '#2f6b2a',
-    '--card-font': 'Georgia, "Times New Roman", serif',
-    '--card-frame': 'inset 0 0 0 3px #f4f1e1, inset 0 0 0 4.5px #6b8f4e',
-  },
-  // A slab of grey stone with the marks carved in.
-  'cartas.piedra': {
-    '--card-face': [
-      'radial-gradient(circle at 20% 30%, rgb(0 0 0 / 0.08) 0 2px, transparent 3px) 0 0 / 11px 13px',
-      'radial-gradient(circle at 70% 60%, rgb(255 255 255 / 0.1) 0 1.5px, transparent 2.5px) 0 0 / 9px 7px',
-      'linear-gradient(160deg, #8a8d8f, #5f6366)',
-    ].join(', '),
-    '--card-ink': '#f1f1ee',
-    '--card-red': '#ffb3a0',
-    '--card-font': 'Georgia, "Times New Roman", serif',
-    '--card-glow': '0 1px 0 rgb(0 0 0 / 0.4)',
-    '--card-frame': 'inset 0 0 0 2px rgb(0 0 0 / 0.25)',
-  },
 }
 
 // ── Chips ───────────────────────────────────────────────────────────────────
@@ -597,29 +418,161 @@ const CARTAS: Record<string, Vars> = {
 export const CHIP_VALUES = [1, 5, 10, 25, 100, 500, 1000] as const
 export type ChipValue = (typeof CHIP_VALUES)[number]
 
-/** The face, the darker edge seen on a stack, the number and the stripes. */
-type Chip = [face: string, edge: string, text: string, stripe: string]
+/** The face, the darker edge seen on a stack, the number, the stripes and maybe a drawing over the whole chip. */
+type Chip = [face: string, edge: string, text: string, stripe: string, art?: string]
 
-function chips(set: Record<ChipValue, Chip>): Vars {
-  const vars: Vars = {}
+/**
+ * The numbers' font and weight, how far they sit above the middle (as bottom padding, so half of it)
+ * and whether a stack shows each chip's darker side (1) or only the chips themselves (0, for flat sprites).
+ */
+type ChipText = { font: string; weight: string; lift: string; rim?: string; radius?: string; halo?: string }
+
+function chips(set: Record<ChipValue, Chip>, text: ChipText = { font: 'inherit', weight: '800', lift: '0px' }): Vars {
+  const vars: Vars = { '--chip-font': text.font, '--chip-weight': text.weight, '--chip-lift': text.lift, '--chip-rim': text.rim ?? '1', '--chip-radius': text.radius ?? '50%', '--chip-halo': text.halo ?? 'none' }
   for (const value of CHIP_VALUES) {
-    const [face, edge, text, stripe] = set[value]
+    const [face, edge, text, stripe, art = 'none'] = set[value]
     vars[`--chip${value}-face`] = face
     vars[`--chip${value}-edge`] = edge
     vars[`--chip${value}-text`] = text
     vars[`--chip${value}-stripe`] = stripe
+    vars[`--chip${value}-art`] = art
   }
   return vars
 }
 
 const neonChip = (colour: string, edge: string): Chip => ['#0d0a1a', edge, colour, colour]
-const goldChip = (stripe: string): Chip => ['#e2b33c', '#9c7314', '#2a1d04', stripe]
-const copperChip = (stripe: string): Chip => ['#c87a45', '#7a4421', '#2a1408', stripe]
-// The face is a plain colour: it also tints the chips under it in a stack.
-const gemChip = (colour: string, edge: string, text: string, shine: string): Chip => [colour, edge, text, shine]
+
+/** A point on a circle round the middle of a 40 × 40 chip, at an angle in degrees from the top. */
+const onRim = (r: number, deg: number) => {
+  const t = (deg * Math.PI) / 180
+  return `${(20 + r * Math.sin(t)).toFixed(2)} ${(20 - r * Math.cos(t)).toFixed(2)}`
+}
+
+/** A piece of a ring, between two radii and two angles. */
+const ringPiece = (inner: number, outer: number, from: number, to: number) =>
+  `M${onRim(outer, from)}A${outer} ${outer} 0 0 1 ${onRim(outer, to)}L${onRim(inner, to)}A${inner} ${inner} 0 0 0 ${onRim(inner, from)}Z`
+
+/**
+ * A flat casino chip drawn from a style's colours: six square inserts round the
+ * edge and a dot between each two, in the stripe colour, and a dashed ring
+ * round the middle.
+ */
+function casinoChip([face, edge, text, stripe]: Chip): Chip {
+  const inserts = Array.from({ length: 6 }, (_, i) => ringPiece(14.2, 20, i * 60 - 9, i * 60 + 9)).join('')
+  const dots = Array.from({ length: 6 }, (_, i) => {
+    const [x, y] = onRim(17.3, i * 60 + 30).split(' ')
+    return `<circle cx='${x}' cy='${y}' r='1'/>`
+  }).join('')
+  return [
+    face,
+    edge,
+    text,
+    'transparent',
+    svg(
+      40,
+      40,
+      `<circle cx='20' cy='20' r='20' fill='${face}'/>` +
+        `<path d='${inserts}' fill='${stripe}'/>` +
+        `<g fill='${stripe}'>${dots}</g>` +
+        // The middle sits a touch lower than the edge, so a thin darker line rings it
+        `<circle cx='20' cy='20' r='14.2' fill='none' stroke='${edge}' stroke-width='0.5' opacity='0.6'/>` +
+        `<circle cx='20' cy='20' r='12.4' fill='none' stroke='${stripe}' stroke-width='1' stroke-dasharray='1.9 1.35'/>`,
+    ),
+  ]
+}
+
+/** Every chip in a set drawn as a casino chip. */
+const casinoChips = (set: Record<ChipValue, Chip>) =>
+  Object.fromEntries(Object.entries(set).map(([value, chip]) => [value, casinoChip(chip)])) as Record<ChipValue, Chip>
+
+/** A chip that is a pixel-art sprite from public/styles, with the number on top. */
+const spriteChip = (sprite: string, face: string, edge: string, text: string): Chip => [
+  face,
+  edge,
+  text,
+  'transparent',
+  `url('/styles/${sprite}.png')`,
+]
+
+/** A gem's shades, from the facet facing away from the light to the one facing it, and the number's colour. */
+type Gem = [deep: string, dark: string, mid: string, light: string, text: string]
+
+type Point = readonly [number, number]
+
+/** An outline scaled to fill a 40 × 40 chip, a little above the middle to leave room for its side below. */
+function fit(points: Point[]): Point[] {
+  const xs = points.map(([x]) => x)
+  const ys = points.map(([, y]) => y)
+  const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)]
+  const scale = Math.min(35 / (maxX - minX), 34 / (maxY - minY))
+  return points.map(([x, y]) => [20 + (x - (minX + maxX) / 2) * scale, 18.5 + (y - (minY + maxY) / 2) * scale] as const)
+}
+
+/** An emerald cut seen from above: a long octagon, going round clockwise. */
+const EMERALD_CUT: Point[] = [[-0.62, -1], [0.62, -1], [0.82, -0.8], [0.82, 0.8], [0.62, 1], [-0.62, 1], [-0.82, 0.8], [-0.82, -0.8]]
+
+/**
+ * A cut gem seen from above: a table in the middle and two rows of facets
+ * round it, each shaded by how much it faces the light from the top left,
+ * standing on its darker side. The chip under it is see-through.
+ */
+function gemChip([deep, dark, mid, light, text]: Gem): Chip {
+  const outline = fit(EMERALD_CUT)
+  const n = outline.length
+  const cx = outline.reduce((sum, [x]) => sum + x, 0) / n
+  const cy = outline.reduce((sum, [, y]) => sum + y, 0) / n
+  const table = outline.map(([x, y]) => [cx + (x - cx) * 0.56, cy + (y - cy) * 0.56] as const)
+  const shades = [deep, dark, mid, light]
+  const pts = (points: readonly Point[]) => points.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' ')
+  const facet = (points: Point[], lift: number) => {
+    const fx = points.reduce((sum, [x]) => sum + x, 0) / points.length - cx
+    const fy = points.reduce((sum, [, y]) => sum + y, 0) / points.length - cy
+    // 1 facing the light (top left), -1 facing away
+    const facing = (-fx - fy) / Math.SQRT2 / (Math.hypot(fx, fy) || 1)
+    const shade = Math.max(0, Math.min(3, Math.round(1.5 + facing * 1.5 + lift)))
+    return `<polygon points='${pts(points)}' fill='${shades[shade]}'/>`
+  }
+  let facets = ''
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n
+    const edge: Point = [(outline[i][0] + outline[j][0]) / 2, (outline[i][1] + outline[j][1]) / 2]
+    // Neighbouring facets catch the light differently, so the cut sparkles
+    const turn = i % 2 ? 0.35 : -0.35
+    facets += facet([outline[i], edge, table[i]], -0.5 + turn)
+    facets += facet([edge, outline[j], table[j]], 0.3 - turn)
+    facets += facet([table[i], edge, table[j]], 0.6)
+  }
+  const side = outline.map(([x, y]) => [x, y + 2.2] as const)
+  return [
+    'transparent',
+    'transparent',
+    text,
+    'transparent',
+    svg(
+      40,
+      40,
+      `<defs><linearGradient id='t' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#fff'/><stop offset='0.35' stop-color='${light}'/><stop offset='1' stop-color='${mid}'/></linearGradient></defs>` +
+        `<polygon points='${pts(side)}' fill='${deep}' stroke='${deep}' stroke-width='1' stroke-linejoin='round'/>` +
+        `<g stroke='${deep}' stroke-width='0.35' stroke-linejoin='round'>${facets}<polygon points='${pts(table)}' fill='url(#t)'/></g>` +
+        `<polygon points='${pts(outline)}' fill='none' stroke='${deep}' stroke-width='0.9' stroke-linejoin='round'/>` +
+        `<path d='M${(cx - 11).toFixed(1)} ${(cy - 15.5).toFixed(1)}l0.9 2.1 2.1 0.9-2.1 0.9-0.9 2.1-0.9-2.1-2.1-0.9 2.1-0.9z' fill='#fff'/>`,
+    ),
+  ]
+}
+
+/** Gems stand on their own drawn side, with no round chip, stripe or painted rim under them. */
+const GEM_TEXT: ChipText = {
+  font: 'inherit',
+  weight: '900',
+  lift: '2px',
+  rim: '0',
+  radius: '0',
+  // A white outline round the black number, so it reads on the dark facets too
+  halo: '0 0 1px #fff, 0 0 2px #fff, 0 0 3px rgb(255 255 255 / 0.9)',
+}
 
 const FICHAS: Record<string, Vars> = {
-  'fichas.casino': chips({
+  'fichas.casino': chips(casinoChips({
     1: ['#f1ede4', '#a9a291', '#1c130d', '#9a968c'],
     5: ['#d23f4c', '#8f2731', '#fff', '#fff'],
     10: ['#2f62c9', '#1e4a92', '#fff', '#fff'],
@@ -627,9 +580,9 @@ const FICHAS: Record<string, Vars> = {
     100: ['#222327', '#050506', '#fff', '#fff'],
     500: ['#7b47c9', '#522d8c', '#fff', '#fff'],
     1000: ['#f0a42a', '#b26f12', '#1c130d', '#fff'],
-  }),
+  })),
   // The seventies: mustard, orange, teal and brown.
-  'fichas.retro': chips({
+  'fichas.retro': chips(casinoChips({
     1: ['#f3e6c8', '#bfae86', '#4a3420', '#c96a2b'],
     5: ['#d2622b', '#8f3f17', '#fff3dc', '#f3e6c8'],
     10: ['#2b6f6b', '#184744', '#fff3dc', '#f3e6c8'],
@@ -637,9 +590,9 @@ const FICHAS: Record<string, Vars> = {
     100: ['#5a3a24', '#352113', '#fff3dc', '#e8a33d'],
     500: ['#8c2f39', '#5a1a22', '#fff3dc', '#e8a33d'],
     1000: ['#c9a227', '#8a6d12', '#2a1d04', '#5a3a24'],
-  }),
+  })),
   // Black, white and greys, telling values apart by the stripe.
-  'fichas.mono': chips({
+  'fichas.mono': chips(casinoChips({
     1: ['#f4f4f4', '#a8a8a8', '#111', '#bdbdbd'],
     5: ['#d9d9d9', '#8f8f8f', '#111', '#fff'],
     10: ['#a6a6a6', '#666', '#111', '#fff'],
@@ -647,8 +600,8 @@ const FICHAS: Record<string, Vars> = {
     100: ['#3a3a3a', '#141414', '#fff', '#a6a6a6'],
     500: ['#1a1a1a', '#000', '#fff', '#fff'],
     1000: ['#0a0a0a', '#000', '#f2c14e', '#f2c14e'],
-  }),
-  'fichas.pastel': chips({
+  })),
+  'fichas.pastel': chips(casinoChips({
     1: ['#f6f1ff', '#c9bfe0', '#5a4a7a', '#c9bfe0'],
     5: ['#ffb3ba', '#d98a92', '#5a2a30', '#fff'],
     10: ['#a8d8ff', '#7fb0d9', '#1d3f5e', '#fff'],
@@ -656,8 +609,8 @@ const FICHAS: Record<string, Vars> = {
     100: ['#d6c8ff', '#a99bd6', '#352a5e', '#fff'],
     500: ['#ffdfba', '#d9b48a', '#5e4020', '#fff'],
     1000: ['#fff3a8', '#d6c870', '#5a4e10', '#fff'],
-  }),
-  'fichas.neon': chips({
+  })),
+  'fichas.neon': chips(casinoChips({
     1: neonChip('#e0e0ff', '#5a5a78'),
     5: neonChip('#ff2e63', '#7a1030'),
     10: neonChip('#00e5ff', '#006a78'),
@@ -665,28 +618,9 @@ const FICHAS: Record<string, Vars> = {
     100: neonChip('#ffffff', '#6a6a6a'),
     500: neonChip('#c04bff', '#5a1a80'),
     1000: neonChip('#ffd400', '#806a00'),
-  }),
-  // Precious stones: bright jewel colours with pale, glassy stripes.
-  'fichas.gemas': chips({
-    1: gemChip('#eaf6ff', '#a9c3d9', '#1d2b3a', '#ffffff'),
-    5: gemChip('#ff3b7f', '#a3124a', '#fff', '#ffc2d8'),
-    10: gemChip('#3f8cff', '#1a4fa8', '#fff', '#c4dcff'),
-    25: gemChip('#1fd69a', '#0c7a55', '#06301f', '#c2f7e3'),
-    100: gemChip('#4a4e6a', '#22243a', '#fff', '#b9bdd9'),
-    500: gemChip('#b45cff', '#6420a6', '#fff', '#e6c9ff'),
-    1000: gemChip('#ffc928', '#a87b00', '#2a1d04', '#fff3c4'),
-  }),
-  'fichas.oro': chips({
-    1: goldChip('#fff6d8'),
-    5: goldChip('#c8283a'),
-    10: goldChip('#2559c4'),
-    25: goldChip('#1b8a4f'),
-    100: goldChip('#1a1a1a'),
-    500: goldChip('#6e3cc0'),
-    1000: ['#f6dc7a', '#a8801c', '#2a1d04', '#fff'],
-  }),
+  })),
   // Dark stone, each value only tinted, with steel stripes.
-  'fichas.obsidiana': chips({
+  'fichas.obsidiana': chips(casinoChips({
     1: ['#2a2a30', '#111114', '#e9e4dc', '#8d959d'],
     5: ['#3a1218', '#1a070a', '#e9e4dc', '#8d959d'],
     10: ['#121e3a', '#070c1a', '#e9e4dc', '#8d959d'],
@@ -694,9 +628,9 @@ const FICHAS: Record<string, Vars> = {
     100: ['#0a0a0c', '#000', '#e9e4dc', '#8d959d'],
     500: ['#24143a', '#10081a', '#e9e4dc', '#8d959d'],
     1000: ['#3a2a0c', '#1a1205', '#f1d58a', '#c9a24a'],
-  }),
+  })),
   // Earth, leaves, river and bark.
-  'fichas.bosque': chips({
+  'fichas.bosque': chips(casinoChips({
     1: ['#e9e1c8', '#a99d78', '#2e2a1a', '#7d8a3c'],
     5: ['#b5532a', '#73311a', '#fff', '#f1d9a8'],
     10: ['#3f6e8c', '#244659', '#fff', '#d9ead2'],
@@ -704,8 +638,8 @@ const FICHAS: Record<string, Vars> = {
     100: ['#4a3424', '#2a1c12', '#fff', '#c9a46a'],
     500: ['#6a4a7a', '#3e2a4a', '#fff', '#e0d0e8'],
     1000: ['#c99a2e', '#80611a', '#2a1d04', '#fff4d0'],
-  }),
-  'fichas.oceano': chips({
+  })),
+  'fichas.oceano': chips(casinoChips({
     1: ['#e6f6f8', '#9cc6cc', '#0d2e36', '#5fb8c4'],
     5: ['#ff7a6a', '#b0453a', '#fff', '#ffe0da'],
     10: ['#1f7fae', '#11506e', '#fff', '#c9ecff'],
@@ -713,9 +647,9 @@ const FICHAS: Record<string, Vars> = {
     100: ['#0b2a40', '#04121e', '#fff', '#7fd6ff'],
     500: ['#5a5fc8', '#33378a', '#fff', '#d6d8ff'],
     1000: ['#f2c14e', '#a8801c', '#2a1d04', '#fff'],
-  }),
+  })),
   // Painted steel, worn at the stripes.
-  'fichas.acero': chips({
+  'fichas.acero': chips(casinoChips({
     1: ['#e3e7eb', '#9099a2', '#15181b', '#ffffff'],
     5: ['#a8323a', '#5e1a1f', '#fff', '#d7dce1'],
     10: ['#3a5a80', '#1f3350', '#fff', '#d7dce1'],
@@ -723,16 +657,33 @@ const FICHAS: Record<string, Vars> = {
     100: ['#2a2d31', '#0e0f11', '#fff', '#9aa3ad'],
     500: ['#5c4a7a', '#33284a', '#fff', '#d7dce1'],
     1000: ['#b08d57', '#6e5530', '#1b1406', '#f4f6f8'],
-  }),
-  'fichas.cobre': chips({
-    1: copperChip('#f4e1cf'),
-    5: copperChip('#c8283a'),
-    10: copperChip('#2559c4'),
-    25: copperChip('#3aa58a'),
-    100: copperChip('#1a1a1a'),
-    500: copperChip('#6e3cc0'),
-    1000: ['#e8a06a', '#8a4f22', '#2a1408', '#5fd0b0'],
-  }),
+  })),
+  // Emerald-cut gems, each value its own colour: aquamarine, ruby, sapphire, emerald, tourmaline, amethyst and topaz.
+  'fichas.joyas': chips(
+    {
+      1: gemChip(['#0e5a6e', '#2a9bb5', '#6fd3e6', '#dcf9ff', '#111']),
+      5: gemChip(['#4a0614', '#8f0f2a', '#d81e48', '#ff8aa3', '#111']),
+      10: gemChip(['#0a1a4f', '#13358f', '#2a66db', '#8fc0ff', '#111']),
+      25: gemChip(['#033a24', '#0a6b43', '#14a86b', '#7ff5c0', '#111']),
+      100: gemChip(['#5e0a3c', '#a8236e', '#e8559e', '#ffb3dc', '#111']),
+      500: gemChip(['#2a0a4a', '#5a1fa0', '#9150e0', '#dcb8ff', '#111']),
+      1000: gemChip(['#6b3d00', '#b87200', '#f2a91c', '#fff0a8', '#111']),
+    },
+    GEM_TEXT,
+  ),
+  // Pixel-art sprites, like an old arcade game; the 1000 is a clown.
+  'fichas.pixel': chips(
+    {
+      1: spriteChip('fichas-pixel/1', '#ebf6f8', '#7c9195', '#445457'),
+      5: spriteChip('fichas-pixel/5', '#fd5f55', '#cc4846', '#fff'),
+      10: spriteChip('fichas-pixel/10', '#009cfd', '#1685cb', '#fff'),
+      25: spriteChip('fichas-pixel/25', '#55a383', '#4d8276', '#fff'),
+      100: spriteChip('fichas-pixel/100', '#4f6367', '#445457', '#fff'),
+      500: spriteChip('fichas-pixel/500', '#8a71e1', '#6059a0', '#fff'),
+      1000: spriteChip('fichas-pixel/1000', '#ebf6f8', '#7c9195', '#445457'),
+    },
+    { font: 'var(--font-pixel), monospace', weight: '400', lift: '2px', rim: '0' },
+  ),
 }
 
 const BY_KIND: Record<Exclude<CosmeticKind, 'marco'>, Record<string, Vars>> = {
@@ -750,14 +701,14 @@ const BY_KIND: Record<Exclude<CosmeticKind, 'marco'>, Record<string, Vars>> = {
 */
 const CARD_RESET: Vars = Object.fromEntries(
   [
-    'face', 'ink', 'red', 'diamond', 'club', 'font', 'frame', 'glow', 'blur',
+    'face', 'face-s', 'face-h', 'face-d', 'face-c', 'ink', 'red', 'diamond', 'club', 'font', 'frame', 'glow', 'blur',
     'radius', 'ratio', 'clip', 'index', 'pip', 'corner-x', 'corner-y',
   ].map((name) => [`--card-${name}`, 'initial']),
 )
 
 /**
  * The CSS variables for a set of styles. The back goes before the faces: a face
- * style can bring its own back (the tarot deck).
+ * style can bring its own back edge (the neon deck).
  */
 export function themeStyle(equipped: Partial<Equipped> | undefined): CSSProperties {
   const e = { ...DEFAULT_EQUIPPED, ...equipped }
@@ -771,6 +722,22 @@ export function themeStyle(equipped: Partial<Equipped> | undefined): CSSProperti
 }
 
 /** The frame's class (globals.css), null for none. */
+// The daily deck's own table: not in the shop, so it can only be the daily deck.
+const SUITS_TILE = svg(
+  96,
+  96,
+  ['♠:18:30', '♥:66:30', '♦:42:78', '♣:90:78', '♣:-6:78']
+    .map((spec) => spec.split(':'))
+    .map(([suit, x, y]) => `<text x='${x}' y='${y}' font-size='22' text-anchor='middle' fill='white' fill-opacity='0.055'>${suit}</text>`)
+    .join(''),
+)
+
+export const DAILY_FELT = felt(
+  [`${SUITS_TILE} 0 0 / 96px 96px`, lit('#1d5566', '#0e3542', '#061a22')].join(', '),
+  '#0a2a35',
+  'rgb(242 193 78)',
+) as CSSProperties
+
 export function frameClass(frame: string | null | undefined): string | null {
   if (!frame || frame === 'marco.ninguno') return null
   return `frame frame-${frame.slice('marco.'.length)}`

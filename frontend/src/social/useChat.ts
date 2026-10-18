@@ -143,7 +143,7 @@ export function useDeleteMessage(chatId: string) {
 }
 
 /** What can be published in the chats: a finished hand, or this week's or all-time stats. */
-export type Shared = { handId: string } | { stats: SharedStats['range'] }
+export type Shared = { handId: string } | { stats: SharedStats['range'] } | { daily: true }
 
 /** Publishes it in the chats the player picks ('global' and/or group ids). */
 export function useShare() {

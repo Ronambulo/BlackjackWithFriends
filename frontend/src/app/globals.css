@@ -461,15 +461,6 @@ select {
   --frame: conic-gradient(#0b2a40, #1aa39a, #8fe3ff, #1f7fae, #0b2a40, #5fd0c4, #0b2a40);
 }
 
-/* Steel teeth all round, poking out further than a plain ring. */
-.frame-pinchos {
-  --frame: repeating-conic-gradient(#e3e7eb 0 5deg, #7c858f 5deg 8deg, #1d2023 8deg 15deg);
-}
-
-.frame-pinchos::before {
-  inset: calc(-1.6 * var(--frame-w, 3px));
-}
-
 .frame-hiedra {
   --frame: conic-gradient(#2e6b3a, #6fae4b, #1f4d28, #8cc463, #2e6b3a, #4f8f37, #1f4d28, #2e6b3a);
 }
@@ -503,12 +494,53 @@ select {
   --frame: #d9b24a;
 }
 
-.frame-leaves {
+/* What a frame adds beyond the ring (ui/Avatar.tsx): behind the avatar, or over it */
+.frame-art {
   position: absolute;
-  inset: -22%;
-  width: 144%;
-  height: 144%;
+  inset: -35%;
+  width: 170%;
+  height: 170%;
+  overflow: visible;
   pointer-events: none;
+}
+
+.frame-art-back {
+  z-index: -1;
+}
+
+.frame:has(.frame-art-back) {
+  isolation: isolate;
+}
+
+.frame-corona {
+  --frame: conic-gradient(from 30deg, #fff1b8, #c9921f, #ffe08a, #8a5f10, #fff1b8);
+}
+
+.frame-diablo {
+  --frame: conic-gradient(from 30deg, #ff5a3a, #4a0505, #b3121b, #1a0202, #ff5a3a);
+}
+
+.frame-angel {
+  --frame: conic-gradient(from 30deg, #ffffff, #cfe3f5, #fff6d0, #a9c7e0, #ffffff);
+}
+
+.frame-flores {
+  --frame: conic-gradient(from 30deg, #8cc463, #3f7f32, #8cc463, #3f7f32, #8cc463);
+}
+
+.frame-orbita {
+  --frame: conic-gradient(from 30deg, #2a1f6a, #6a8aff, #0d0a2a, #b06aff, #2a1f6a);
+}
+
+/* The whole drawing turns, so it turns around the avatar in its middle */
+.frame-orbit {
+  animation: frame-spin 18s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame-orbit {
+    animation: none;
+  }
 }
 
 .sr-only {

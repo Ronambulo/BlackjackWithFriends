@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useUser } from '@/auth/session-context'
 import { ChallengesCard } from '@/challenges/ChallengesCard'
+import { DailyCard } from '@/daily/DailyCard'
 import { TopList } from '@/groups/Ranking'
 import { useCurrentGroup, useGroups } from '@/groups/useGroups'
 import { useFriendsRanking } from '@/groups/useRankings'
@@ -36,7 +37,12 @@ export default function HomePage() {
       <div className={`${styles.page} ${styles.tight}`}>
         <h1 className={styles.heading}>{t('home.greeting', { name: profile?.nombre ?? '' })}</h1>
 
+        {/* Where the player stands first, then what there is to do today, then everyone else. */}
         <LeagueCard group={group} dayChange={mine?.dayChange} />
+
+        <h2 className={`label ${styles.sectionLabel}`}>{t('home.today')}</h2>
+
+        <DailyCard />
 
         <PollCard />
 

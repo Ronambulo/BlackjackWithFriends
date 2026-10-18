@@ -375,7 +375,7 @@ function SaleModal({ rebaja, onClose }: { rebaja: AdminShop['rebaja']; onClose: 
         <div className={styles.shopRowBox}>
           <span>
             <b>{t('admin.shop.examples')}</b>
-            {[300, 750, 1500, 3500].map((base) => (
+            {[100, 400, 1000, 1600].map((base) => (
               <small key={base} className={styles.shopExample}>
                 <s>{number(base)}</s> {number(Math.max(1, Math.round((base * (100 - (valid ? n : 0))) / 100)))}
               </small>

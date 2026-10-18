@@ -107,7 +107,8 @@
 }
 
 .printRules {
-  fill: rgb(244 241 232 / 0.38);
+  fill: rgb(var(--felt-ink, 244 241 232) / 0.38);
+  filter: drop-shadow(0 1px 2px var(--felt-shadow, transparent));
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 2.5px;
@@ -133,27 +134,57 @@
   border-radius: 50%;
 }
 
+/* With chips on it the spot is a button that takes the last one back */
+.spotUndo {
+  padding: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.spotUndo:active > * {
+  scale: 0.94;
+}
+
 .spotLabel {
   margin-top: 14px;
-  color: rgb(244 241 232 / 0.55);
+  color: rgb(var(--felt-ink, 244 241 232) / 0.55);
+  text-shadow: 0 1px 3px var(--felt-shadow, transparent);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
-/* A stack: the top chip, with the ones under it drawn as its shadow */
+/* A stack: the chips under the top one, each peeking out below the one above */
+.stackWrap {
+  display: grid;
+  position: relative;
+  animation: drop 0.2s ease both;
+}
+
+.stackLayer {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--chip-radius, 50%);
+  image-rendering: pixelated;
+}
+
 .stack {
   display: grid;
+  position: relative;
   place-items: center;
   width: 66px;
   height: 66px;
   border: 6px dashed #fff;
-  border-radius: 50%;
+  border-radius: var(--chip-radius, 50%);
+  font-family: var(--chip-font, inherit);
+  padding-bottom: var(--chip-lift, 0px);
+  image-rendering: pixelated;
   font-size: 15px;
-  font-weight: 800;
+  font-weight: var(--chip-weight, 800);
+  text-shadow: var(--chip-halo, none);
   font-variant-numeric: tabular-nums;
-  animation: drop 0.2s ease both;
 }
 
 @keyframes drop {
@@ -209,6 +240,7 @@
 
 .cards {
   display: flex;
+  isolation: isolate;
   justify-content: center;
   min-height: calc(var(--card-w, 64px) * 1.4);
 }
@@ -217,7 +249,8 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  color: rgb(244 241 232 / 0.7);
+  color: rgb(var(--felt-ink, 244 241 232) / 0.7);
+  text-shadow: 0 1px 3px var(--felt-shadow, transparent);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -246,7 +279,8 @@
 }
 
 .insured {
-  color: rgb(244 241 232 / 0.75);
+  color: rgb(var(--felt-ink, 244 241 232) / 0.75);
+  text-shadow: 0 1px 3px var(--felt-shadow, transparent);
   font-size: 0.8rem;
   font-weight: 700;
   text-align: center;
@@ -385,11 +419,15 @@
   min-width: 0;
   aspect-ratio: 1;
   padding: 0;
+  font-family: var(--chip-font, inherit);
+  padding-bottom: var(--chip-lift, 0px);
   border: 5px dashed #fff;
-  border-radius: 50%;
+  border-radius: var(--chip-radius, 50%);
+  image-rendering: pixelated;
   color: #fff;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: var(--chip-weight, 800);
+  text-shadow: var(--chip-halo, none);
   cursor: pointer;
   box-shadow: 0 4px 0 var(--edge);
   transition: transform 0.12s ease;
@@ -413,7 +451,9 @@
   --edge: var(--chip1-edge, #a9a291);
 
   border-color: var(--chip1-stripe, #9a968c);
-  background: var(--chip1-face, #f1ede4);
+  background:
+    var(--chip1-art, none) border-box center / 100% 100% no-repeat,
+    var(--chip1-face, #f1ede4);
   color: var(--chip1-text, #1c130d);
 }
 
@@ -421,7 +461,9 @@
   --edge: var(--chip5-edge, #8f2731);
 
   border-color: var(--chip5-stripe, #fff);
-  background: var(--chip5-face, #d23f4c);
+  background:
+    var(--chip5-art, none) border-box center / 100% 100% no-repeat,
+    var(--chip5-face, #d23f4c);
   color: var(--chip5-text, #fff);
 }
 
@@ -429,7 +471,9 @@
   --edge: var(--chip10-edge, #1e4a92);
 
   border-color: var(--chip10-stripe, #fff);
-  background: var(--chip10-face, #2f62c9);
+  background:
+    var(--chip10-art, none) border-box center / 100% 100% no-repeat,
+    var(--chip10-face, #2f62c9);
   color: var(--chip10-text, #fff);
 }
 
@@ -437,7 +481,9 @@
   --edge: var(--chip25-edge, #11693c);
 
   border-color: var(--chip25-stripe, #fff);
-  background: var(--chip25-face, #1b9a59);
+  background:
+    var(--chip25-art, none) border-box center / 100% 100% no-repeat,
+    var(--chip25-face, #1b9a59);
   color: var(--chip25-text, #fff);
 }
 
@@ -445,7 +491,9 @@
   --edge: var(--chip100-edge, #050506);
 
   border-color: var(--chip100-stripe, #fff);
-  background: var(--chip100-face, #222327);
+  background:
+    var(--chip100-art, none) border-box center / 100% 100% no-repeat,
+    var(--chip100-face, #222327);
   color: var(--chip100-text, #fff);
 }
 
@@ -453,7 +501,9 @@
   --edge: var(--chip500-edge, #522d8c);
 
   border-color: var(--chip500-stripe, #fff);
-  background: var(--chip500-face, #7b47c9);
+  background:
+    var(--chip500-art, none) border-box center / 100% 100% no-repeat,
+    var(--chip500-face, #7b47c9);
   color: var(--chip500-text, #fff);
 }
 
@@ -461,7 +511,9 @@
   --edge: var(--chip1000-edge, #b26f12);
 
   border-color: var(--chip1000-stripe, #fff);
-  background: var(--chip1000-face, #f0a42a);
+  background:
+    var(--chip1000-art, none) border-box center / 100% 100% no-repeat,
+    var(--chip1000-face, #f0a42a);
   color: var(--chip1000-text, #1c130d);
 }
 
@@ -515,33 +567,75 @@
   cursor: not-allowed;
 }
 
-/* Player actions: round buttons with the name underneath */
-.actions {
+/* Player actions: Stand and Hit big at the bottom, where the thumb rests; the rarer moves smaller above */
+.extras {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
 }
 
-.action {
+.extra {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  align-content: center;
   align-items: center;
-  gap: 6px;
-  padding: 0;
+  justify-content: center;
+  gap: 1px 5px;
+  min-width: 0;
+  height: 48px;
+  padding: 0 8px;
   border: 0;
-  background: none;
+  border-radius: 12px;
+  background: #2e2118;
   color: #f4f1e8;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: inset 0 0 0 1.5px #6b5240;
   cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    opacity 0.15s ease;
 }
 
-.actionIcon {
+.extraName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* What it costs, on its own line: one more bet, or the half you lose */
+.extraCost {
+  flex: 0 0 100%;
+  color: var(--accent);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+/* Surrendering costs half the bet, so its price is red */
+.extraLoss .extraCost {
+  color: #ff8a8a;
+}
+
+.extra:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.moves {
   display: grid;
-  place-items: center;
-  width: 56px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.move {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   height: 56px;
-  border-radius: 50%;
+  border: 0;
+  border-radius: 16px;
   background: #3a2a1f;
   color: #f4f1e8;
   font-size: 17px;
@@ -549,40 +643,30 @@
   box-shadow:
     inset 0 0 0 2px #6b5240,
     0 4px 0 #120c08;
+  cursor: pointer;
   transition: transform 0.12s ease;
 }
 
-.actionGold .actionIcon {
+.moveHit {
   background: var(--accent);
   color: var(--accent-text);
   box-shadow: 0 4px 0 #a9822b;
 }
 
-.action:active:not(:disabled) .actionIcon {
+.move:active:not(:disabled),
+.extra:active:not(:disabled) {
   transform: translateY(3px);
 }
 
-.action:disabled {
-  color: rgb(244 241 232 / 0.4);
-  cursor: not-allowed;
+.move:active:not(:disabled) {
+  box-shadow: none;
 }
 
-.action:disabled .actionIcon {
+.move:disabled {
   background: #2a1e16;
   color: rgb(244 241 232 / 0.35);
   box-shadow: inset 0 0 0 2px #3c2d22;
-}
-
-.textButton {
-  align-self: center;
-  min-height: 32px;
-  padding: 0 12px;
-  border: 0;
-  background: none;
-  color: rgb(244 241 232 / 0.55);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
+  cursor: not-allowed;
 }
 
 /* Square icon button between "Change bet" and "Again" */
@@ -598,12 +682,6 @@
   color: var(--success);
   opacity: 1;
   cursor: default;
-}
-
-/* Keeps the rail the same height whether or not surrender is offered */
-.textButton[hidden] {
-  display: block;
-  visibility: hidden;
 }
 
 .net {
