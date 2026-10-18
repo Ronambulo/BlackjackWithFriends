@@ -1699,10 +1699,45 @@
 /* Correcting someone's chips or coins by hand. */
 .adjust {
   display: grid;
-  grid-template-columns: 9rem 1fr auto;
+  grid-template-columns: 15rem 1fr auto;
   align-items: end;
   gap: 8px;
   margin: 10px 0 6px;
+}
+
+/* Give / take away, then the amount: phones type only digits in a numeric field. */
+.signed {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px;
+}
+
+.sign {
+  display: flex;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.sign button {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  background: var(--layer-1);
+  color: var(--text-dim);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sign button[aria-pressed='true']:first-child {
+  background: rgb(74 222 128 / 0.14);
+  color: var(--success);
+}
+
+.sign button[aria-pressed='true']:last-child {
+  background: rgb(248 113 113 / 0.14);
+  color: var(--danger-soft);
 }
 
 @media (width < 520px) {

@@ -2,9 +2,12 @@
 
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useEconomy, useSetRules, type Economy } from '@/admin/useAdmin'
+import { useAdjustAll, useEconomy, useSetRules, type Economy } from '@/admin/useAdmin'
 import { number, percent } from '@/admin/format'
+import { ConfirmSheet } from '@/ui/ConfirmSheet'
+import { CoinsIcon } from '@/ui/icons'
 import styles from './admin.module.css'
+import { SignedAmount, signedAmount, type Sign } from './SignedAmount'
 
 const OUTCOMES = ['blackjack', 'win', 'push', 'lose', 'bust', 'surrender'] as const
 
@@ -65,6 +68,93 @@ function RulesForm({ data }: { data: Economy }) {
           {t('admin.saveForMonday')}
         </button>
       </div>
+    </form>
+  )
+}
+
+/** Gives every player the same coins, or takes them away, after a confirmation. */
+function CoinsForAll({ players }: { players: number }) {
+  const { t } = useTranslation()
+  const adjust = useAdjustAll()
+  const [sign, setSign] = useState<Sign>(1)
+  const [amount, setAmount] = useState('')
+  const [motivo, setMotivo] = useState('')
+  const [asking, setAsking] = useState(false)
+  const cantidad = signedAmount(sign, amount)
+  const valid = cantidad !== 0 && Math.abs(cantidad) <= 1_000_000 && motivo.trim().length >= 3
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    if (valid) setAsking(true)
+  }
+  const apply = () =>
+    adjust.mutate(
+      { cantidad, motivo: motivo.trim() },
+      {
+        onSuccess: () => {
+          setAmount('')
+          setMotivo('')
+        },
+        onSettled: () => setAsking(false),
+      },
+    )
+
+  return (
+    <form className={`card ${styles.block}`} onSubmit={submit}>
+      <div className={styles.headStack}>
+        <h2 className="label">{t('admin.coinsAll.title')}</h2>
+        <span className={styles.dim}>{t('admin.coinsAll.hint')}</span>
+      </div>
+      <div className={styles.adjust}>
+        <SignedAmount
+          sign={sign}
+          digits={amount}
+          onSign={(value) => {
+            setSign(value)
+            adjust.reset()
+          }}
+          onDigits={(value) => {
+            setAmount(value)
+            adjust.reset()
+          }}
+        />
+        <label className="field">
+          <span className="field-label">{t('admin.adjust.reason')}</span>
+          <input
+            className="input"
+            maxLength={200}
+            placeholder={t('admin.adjust.reasonHint')}
+            value={motivo}
+            onChange={(e) => {
+              setMotivo(e.target.value)
+              adjust.reset()
+            }}
+          />
+        </label>
+        <button className="btn btn-secondary" type="submit" disabled={!valid || adjust.isPending}>
+          {t('admin.adjust.apply')}
+        </button>
+      </div>
+      {adjust.isError && <p className="error-text">{t('common.error')}</p>}
+      {adjust.isSuccess && (
+        <p className={styles.dim}>
+          {t('admin.coinsAll.done', { count: adjust.data.players, total: number(Math.abs(adjust.data.total)) })}
+        </p>
+      )}
+      <ConfirmSheet
+        open={asking}
+        icon={<CoinsIcon />}
+        title={t(sign === 1 ? 'admin.coinsAll.confirmGive' : 'admin.coinsAll.confirmTake', {
+          n: number(Math.abs(cantidad)),
+          count: players,
+        })}
+        text={sign === 1 ? t('admin.coinsAll.confirmGiveText') : t('admin.coinsAll.confirmTakeText')}
+        confirm={t('admin.adjust.apply')}
+        tone={sign === 1 ? 'accent' : 'danger'}
+        busy={adjust.isPending}
+        onConfirm={apply}
+        onCancel={() => setAsking(false)}
+      />
     </form>
   )
 }
@@ -171,6 +261,8 @@ export function EconomyTab() {
         </table>
         <p className={styles.dim}>{t('admin.fairHint', { n: number(data.rounds) })}</p>
       </section>
+
+      <CoinsForAll players={data.players} />
 
       <RulesForm key={`${data.nextRules?.startBalance}:${data.nextRules?.dailyPay}`} data={data} />
     </>

@@ -24,6 +24,7 @@ import { ConfirmSheet } from '@/ui/ConfirmSheet'
 import { ChevronLeftIcon, CloseIcon, PhoneIcon, SearchIcon } from '@/ui/icons'
 import pages from '../pages.module.css'
 import styles from './admin.module.css'
+import { SignedAmount, signedAmount, type Sign } from './SignedAmount'
 
 const DAY = 24 * 60 * 60 * 1000
 type Filter = 'all' | 'active' | 'new' | 'inactive' | 'banned' | 'admins'
@@ -154,9 +155,10 @@ function Adjust({ user, history }: { user: AdminUser; history: UserDetail['adjus
   const { t } = useTranslation()
   const adjust = useAdjustUser()
   const [tipo, setTipo] = useState<AdjustmentKind>('saldo')
+  const [sign, setSign] = useState<Sign>(1)
   const [amount, setAmount] = useState('')
   const [motivo, setMotivo] = useState('')
-  const cantidad = /^[-+]?\d{1,7}$/.test(amount.trim()) ? Number(amount.trim()) : 0
+  const cantidad = signedAmount(sign, amount)
   const current = tipo === 'saldo' ? user.balance : user.monedas
   // The server refuses to leave anyone below zero; say so before trying.
   const negative = current !== null && current + cantidad < 0
@@ -201,20 +203,18 @@ function Adjust({ user, history }: { user: AdminUser; history: UserDetail['adjus
         ))}
       </div>
       <div className={styles.adjust}>
-        <label className="field">
-          <span className="field-label">{t('admin.adjust.amount')}</span>
-          <input
-            className="input"
-            inputMode="numeric"
-            placeholder="+500 / -200"
-            maxLength={9}
-            value={amount}
-            onChange={(e) => {
-              setAmount(e.target.value)
-              reset()
-            }}
-          />
-        </label>
+        <SignedAmount
+          sign={sign}
+          digits={amount}
+          onSign={(value) => {
+            setSign(value)
+            reset()
+          }}
+          onDigits={(value) => {
+            setAmount(value)
+            reset()
+          }}
+        />
         <label className="field">
           <span className="field-label">{t('admin.adjust.reason')}</span>
           <input

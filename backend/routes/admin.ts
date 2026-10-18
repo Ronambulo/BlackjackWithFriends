@@ -1081,6 +1081,37 @@ export async function adjustUser(request: Request): Promise<Response> {
   return json({ ok: true })
 }
 
+// POST /api/admin/users/adjust-all { cantidad, motivo }: gives every player coins, or takes them
+// away; whoever has fewer than that is left at zero. Each one gets its own line in their history.
+export async function adjustAll(request: Request): Promise<Response> {
+  const me = await requireAdmin(request)
+  const body = await readBody(request)
+  const cantidad = body.cantidad
+  if (typeof cantidad !== 'number' || !Number.isInteger(cantidad) || cantidad === 0 || Math.abs(cantidad) > ADJUST_MAX) {
+    throw new HttpError(400, 'Cantidad no válida')
+  }
+  const motivo = typeof body.motivo === 'string' ? body.motivo.trim() : ''
+  if (motivo.length < 3 || motivo.length > 200) throw new HttpError(400, 'Falta el motivo')
+  let players = 0
+  let total = 0
+  db().transaction((tx) => {
+    for (const row of tx.select({ id: profiles.id, monedas: profiles.monedas }).from(profiles).all()) {
+      const change = Math.max(cantidad, -row.monedas)
+      if (change === 0) continue
+      tx.update(profiles)
+        .set({ monedas: sql`${profiles.monedas} + ${change}` })
+        .where(eq(profiles.id, row.id))
+        .run()
+      tx.insert(adjustments).values({ userId: row.id, tipo: 'monedas', cantidad: change, motivo, por: me.name }).run()
+      players++
+      total += change
+    }
+  })
+  logAction(me, 'adjust_all_monedas', `${players} jugadores`, `${cantidad > 0 ? '+' : ''}${cantidad} · ${motivo}`)
+  notifyAll()
+  return json({ ok: true, players, total })
+}
+
 // POST /api/admin/maintenance { on, message? }: closes the app to players (admins still get in).
 export async function postMaintenance(request: Request): Promise<Response> {
   const me = await requireAdmin(request)
@@ -1165,7 +1196,12 @@ function csv(name: string, header: string[], rows: (string | number | null)[][])
 const stampFormat = new Intl.DateTimeFormat('sv-SE', { timeZone: ZONE, dateStyle: 'short', timeStyle: 'short' })
 const stamp = (ms: number | null) => (ms === null ? null : stampFormat.format(ms))
 
-// GET /api/admin/export?what=players|days: the players, or every day the app has been played, as CSV.
+const SUITS: Record<string, string> = { S: '♠', H: '♥', D: '♦', C: '♣' }
+const OUTCOME_TEXT: Record<string, string> = { blackjack: 'blackjack', win: 'gana', push: 'empate', lose: 'pierde', bust: 'se pasa', surrender: 'se rinde' }
+const cardsText = (cards: { rank: string; suit: string }[]) => cards.map((card) => `${card.rank}${SUITS[card.suit] ?? card.suit}`).join(' ')
+
+// GET /api/admin/export?what=players|days|hands: the players, every day the app has been played,
+// or every hand anyone has played, as CSV.
 export async function getExport(request: Request): Promise<Response> {
   const me = await requireAdmin(request)
   const what = new URL(request.url).searchParams.get('what')
@@ -1247,6 +1283,53 @@ export async function getExport(request: Request): Promise<Response> {
       [...days.entries()]
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([key, entry]) => [key, entry.players.size, entry.hands, entry.wagered, entry.net, -entry.net, entry.signups, entry.paid]),
+    )
+  }
+  if (what === 'hands') {
+    // Only what's needed of the round: the shoe left in it would make this huge.
+    const rows = d
+      .select({
+        at: sql<number>`${hands.createdAt}`,
+        username: sql<string>`coalesce(${user.displayUsername}, ${user.username}, ${user.name})`,
+        nombre: profiles.nombre,
+        modo: hands.modo,
+        fase: hands.fase,
+        bet: hands.apuesta,
+        net: hands.neto,
+        dealer: sql<string>`json_extract(${hands.ronda}, '$.dealer')`,
+        played: sql<string>`json_extract(${hands.ronda}, '$.hands')`,
+        settlement: sql<string | null>`json_extract(${hands.ronda}, '$.settlement')`,
+        insurance: sql<number>`coalesce(json_extract(${hands.ronda}, '$.insuranceBet'), 0)`,
+      })
+      .from(hands)
+      .innerJoin(user, eq(user.id, hands.userId))
+      .leftJoin(profiles, eq(profiles.id, hands.userId))
+      .orderBy(hands.createdAt)
+      .all()
+    logAction(me, 'export', 'hands')
+    return csv(
+      'manos',
+      ['fecha', 'usuario', 'nombre', 'modo', 'estado', 'apuesta', 'apostado_total', 'neto', 'cartas_jugador', 'cartas_crupier', 'resultado', 'doblada', 'separada', 'seguro'],
+      rows.map((row) => {
+        const played = JSON.parse(row.played) as { cards: { rank: string; suit: string }[]; doubled: boolean }[]
+        const settlement = row.settlement ? (JSON.parse(row.settlement) as { hands: { outcome: string }[]; totalWagered: number }) : null
+        return [
+          stamp(row.at),
+          row.username,
+          row.nombre,
+          row.modo,
+          row.fase === 'settled' ? 'terminada' : 'en curso',
+          row.bet,
+          settlement?.totalWagered ?? null,
+          row.net,
+          played.map((hand) => cardsText(hand.cards)).join(' | '),
+          row.fase === 'settled' ? cardsText(JSON.parse(row.dealer)) : null,
+          settlement?.hands.map((hand) => OUTCOME_TEXT[hand.outcome] ?? hand.outcome).join(' | ') ?? null,
+          played.some((hand) => hand.doubled) ? 'si' : 'no',
+          played.length > 1 ? 'si' : 'no',
+          row.insurance,
+        ]
+      }),
     )
   }
   throw new HttpError(400, 'Exportación no válida')

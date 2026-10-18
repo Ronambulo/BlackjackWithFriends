@@ -371,6 +371,16 @@ export const useSetRules = () => useAdminAction<EconomyRules>('/admin/rules')
 export const useBackupNow = () => useAdminAction<Record<string, never>>('/admin/backups')
 export const useAdjustUser = () =>
   useAdminAction<{ id: string; tipo: AdjustmentKind; cantidad: number; motivo: string }>('/admin/users/adjust')
+/** Coins for every player at once, or taken from all of them (nobody goes below zero). */
+export function useAdjustAll() {
+  const user = useUser()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { cantidad: number; motivo: string }) =>
+      api<{ ok: true; players: number; total: number }>('/admin/users/adjust-all', { method: 'POST', body }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['admin', user.id] }),
+  })
+}
 export const useResolveReport = () => useAdminAction<{ id: number; ok: boolean }>('/admin/reports/resolve')
 export const useDeleteReport = () => useAdminAction<{ id: number }>('/admin/reports/delete')
 

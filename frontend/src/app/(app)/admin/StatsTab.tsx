@@ -331,6 +331,9 @@ export function StatsTab({ onSeeAll }: { onSeeAll: () => void }) {
             <a className="btn btn-secondary" href="/api/admin/export?what=days" download>
               {t('admin.export.days')}
             </a>
+            <a className="btn btn-secondary" href="/api/admin/export?what=hands" download>
+              {t('admin.export.hands')}
+            </a>
           </div>
         </div>
         <p className={styles.dim}>{t('admin.export.hint')}</p>
