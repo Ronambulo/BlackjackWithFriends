@@ -239,6 +239,14 @@ export const es = {
     prizeRule: 'Cuando cierra el día, el 1º de cada grupo donde hayan jugado al menos 2 gana +{{amount}} monedas para estilos. Llegan al día siguiente, con la tabla ya cerrada.',
     tableRules: 'Mismas cartas para todos · Apuesta fija',
   },
+  important: {
+    eyebrow: 'Importante',
+    notice: 'Aviso',
+    ok: 'Entendido',
+    prizeTitle: '¡Ganaste la Baraja del día #{{number}}!',
+    prizeText: 'Quedaste 1º de tu grupo con {{net}}. Te llevas +{{amount}} monedas para estilos.',
+    prizeShop: 'Ir a la tienda',
+  },
   social: {
     title: 'Social',
     global: 'Ranking global de la semana',
@@ -911,6 +919,8 @@ export const es = {
     noticeUntil: 'Hasta',
     noticeFor: { day: '24 horas', week: '7 días', none: 'Hasta que lo quiten' },
     noticeLooks: 'Así se verá',
+    noticeImportant: 'Importante: mostrarlo como ventana al abrir la app',
+    noticeImportantBadge: 'Ventana',
     noticePublish: 'Publicar aviso',
     noticeReplace: 'Cambiar el aviso',
     audienceLabel: 'Para quién',

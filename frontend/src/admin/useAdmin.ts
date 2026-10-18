@@ -415,6 +415,8 @@ export interface AdminNotice {
   audiencia: Audience
   startsAt: number
   expiresAt: number | null
+  /** A dialog when the app opens instead of the strip. */
+  importante: boolean
   por: string
   /** Players who had it on screen, and who of them closed it. */
   seen: number
@@ -459,7 +461,7 @@ export function useAdminNotices() {
 }
 
 export const usePostNotice = () =>
-  useNoticeAction<{ texto: string; audiencia: Audience; startsAt?: number; hours?: number | null }>('/admin/notices')
+  useNoticeAction<{ texto: string; audiencia: Audience; startsAt?: number; hours?: number | null; importante: boolean }>('/admin/notices')
 export const useEndNotice = () => useNoticeAction<{ id: number }>('/admin/notices/end')
 export const usePostCampaign = () =>
   useAdminAction<{ titulo: string; cuerpo: string; url?: string; audiencia: Audience; sendAt?: number }>('/admin/campaigns')

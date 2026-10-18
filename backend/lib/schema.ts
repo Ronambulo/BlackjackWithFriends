@@ -569,6 +569,8 @@ export const notices = sqliteTable('notices', {
   audiencia: text('audiencia', { enum: AUDIENCES }).notNull().default('all'),
   startsAt: timestamp('starts_at').notNull(),
   expiresAt: timestamp('expires_at'),
+  // Shown as a dialog when the app opens, not as the strip on top.
+  importante: integer('importante', { mode: 'boolean' }).notNull().default(false),
   // username of the admin
   por: text('por').notNull(),
   createdAt: createdAt(),

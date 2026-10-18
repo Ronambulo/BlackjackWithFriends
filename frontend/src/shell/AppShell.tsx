@@ -20,6 +20,7 @@ import { useReportDevice } from '@/push/device'
 import { useUnread } from '@/social/useChat'
 import { CardsIcon, ChatIcon, GearIcon, GroupIcon, HomeIcon, UserIcon } from '@/ui/icons'
 import { AnnouncementBar } from './AnnouncementBar'
+import { ImportantGate } from './ImportantGate'
 import { rememberScreen } from './lastScreen'
 import styles from './AppShell.module.css'
 
@@ -94,6 +95,7 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
       {!felted && <InstallBanner />}
       {/* Never in the middle of a hand: it waits until they leave the table. */}
       <CeremonyGate paused={felted} />
+      <ImportantGate paused={felted} />
 
       <nav className={styles.tabbar} aria-label="Menú">
         {TABS.map(({ href, key, Icon }) => {

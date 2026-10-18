@@ -20,8 +20,9 @@ import {
 } from '../lib/schema.js'
 import { deviceKind } from './push.js'
 
-// What the admins tell the players: notices on top of the app, push campaigns
-// and polls, each for an audience (iPhones, people without the app installed...).
+// What the admins tell the players: notices on top of the app (the important ones in a
+// dialog when it opens), push campaigns and polls, each for an audience (iPhones,
+// people without the app installed...).
 // Devices say what they are when the app opens, which is how audiences are known.
 
 const HOUR = 60 * 60 * 1000
@@ -112,7 +113,7 @@ export async function getNotices(request: Request): Promise<Response> {
   const me = await requireUser(request)
   const now = new Date()
   const rows = db()
-    .select({ id: notices.id, texto: notices.texto, audiencia: notices.audiencia, startsAt: notices.startsAt })
+    .select({ id: notices.id, texto: notices.texto, audiencia: notices.audiencia, importante: notices.importante, startsAt: notices.startsAt })
     .from(notices)
     .leftJoin(noticeViews, and(eq(noticeViews.noticeId, notices.id), eq(noticeViews.userId, me.id)))
     .where(and(lte(notices.startsAt, now), live(now), or(isNull(noticeViews.cerrado), eq(noticeViews.cerrado, false))))
@@ -272,6 +273,7 @@ export async function getAdminNotices(request: Request): Promise<Response> {
       id: row.id,
       texto: row.texto,
       audiencia: row.audiencia,
+      importante: row.importante,
       startsAt: row.startsAt.getTime(),
       expiresAt: row.expiresAt?.getTime() ?? null,
       por: row.por,
@@ -299,7 +301,7 @@ export async function getAdminNotices(request: Request): Promise<Response> {
   return json({ now: Date.now(), notices: list, campaigns, audiences: audienceFigures() })
 }
 
-// POST /api/admin/notices { texto, audiencia?, startsAt?, hours? }: a notice, now or later.
+// POST /api/admin/notices { texto, audiencia?, startsAt?, hours?, importante? }: a notice, now or later.
 export async function postNotice(request: Request): Promise<Response> {
   const me = await requireAdmin(request)
   const body = await readBody(request)
@@ -307,7 +309,8 @@ export async function postNotice(request: Request): Promise<Response> {
   const audiencia = audienceOf(body.audiencia)
   const startsAt = startOf(body.startsAt)
   const expiresAt = endOf(body.hours, startsAt)
-  db().insert(notices).values({ texto, audiencia, startsAt, expiresAt, por: me.name }).run()
+  const importante = body.importante === true
+  db().insert(notices).values({ texto, audiencia, startsAt, expiresAt, importante, por: me.name }).run()
   logAction(me, 'notice', audiencia, texto)
   return json({ ok: true }, 201)
 }

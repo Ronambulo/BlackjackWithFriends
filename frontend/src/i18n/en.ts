@@ -240,6 +240,14 @@ export const en: Messages = {
     prizeRule: 'When the day closes, 1st place in each group where at least 2 played gets +{{amount}} coins for styles. They arrive the next day, once the table is final.',
     tableRules: 'Same cards for everyone · Fixed bet',
   },
+  important: {
+    eyebrow: 'Important',
+    notice: 'Notice',
+    ok: 'Got it',
+    prizeTitle: 'You won Daily deck #{{number}}!',
+    prizeText: 'You finished 1st in your group with {{net}}. You get +{{amount}} coins for styles.',
+    prizeShop: 'Go to the shop',
+  },
   social: {
     title: 'Social',
     global: 'This week’s global ranking',
@@ -912,6 +920,8 @@ export const en: Messages = {
     noticeUntil: 'Until',
     noticeFor: { day: '24 hours', week: '7 days', none: 'Until taken down' },
     noticeLooks: 'How it will look',
+    noticeImportant: 'Important: show it as a dialog when the app opens',
+    noticeImportantBadge: 'Dialog',
     noticePublish: 'Post notice',
     noticeReplace: 'Change the notice',
     audienceLabel: 'Who for',
