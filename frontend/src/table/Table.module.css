@@ -133,27 +133,57 @@
   border-radius: 50%;
 }
 
+/* With chips on it the spot is a button that takes the last one back */
+.spotUndo {
+  padding: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.spotUndo:active > * {
+  scale: 0.94;
+}
+
 .spotLabel {
   margin-top: 14px;
-  color: rgb(244 241 232 / 0.55);
+  color: rgb(var(--felt-ink, 244 241 232) / 0.55);
+  text-shadow: 0 1px 3px var(--felt-shadow, transparent);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
-/* A stack: the top chip, with the ones under it drawn as its shadow */
+/* A stack: the chips under the top one, each peeking out below the one above */
+.stackWrap {
+  display: grid;
+  position: relative;
+  animation: drop 0.2s ease both;
+}
+
+.stackLayer {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--chip-radius, 50%);
+  image-rendering: pixelated;
+}
+
 .stack {
   display: grid;
+  position: relative;
   place-items: center;
   width: 66px;
   height: 66px;
   border: 6px dashed #fff;
-  border-radius: 50%;
+  border-radius: var(--chip-radius, 50%);
+  font-family: var(--chip-font, inherit);
+  padding-bottom: var(--chip-lift, 0px);
+  image-rendering: pixelated;
   font-size: 15px;
-  font-weight: 800;
+  font-weight: var(--chip-weight, 800);
+  text-shadow: var(--chip-halo, none);
   font-variant-numeric: tabular-nums;
-  animation: drop 0.2s ease both;
 }
 
 @keyframes drop {
@@ -534,33 +564,75 @@
   cursor: not-allowed;
 }
 
-/* Player actions: round buttons with the name underneath */
-.actions {
+/* Player actions: Stand and Hit big at the bottom, where the thumb rests; the rarer moves smaller above */
+.extras {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
 }
 
-.action {
+.extra {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  align-content: center;
   align-items: center;
-  gap: 6px;
-  padding: 0;
+  justify-content: center;
+  gap: 1px 5px;
+  min-width: 0;
+  height: 48px;
+  padding: 0 8px;
   border: 0;
-  background: none;
+  border-radius: 12px;
+  background: #2e2118;
   color: #f4f1e8;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: inset 0 0 0 1.5px #6b5240;
   cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    opacity 0.15s ease;
 }
 
-.actionIcon {
+.extraName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* What it costs, on its own line: one more bet, or the half you lose */
+.extraCost {
+  flex: 0 0 100%;
+  color: var(--accent);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+/* Surrendering costs half the bet, so its price is red */
+.extraLoss .extraCost {
+  color: #ff8a8a;
+}
+
+.extra:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.moves {
   display: grid;
-  place-items: center;
-  width: 56px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.move {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   height: 56px;
-  border-radius: 50%;
+  border: 0;
+  border-radius: 16px;
   background: #3a2a1f;
   color: #f4f1e8;
   font-size: 17px;
@@ -568,40 +640,30 @@
   box-shadow:
     inset 0 0 0 2px #6b5240,
     0 4px 0 #120c08;
+  cursor: pointer;
   transition: transform 0.12s ease;
 }
 
-.actionGold .actionIcon {
+.moveHit {
   background: var(--accent);
   color: var(--accent-text);
   box-shadow: 0 4px 0 #a9822b;
 }
 
-.action:active:not(:disabled) .actionIcon {
+.move:active:not(:disabled),
+.extra:active:not(:disabled) {
   transform: translateY(3px);
 }
 
-.action:disabled {
-  color: rgb(244 241 232 / 0.4);
-  cursor: not-allowed;
+.move:active:not(:disabled) {
+  box-shadow: none;
 }
 
-.action:disabled .actionIcon {
+.move:disabled {
   background: #2a1e16;
   color: rgb(244 241 232 / 0.35);
   box-shadow: inset 0 0 0 2px #3c2d22;
-}
-
-.textButton {
-  align-self: center;
-  min-height: 32px;
-  padding: 0 12px;
-  border: 0;
-  background: none;
-  color: rgb(244 241 232 / 0.55);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
+  cursor: not-allowed;
 }
 
 /* Square icon button between "Change bet" and "Again" */
@@ -617,12 +679,6 @@
   color: var(--success);
   opacity: 1;
   cursor: default;
-}
-
-/* Keeps the rail the same height whether or not surrender is offered */
-.textButton[hidden] {
-  display: block;
-  visibility: hidden;
 }
 
 .net {
