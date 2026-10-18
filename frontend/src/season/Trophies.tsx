@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { currentLanguage } from '@/i18n'
 import { formatNumber } from '@/lib/format'
 import { useStats } from '@/profile/useStats'
-import { CrownIcon } from '@/ui/icons'
+import { CardsIcon, CoinsIcon, CrownIcon, PodiumIcon } from '@/ui/icons'
 import styles from './Season.module.css'
 import { formatWeek } from './useSeason'
 
@@ -22,14 +22,38 @@ export function Trophies() {
         <p className="muted">{t('profile.noTrophies')}</p>
       ) : (
         <>
-          <dl className={styles.record}>
-            {(['played', 'won', 'podiums', 'coins'] as const).map((key) => (
-              <div key={key}>
-                <dt>{t(`season.record.${key}`)}</dt>
-                <dd>{formatNumber(record[key], lang)}</dd>
+          <div className={styles.record}>
+            {/* The weeks won lead; the rest sit under them */}
+            <div className={styles.recordHero} data-won={record.won > 0}>
+              <span className={styles.medal} aria-hidden="true">
+                <CrownIcon width={30} height={24} />
+              </span>
+              <div className={styles.recordWon}>
+                <span className={styles.recordBig}>{formatNumber(record.won, lang)}</span>
+                <span className={styles.recordLabel}>{t('season.record.wonWeeks', { count: record.won })}</span>
               </div>
-            ))}
-          </dl>
+              <span className={styles.recordRate}>
+                {t('season.record.rate', { pct: Math.round((record.won / record.played) * 100) })}
+              </span>
+            </div>
+            <dl className={styles.recordRow}>
+              {(
+                [
+                  ['played', CardsIcon],
+                  ['podiums', PodiumIcon],
+                  ['coins', CoinsIcon],
+                ] as const
+              ).map(([key, Icon]) => (
+                <div key={key} data-key={key}>
+                  <dt>
+                    <Icon width={14} height={14} aria-hidden="true" />
+                    {t(`season.record.${key}`)}
+                  </dt>
+                  <dd>{formatNumber(record[key], lang)}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
           {record.trophies.length > 0 && (
             <ul className={styles.trophies}>
               {record.trophies.map((trophy) => (
