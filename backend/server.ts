@@ -25,6 +25,9 @@ scheduleBackups()
 // Closes the week on Monday 00:00 in Madrid: podiums, prizes and the ceremony (lib/season.ts).
 const { scheduleSeasons } = await import('./lib/season.js')
 scheduleSeasons()
+// Gives the daily deck's prizes at midnight in Madrid and deals the new one (lib/daily.ts).
+const { scheduleDaily } = await import('./lib/daily.js')
+scheduleDaily()
 // Achievements earned before they existed, or while the server was off (lib/achievements.ts).
 const { syncAllAchievements } = await import('./lib/achievements.js')
 syncAllAchievements()

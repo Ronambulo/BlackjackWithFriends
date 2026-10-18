@@ -11,6 +11,24 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    id: '2026-10-18-baraja',
+    date: '2026-10-18',
+    items: {
+      es: [
+        'Baraja del día (en Inicio): 10 manos con las mismas cartas para todos, 1.000 fichas aparte de la liga y una apuesta fija de 100.',
+        'Al terminar ves cómo les ha ido a tus amigos y a cada grupo, y puedes compartir tu resultado o publicarlo en el chat.',
+        'El 1º del día en cada grupo (si jugaron al menos 2) gana +50 monedas para estilos. Llegan al día siguiente, con la tabla ya cerrada.',
+        'La baraja tiene su propia mesa, que no se puede comprar, e Inicio está reordenado: tu saldo, lo de hoy y después tus amigos.',
+      ],
+      en: [
+        'Daily deck (on Home): 10 hands with the same cards for everyone, 1,000 chips apart from the league and a fixed bet of 100.',
+        'Once you finish you see how your friends and each group did, and you can share your result or post it in the chat.',
+        'The day’s winner in each group (if at least 2 played) gets +50 coins for styles. They arrive the next day, once the table is final.',
+        'The deck has a table of its own that can’t be bought, and Home is reordered: your balance, today’s things and then your friends.',
+      ],
+    },
+  },
+  {
     id: '2026-10-16-estilos',
     date: '2026-10-16',
     items: {

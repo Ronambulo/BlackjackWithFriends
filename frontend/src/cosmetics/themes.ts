@@ -722,6 +722,22 @@ export function themeStyle(equipped: Partial<Equipped> | undefined): CSSProperti
 }
 
 /** The frame's class (globals.css), null for none. */
+// The daily deck's own table: not in the shop, so it can only be the daily deck.
+const SUITS_TILE = svg(
+  96,
+  96,
+  ['♠:18:30', '♥:66:30', '♦:42:78', '♣:90:78', '♣:-6:78']
+    .map((spec) => spec.split(':'))
+    .map(([suit, x, y]) => `<text x='${x}' y='${y}' font-size='22' text-anchor='middle' fill='white' fill-opacity='0.055'>${suit}</text>`)
+    .join(''),
+)
+
+export const DAILY_FELT = felt(
+  [`${SUITS_TILE} 0 0 / 96px 96px`, lit('#1d5566', '#0e3542', '#061a22')].join(', '),
+  '#0a2a35',
+  'rgb(242 193 78)',
+) as CSSProperties
+
 export function frameClass(frame: string | null | undefined): string | null {
   if (!frame || frame === 'marco.ninguno') return null
   return `frame frame-${frame.slice('marco.'.length)}`

@@ -1,0 +1,1 @@
+ALTER TABLE `daily_runs` ADD `premio_visto` integer;

@@ -78,7 +78,7 @@ function buildSchedule(prev: HandView | null, next: HandView | null): Schedule {
   return { delays, flipAt, done }
 }
 
-function useDealTiming(hand: HandView | null) {
+export function useDealTiming(hand: HandView | null) {
   // Each new state of the hand is compared with the one before it (adjusting state during render).
   const [current, setCurrent] = useState(() => ({ hand, schedule: buildSchedule(null, hand) }))
   let { schedule } = current
@@ -128,7 +128,7 @@ function valueText(value: HandValue, final = false): string {
   return !final && value.soft && value.total < 21 ? `${value.total} / ${value.total - 10}` : String(value.total)
 }
 
-function signed(n: number, lang: ReturnType<typeof currentLanguage>): string {
+export function signed(n: number, lang: ReturnType<typeof currentLanguage>): string {
   if (n === 0) return '±0'
   return `${n > 0 ? '+' : '−'}${formatNumber(Math.abs(n), lang)}`
 }
@@ -520,44 +520,54 @@ export function FeltPrint({ compact = false, payout, rules }: { compact?: boolea
       <path d="M18 42 Q195 144 372 42" fill="none" stroke="var(--felt-print, rgb(242 193 78))" strokeOpacity="0.35" strokeWidth="1.5" />
       <text className={styles.printPayout}>
         <textPath href={`#${arcId}`} startOffset="50%" textAnchor="middle">
-          {t('play.payout')}
+          {payout ?? t('play.payout')}
         </textPath>
       </text>
       <text className={styles.printRules} x="195" y="116" textAnchor="middle">
-        {t('play.rules').toUpperCase()}
+        {(rules ?? t('play.rules')).toUpperCase()}
       </text>
     </svg>
   )
 }
 
 /** A stack of chips for an amount, the top one showing the total. */
-function BetStack({ amount, small = false }: { amount: number; small?: boolean }) {
+export function BetStack({ amount, chips, small = false }: { amount: number; chips?: ChipValue[]; small?: boolean }) {
   const lang = currentLanguage()
-  const [top, ...rest] = chipsFor(amount)
+  // `chips` is the order they went down in, the newest on top; otherwise the biggest goes on top
+  const [top, ...rest] = (chips ?? chipsFor(amount))
     .slice(0, 7)
     .map(chipColors)
   if (!top) return null
   const u = small ? 2 : 4
-  const shadow = [
-    `0 ${u}px 0 ${top.edge}`,
-    ...rest.flatMap((c, i) => [`0 ${2 * u * (i + 1)}px 0 ${c.face}`, `0 ${2 * u * (i + 1) + u}px 0 ${c.edge}`]),
-  ]
+  // Each chip's darker side, unless the style draws its chips flat (pixel art)
+  const rim = (edge: string) => `0 calc(var(--chip-rim, 1) * ${u}px) 0 ${edge}`
   const depth = 2 * u * rest.length + u
   const style: CSSProperties = {
-    background: top.face,
+    background: top.background,
     color: top.text,
     borderColor: top.stripe,
-    boxShadow: shadow.join(', '),
-    transform: `translateY(${-depth / 2}px)`,
+    boxShadow: rim(top.edge),
   }
   return (
-    <span className={`${styles.stack} ${small ? styles.stackSmall : ''}`} style={style} role="img" aria-label={formatNumber(amount, lang)}>
-      {chipLabel(amount, lang)}
+    <span className={styles.stackWrap} style={{ transform: `translateY(${-depth / 2}px)` }} role="img" aria-label={formatNumber(amount, lang)}>
+      {/* The chips underneath, whole, so a sprite's own edge shows on the side; the deepest first */}
+      {rest
+        .map((c, i) => (
+          <span
+            key={i}
+            className={styles.stackLayer}
+            style={{ background: c.background, boxShadow: rim(c.edge), translate: `0 ${2 * u * (i + 1)}px` }}
+          />
+        ))
+        .reverse()}
+      <span className={`${styles.stack} ${small ? styles.stackSmall : ''}`} style={style}>
+        {chipLabel(amount, lang)}
+      </span>
     </span>
   )
 }
 
-function FeltHand({ hand, schedule, ready }: { hand: HandView; schedule: Schedule; ready: boolean }) {
+export function FeltHand({ hand, schedule, ready }: { hand: HandView; schedule: Schedule; ready: boolean }) {
   const { t } = useTranslation()
   const lang = currentLanguage()
   const settled = hand.settlement

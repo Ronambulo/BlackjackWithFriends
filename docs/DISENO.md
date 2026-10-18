@@ -60,9 +60,11 @@ Separarlas es clave: gastar en la tienda **nunca** te baja en el ranking.
 ### Baraja del día
 - Todos los jugadores juegan **las mismas cartas** ese día (una sola semilla para todos), así que tu partida cuenta en todos tus grupos.
 - **10 manos**, saldo virtual de 1.000 aparte de la liga y la misma apuesta fija de 100 por mano, para que solo cuenten las decisiones.
-- Clasificación diaria propia en cada grupo. Premio para el 1º del día: **+500 fichas** en tu saldo, como mucho una vez al día aunque seas 1º en varios grupos, y solo en grupos donde hayan jugado la baraja al menos 2 personas.
+- Clasificación diaria propia en cada grupo. Premio para el 1º del día: **+50 monedas** para estilos (no fichas: no mueve la liga), como mucho una vez al día aunque seas 1º en varios grupos, y solo en grupos donde hayan jugado la baraja al menos 2 personas. Se dan al día siguiente, con la tabla del día ya cerrada, y la app lo cuenta en una ventana al abrirla.
 - Al terminar, puedes compartir el resultado en el grupo, estilo Wordle: `🃏 Baraja del día #42 · +650 · 🟩🟩🟥🟩⬜🟩🟥🟩🟩🟩`.
 - Hasta que acabas tus 10 manos no ves las de los demás, para que nadie te haga spoiler.
+- Si te quedas sin fichas para la apuesta antes de la 10ª mano, la baraja termina ahí.
+- ✅ **Hecha** (fase 9): `backend/lib/daily.ts` y `backend/routes/daily.ts`, en `/jugar/baraja` y con su tarjeta en Inicio. La semilla se crea al vuelo la primera vez que alguien la pide (y a las 00:00 de Madrid) y se guarda en `daily_decks`; cada mano sale de `semilla:n`, así que la mano n es igual para todos aunque cada uno la juegue distinto. Las partidas van en `daily_runs` (una por jugador y día, con su `version` y la mano en curso), aparte de `hands`, para que no cuenten en la liga, los retos ni las estadísticas. El día se cierra a medianoche (o en la primera petición del día siguiente): el 1º de cada grupo con al menos 2 partidas terminadas gana `DAILY_PRIZE` (50) monedas (los empates también), apuntadas en `daily_runs.premio`; al día siguiente la app lo enseña en una ventana hasta que el jugador la cierra (`POST /api/daily/seen`, `premio_visto`). La mesa de la baraja lleva un tapete propio (`DAILY_FELT` en `cosmetics/themes.ts`, petróleo con palos dibujados) que no está en la tienda, para que se note que no es la mesa de la liga, y en Inicio su icono es la carta por defecto con el número de la baraja en lugar del valor. Al acabar sale la línea para compartir fuera (con el enlace `/r/<código>` y su imagen) o publicar en el chat.
 
 ### Retos y logros
 - **Retos diarios**: 3 al día, iguales para todos los jugadores (p. ej. "gana 3 manos seguidas", "haz un split ganador", "gana con 5 cartas"). Cada uno da 🪙 **monedas** (no fichas) para gastar en estilos: son un logro personal, así que no cuentan para la liga ni mueven el ranking. Uno fácil (10 🪙), uno medio (20 🪙) y uno difícil (40 🪙), sacados de un catálogo de 25 según la fecha, salvo que un admin los elija. Cada reto tiene un tipo (volumen, victorias, rachas, dobles…) y los tres del día son siempre de tipos distintos; cada nivel rota en rondas barajadas, así que un reto no vuelve hasta que han salido los demás de su nivel; el progreso sale de las manos resueltas del día (hora de Madrid) y cambian a medianoche. La cantidad se ajusta en la beta.
@@ -262,12 +264,24 @@ erDiagram
   hands {
     uuid id PK
     uuid user_id
-    text modo "prueba | liga | baraja_del_dia"
+    text modo "prueba | liga"
     bigint apuesta
     jsonb ronda "estado completo con el mazo, solo servidor"
     text fase "insurance | player | settled"
     int version
     bigint neto
+  }
+  daily_runs {
+    uuid user_id PK
+    date dia PK
+    int fichas "las de la baraja, aparte de la liga"
+    text resultados "una letra por mano: w l p"
+    jsonb ronda "la mano en curso"
+    int version
+    bool terminada
+    text codigo "para /r/<codigo>"
+    int premio "monedas ganadas al cerrar el día"
+    timestamp premio_visto "cuando la app se lo enseñó"
   }
   user_cosmetics {
     uuid user_id PK,FK
@@ -372,7 +386,7 @@ Barra inferior con 5 pestañas. El botón central **Jugar** es más grande. Arri
 
 ### Pantallas
 
-**Inicio (resumen del grupo)**
+**Inicio (resumen del grupo)**: de arriba abajo, tu saldo y puesto, luego "Para hoy" (Baraja del día, encuesta si hay y retos del día) y después tus amigos de la semana.
 ```
 ┌─────────────────────────────┐
 │ Los del Curro ▾      🪙 240 │
@@ -574,7 +588,7 @@ Cada fase termina con algo usable y desplegado.
 | 6 | 🟡 Social | ✅ Chat global y por grupo con reacciones, respuestas y publicar manos y estadísticas. Falta: feed y mensajes a una persona |
 | 7 | ✅ Notificaciones push | Suscripción por dispositivo, preferencias por tipo en Ajustes y envíos (paga, adelantamientos, menciones, cierre, ceremonia y moderación) |
 | 8 | ✅ Retos y logros | Retos diarios en Inicio con aviso en la mesa al completarlos y gestión en Administración; dan monedas para estilos, nunca fichas |
-| 9 | Baraja del día | Semilla diaria, 10 manos, clasificación y compartir (con su vista previa `/r/…`) |
+| 9 | ✅ Baraja del día | Semilla diaria, 10 manos, clasificación y compartir (con su vista previa `/r/…`) |
 | 10 | ✅ Estilos y tienda | Sistema de temas para la mesa, colección, tienda y selector; en Administración, los cosméticos más usados y comprados |
 | 11 | Juice y pulido | Más sonidos (los básicos de la mesa ya están), más animaciones, vibración, accesibilidad y rendimiento |
 | 12 | Beta con amigos | Probar con un grupo real, ajustar la economía y corregir errores |
@@ -591,7 +605,7 @@ Para empezar a probar con amigos de verdad bastan las fases 1–5 (incluida la 4
 | Apuesta mínima / máxima | 10 / 500 fichas por mano |
 | Quien entra a mitad de semana | Saldo inicial + todas las pagas de los días ya transcurridos |
 | Cierre de semana | Domingo 23:59, hora de Madrid |
-| Baraja del día | 10 manos con apuesta fija; el 1º del día gana +500 fichas en la liga |
+| Baraja del día | 10 manos con apuesta fija; el 1º del día gana +50 monedas para estilos, al día siguiente |
 | Saldo | Uno por jugador, común a todos sus grupos; los grupos son clasificaciones |
 | Premios en monedas | 100 / 60 / 30 para el podio, 10 por haber jugado; solo cuenta tu mejor puesto y el grupo necesita al menos 2 personas que hayan jugado |
 | Premio de los retos diarios | Monedas para estilos, no fichas: los retos son personales y no deben dar ventaja en la liga |

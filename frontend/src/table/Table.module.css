@@ -107,7 +107,8 @@
 }
 
 .printRules {
-  fill: rgb(244 241 232 / 0.38);
+  fill: rgb(var(--felt-ink, 244 241 232) / 0.38);
+  filter: drop-shadow(0 1px 2px var(--felt-shadow, transparent));
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 2.5px;
@@ -248,7 +249,8 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  color: rgb(244 241 232 / 0.7);
+  color: rgb(var(--felt-ink, 244 241 232) / 0.7);
+  text-shadow: 0 1px 3px var(--felt-shadow, transparent);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -277,7 +279,8 @@
 }
 
 .insured {
-  color: rgb(244 241 232 / 0.75);
+  color: rgb(var(--felt-ink, 244 241 232) / 0.75);
+  text-shadow: 0 1px 3px var(--felt-shadow, transparent);
   font-size: 0.8rem;
   font-weight: 700;
   text-align: center;

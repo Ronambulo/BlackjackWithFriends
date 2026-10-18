@@ -10,6 +10,7 @@ import { eventStream, groupmates, notifyAll, notifyGroups } from '../lib/events.
 import { HttpError, json } from '../lib/http.js'
 import { watchOvertakes } from '../lib/push.js'
 import { closePastWeeks } from '../lib/season.js'
+import { closePastDays } from '../lib/daily.js'
 import { serveMedia } from '../lib/storage.js'
 import {
   createGroup,
@@ -81,6 +82,7 @@ import { deleteMessage, getChat, getUnread, postMessage, postReaction, share } f
 import { getLeague, postPay } from '../routes/league.js'
 import { getFriendsRanking, getGlobalRanking } from '../routes/ranking.js'
 import { getTable, postPlay } from '../routes/play.js'
+import { getDaily, getDailyPreview, getDailyRanking, postDaily, postDailySeen } from '../routes/daily.js'
 import { getPushKey, getPushPrefs, patchPushPrefs, postPushTest, postSubscribe, postUnsubscribe } from '../routes/push.js'
 import { getProfile, patchProfile, postAvatar } from '../routes/profile.js'
 import { getCeremony, getGroupSeasons, postCeremonySeen } from '../routes/season.js'
@@ -171,6 +173,11 @@ const routes: Routes = {
     GET: getTable,
     POST: live(race(postPlay)),
   },
+  // The daily deck: virtual chips, apart from the league; its prizes are coins (lib/daily.ts).
+  '/api/daily': { GET: getDaily, POST: postDaily },
+  '/api/daily/seen': { POST: postDailySeen },
+  '/api/daily/ranking': { GET: getDailyRanking },
+  '/api/daily/preview': { GET: getDailyPreview },
   '/api/league': { GET: getLeague },
   '/api/league/pay': { POST: live(race(postPay)) },
   '/api/ranking/friends': { GET: getFriendsRanking },
@@ -269,6 +276,8 @@ async function route(request: Request): Promise<Response> {
   if (!fn) throw new HttpError(405, 'Método no permitido')
   // A week that ended while the server was off closes before anyone's balance resets.
   if (closePastWeeks()) notifyAll()
+  // And a day of the daily deck: its winners get their coins.
+  if (closePastDays()) notifyAll()
   return fn(request)
 }
 
