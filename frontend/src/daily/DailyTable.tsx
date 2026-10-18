@@ -23,10 +23,13 @@ export function DailyTable() {
   const { data, isPending, isError, refetch } = useDaily()
   const play = useDailyPlay()
   const dealing = play.isPending && play.variables.action === 'deal'
-  const hand = dealing ? null : (data?.hand ?? null)
-  const { schedule, ready } = useDealTiming(hand)
   // Finished in this visit: the last hand stays on the felt until the player asks for the results.
-  const [finishing, setFinishing] = useState(false)
+  const [dismissed, setDismissed] = useState(false)
+  const finishing = Boolean(play.data?.done) && !dismissed
+  // While the results show, there's no felt: no hand to deal again and make heard behind them.
+  const results = Boolean(data?.done) && !finishing
+  const hand = dealing || results ? null : (data?.hand ?? null)
+  const { schedule, ready } = useDealTiming(hand)
 
   const [shownChips, setShownChips] = useState<number | null>(null)
   if (ready && data && shownChips !== data.chips) setShownChips(data.chips)
@@ -49,12 +52,12 @@ export function DailyTable() {
       </div>
     )
   }
-  if (data.done && !finishing) return <DailyResults daily={data} />
+  if (results) return <DailyResults daily={data} />
 
   const busy = play.isPending || !ready
   const fmt = (n: number) => formatNumber(n, lang)
   const send = (action: 'deal' | Action) =>
-    play.mutate({ action, version: data.version }, { onSuccess: (state) => state.done && setFinishing(true) })
+    play.mutate({ action, version: data.version }, { onSuccess: () => setDismissed(false) })
   const act = (action: Action) => {
     if (action === 'double' || action === 'split') playSound(action)
     send(action)
@@ -107,7 +110,7 @@ export function DailyTable() {
             {!hand && data.results.length === 0 && <p className={table.note}>{t('daily.intro', { total: data.total, start: fmt(data.start) })}</p>}
             <div className={table.row}>
               {data.done ? (
-                <button className={`${table.gold} ${table.wide}`} onClick={() => setFinishing(false)}>
+                <button className={`${table.gold} ${table.wide}`} onClick={() => setDismissed(true)}>
                   {t('daily.seeResults')}
                 </button>
               ) : (
