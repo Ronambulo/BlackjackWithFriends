@@ -514,7 +514,7 @@ export function netTone(net: number): 'win' | 'lose' | 'push' {
 export function FeltPrint({ compact = false, payout, rules }: { compact?: boolean; payout?: string; rules?: string }) {
   const { t } = useTranslation()
   const arcId = `arc${useId().replace(/[^\w-]/g, '')}`
-  return (
+  const print = (
     <svg className={`${styles.print} ${compact ? styles.printCompact : ''}`} viewBox="0 0 390 140" aria-hidden="true">
       <path id={arcId} d="M30 24 Q195 120 360 24" fill="none" />
       <path d="M18 42 Q195 144 372 42" fill="none" stroke="var(--felt-print, rgb(242 193 78))" strokeOpacity="0.35" strokeWidth="1.5" />
@@ -527,6 +527,24 @@ export function FeltPrint({ compact = false, payout, rules }: { compact?: boolea
         {(rules ?? t('play.rules')).toUpperCase()}
       </text>
     </svg>
+  )
+  // A felt that draws its own board (the ouija) prints the same words straight, in its letters,
+  // in the same place with or without a hand on the table
+  const board = (
+    <svg className={styles.board} viewBox="0 0 390 110" aria-hidden="true">
+      <text className={styles.boardPayout} x="195" y="52" textAnchor="middle" textLength="330" lengthAdjust="spacingAndGlyphs">
+        {(payout ?? t('play.payout')).toUpperCase()}
+      </text>
+      <text className={styles.boardRules} x="195" y="84" textAnchor="middle" textLength="300" lengthAdjust="spacing">
+        {(rules ?? t('play.rules')).toUpperCase()}
+      </text>
+    </svg>
+  )
+  return (
+    <>
+      {print}
+      {board}
+    </>
   )
 }
 

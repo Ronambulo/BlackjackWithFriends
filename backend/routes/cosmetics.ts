@@ -1,5 +1,5 @@
 import { requireUser } from '../lib/auth.js'
-import { buyCosmetic, cosmeticsFor, equipCosmetic } from '../lib/cosmetics.js'
+import { buyCosmetic, cosmeticsFor, equipCosmetic, eventId, openEventBox } from '../lib/cosmetics.js'
 import { HttpError, json } from '../lib/http.js'
 
 async function readBody(request: Request): Promise<{ id?: unknown; precio?: unknown }> {
@@ -28,4 +28,12 @@ export async function postBuy(request: Request): Promise<Response> {
   const body = await readBody(request)
   buyCosmetic(me.id, body.id, body.precio)
   return json(cosmeticsFor(me.id))
+}
+
+// POST /api/cosmetics/box { evento, precio }: the event box's price for one of its styles the player doesn't have, picked at random.
+export async function postEventBox(request: Request): Promise<Response> {
+  const me = await requireUser(request)
+  const body = (await request.json().catch(() => null)) as { evento?: unknown; precio?: unknown } | null
+  const won = openEventBox(me.id, eventId(body?.evento), body?.precio)
+  return json({ ...cosmeticsFor(me.id), won })
 }

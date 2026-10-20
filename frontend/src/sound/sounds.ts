@@ -139,7 +139,24 @@ function nextStep(kind: string, max: number): number {
   return step
 }
 
-export type Sound = 'chip' | 'card' | 'flip' | 'double' | 'split' | 'win' | 'blackjack' | 'lose' | 'push' | 'achievement'
+/** An event box's sounds: the table's own chips and sting. */
+function box(sound: BoxSound) {
+  switch (sound) {
+    case 'box-open':
+      hit('chip', { volume: 0.8 })
+      break
+    case 'box-tick':
+      hit('chip', { rate: 1.7, volume: 0.4 })
+      break
+    case 'box-reveal':
+      hit('win', { volume: 0.9, detune: false })
+      break
+  }
+}
+
+export type BoxSound = 'box-open' | 'box-tick' | 'box-reveal'
+
+export type Sound = 'chip' | 'card' | 'flip' | 'double' | 'split' | 'win' | 'blackjack' | 'lose' | 'push' | 'achievement' | BoxSound
 
 export function play(sound: Sound) {
   if (!audio()) return
@@ -157,6 +174,11 @@ export function play(sound: Sound) {
     case 'achievement':
       // The blackjack sting, a fifth up: brighter, and not mistaken for the hand's result.
       hit('blackjack', { rate: semitones(7), volume: 0.8, detune: false })
+      break
+    case 'box-open':
+    case 'box-tick':
+    case 'box-reveal':
+      box(sound)
       break
     default:
       // Stings and one-off gestures: as recorded, no detune that would put them out of tune.

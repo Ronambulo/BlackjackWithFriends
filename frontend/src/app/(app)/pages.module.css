@@ -514,3 +514,25 @@ button.listRow:disabled {
   line-height: 1.4;
   resize: vertical;
 }
+
+/* A round button at the end of the title row, with its count on the corner. */
+.titleAction {
+  position: relative;
+  margin-left: auto;
+}
+
+.dotBadge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--danger-solid);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+}

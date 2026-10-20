@@ -8,8 +8,9 @@
   border: 4px dashed;
   font-family: var(--chip-font, inherit);
   padding-bottom: var(--chip-lift, 0px);
+  padding-top: max(0px, calc(-1 * var(--chip-lift, 0px)));
   border-radius: var(--chip-radius, 50%);
-  image-rendering: pixelated;
+  image-rendering: var(--chip-render, pixelated);
   font-size: 0.7rem;
   font-weight: var(--chip-weight, 800);
   text-shadow: var(--chip-halo, none);
@@ -44,8 +45,33 @@
   margin: 0 auto;
 }
 
+/* Chips and a framed photo have a fixed size; a bigger look at one scales them with --preview-zoom */
+.preview_fichas > *,
+.preview_marco > * {
+  zoom: var(--preview-zoom, 1);
+}
+
 .preview_tapete {
+  position: relative;
+  overflow: hidden;
   background: var(--felt-bg, #0c5a34);
+}
+
+/*
+  The felt drawn on a table --felt-scale times bigger, then shrunk to fit: its art is
+  sized in pixels for a real table, and on a small swatch it would be all border.
+*/
+.feltArt {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: calc(100% / var(--felt-scale, 0.5));
+  height: calc(100% / var(--felt-scale, 0.5));
+  background: var(--felt-art, var(--felt-bg, #0c5a34));
+  transform: scale(var(--felt-scale, 0.5));
+  transform-origin: 0 0;
+  pointer-events: none;
 }
 
 .previewSpot {

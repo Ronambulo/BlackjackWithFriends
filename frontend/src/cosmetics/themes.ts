@@ -29,10 +29,21 @@ type Vars = Record<`--${string}`, string>
 const lit = (centre: string, mid: string, edge: string) =>
   `radial-gradient(ellipse 90% 60% at 50% 38%, ${centre} 0%, ${mid} 60%, ${edge} 100%)`
 
+/**
+ * A felt's colours. Its background goes on the whole screen (--felt-bg) and again over
+ * the play area alone (--felt-art), so it's sized to the table, clear of the bar and the
+ * rail; a felt can draw something else there instead. It can also turn the writing on it
+ * dark and hide what's printed on it; the defaults are set here so a preview never takes
+ * them from the felt around it.
+ */
 const felt = (background: string, bar: string, print = 'rgb(242 193 78)'): Vars => ({
   '--felt-bg': background,
   '--felt-bar': bar,
   '--felt-print': print,
+  '--felt-art': background,
+  '--felt-ink': '244 241 232',
+  '--felt-text': '#f4f1e8',
+  '--felt-printed': 'block',
 })
 
 /** An SVG drawing as a CSS image. */
@@ -125,6 +136,92 @@ function nebula() {
       bright,
   )
 }
+
+/** Bats flying over a graveyard on a 320 × 80 strip, the big ones near the middle. */
+function bats() {
+  const bat = (x: number, y: number, scale: number, opacity = 1) =>
+    `<path transform='translate(${x} ${y}) scale(${scale})' opacity='${opacity}' d='M0 -2C2 -4 3 -4 3 -2L4 -4L4.4 -1C8 -4 13 -3 17 -6C15 -2 16 1 14 3C12 1 10 2 9 4C7 2 5 3 3.5 4C2 5 1 6 0 7C-1 6 -2 5 -3.5 4C-5 3 -7 2 -9 4C-10 2 -12 1 -14 3C-16 1 -15 -2 -17 -6C-13 -3 -8 -4 -4.4 -1L-4 -4L-3 -2C-3 -4 -2 -4 0 -2Z'/>`
+  return svg(
+    320,
+    80,
+    `<g fill='#07040c'>${bat(80, 36, 1.1)}${bat(118, 22, 0.6, 0.8)}${bat(210, 30, 0.9)}${bat(246, 52, 0.5, 0.7)}${bat(150, 52, 0.45, 0.6)}${bat(190, 64, 0.35, 0.5)}${bat(60, 70, 0.4, 0.55)}${bat(270, 24, 0.4, 0.55)}</g>`,
+  )
+}
+
+/** Bare trees on a 320 × 90 strip of ground, the far ones fainter, with mist low down. */
+function bareTrees() {
+  // A trunk splitting in two four times, each branch shorter and thinner
+  const tree = (x: number, height: number, lean: number, base = 196) => {
+    let lines = ''
+    const branch = (x: number, y: number, length: number, angle: number, depth: number) => {
+      const [x2, y2] = [x + length * Math.sin(angle), y - length * Math.cos(angle)]
+      lines += `<path d='M${x.toFixed(1)} ${y.toFixed(1)}L${x2.toFixed(1)} ${y2.toFixed(1)}' stroke-width='${(depth * 0.75 + 0.35).toFixed(2)}'/>`
+      if (depth > 0) {
+        branch(x2, y2, length * 0.66, angle - 0.5 * lean, depth - 1)
+        branch(x2, y2, length * 0.72, angle + 0.36 * lean, depth - 1)
+      }
+    }
+    branch(x, base, height * 0.42, 0, 4)
+    return lines
+  }
+  return svg(
+    320,
+    90,
+    `<defs><linearGradient id='fog' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#6b4f8f' stop-opacity='0'/><stop offset='1' stop-color='#6b4f8f' stop-opacity='0.28'/></linearGradient></defs>` +
+      `<g transform='translate(0 -110)'>` +
+      `<g stroke='#120a1d' stroke-linecap='round' opacity='0.55'>${tree(52, 40, 1, 192)}${tree(104, 26, -1, 193)}${tree(214, 30, 1, 192)}${tree(262, 22, -1, 193)}</g>` +
+      `<g stroke='#0a0512' stroke-linecap='round' opacity='0.85'>${tree(22, 58, -1)}${tree(300, 64, 1)}${tree(160, 34, 1, 197)}</g>` +
+      `<rect y='150' width='320' height='50' fill='url(#fog)'/><path d='M0 194Q80 186 160 192T320 190V200H0Z' fill='#0a0512'/></g>`,
+  )
+}
+
+/**
+ * The words on an ouija board, around the middle where the table prints its rules in
+ * the board's own letters (FeltPrint): yes and no in the top corners (40 × 30 each), clear
+ * of the dealer's cards and the shoe, and the letters and numbers at the foot (200 × 96),
+ * faded so the cards read over them.
+ */
+function ouijaBoard() {
+  const ink = '#1c150e'
+  // Letters spread along an arc, each turned to face out from its middle
+  const arc = (letters: string, cx: number, cy: number, r: number, from: number, to: number, size: number) =>
+    [...letters]
+      .map((letter, i) => {
+        const angle = ((from + ((to - from) * i) / (letters.length - 1)) * Math.PI) / 180
+        const [x, y] = [(cx + r * Math.cos(angle)).toFixed(1), (cy + r * Math.sin(angle)).toFixed(1)]
+        return `<text x='${x}' y='${y}' font-size='${size}' transform='rotate(${((angle * 180) / Math.PI + 90).toFixed(1)} ${x} ${y})' text-anchor='middle'>${letter}</text>`
+      })
+      .join('')
+  const words = (content: string) => `<g fill='${ink}' font-family='Georgia,serif' font-weight='700' text-anchor='middle'>${content}</g>`
+  return {
+    // In the top corners, either side of the dealer's cards
+    yes: svg(40, 30, words(`<text x='20' y='24' font-size='20'>SÍ</text>`)),
+    no: svg(40, 30, words(`<text x='20' y='24' font-size='20'>NO</text>`)),
+    bottom: svg(
+      200,
+      96,
+      words(
+        `<g opacity='0.3'>${arc('ABCDEFGHIJKLM', 100, 110, 92, -136, -44, 12.5)}${arc('NOPQRSTUVWXYZ', 100, 110, 72, -139, -41, 12)}` +
+          `<text x='100' y='92' font-size='12' textLength='118' lengthAdjust='spacing'>1234567890</text></g>`,
+      ),
+    ),
+  }
+}
+
+/** A rectangle's outline `inset` px in from the edges, `width` px thick, as four background layers. */
+const outline = (colour: string, inset: number, width: number) => {
+  const line = `linear-gradient(${colour}, ${colour})`
+  const across = `calc(100% - ${2 * inset}px) ${width}px no-repeat`
+  const down = `${width}px calc(100% - ${2 * inset}px) no-repeat`
+  return [
+    `${line} ${inset}px ${inset}px / ${across}`,
+    `${line} ${inset}px calc(100% - ${inset}px) / ${across}`,
+    `${line} ${inset}px ${inset}px / ${down}`,
+    `${line} calc(100% - ${inset}px) ${inset}px / ${down}`,
+  ]
+}
+
+const CRYPT_SKY = 'radial-gradient(ellipse 90% 75% at 50% 40%, #3d2457 0%, #1c0f2c 70%, #0b0612 100%)'
 
 const TAPETES: Record<string, Vars> = {
   'tapete.verde': felt(lit('#14834c', '#0c5a34', '#073a22'), '#0b5231'),
@@ -254,6 +351,33 @@ const TAPETES: Record<string, Vars> = {
     ),
     '--felt-shadow': 'rgb(70 25 30 / 0.7)',
   },
+  // A graveyard at night: bats over bare trees, and mist on the ground.
+  'tapete.cripta': {
+    ...felt(CRYPT_SKY, '#120a1d', 'rgb(255 170 70)'),
+    '--felt-art': [
+      `${bats()} center 3% / min(100%, 640px) auto no-repeat`,
+      `${bareTrees()} left bottom / auto min(30%, 170px) repeat-x`,
+      CRYPT_SKY,
+    ].join(', '),
+  },
+  // An ouija board on old cream paper. Its own words take the place of what's
+  // printed on the felt, so that goes, and the writing on it turns dark.
+  'tapete.ouija': {
+    ...felt('#ece2c8', '#2a1d10', 'rgb(28 21 14)'),
+    '--felt-art': [
+      `${ouijaBoard().yes} left 36px top 56px / 40px 30px no-repeat`,
+      `${ouijaBoard().no} right 36px top 56px / 40px 30px no-repeat`,
+      `${ouijaBoard().bottom} center bottom 9% / auto min(19%, 140px) no-repeat`,
+      ...outline('#1c150e', 10, 5),
+      ...outline('#1c150e', 18, 1),
+      'radial-gradient(ellipse 75% 75% at 50% 50%, transparent 60%, rgb(90 61 28 / 0.45))',
+      '#ece2c8',
+    ].join(', '),
+    '--felt-ink': '28 21 14',
+    '--felt-text': '#1c150e',
+    '--felt-printed': 'none',
+    '--felt-board': 'block',
+  },
 }
 
 // ── Card backs ──────────────────────────────────────────────────────────────
@@ -265,7 +389,11 @@ const cross = (colour: string) =>
     colour,
   ].join(', ')
 
-const back = (background: string, edge = '#fbfaf6'): Vars => ({ '--card-back': background, '--card-back-edge': edge })
+const back = (background: string, edge = '#fbfaf6'): Vars => ({
+  '--card-back': background,
+  '--card-back-edge': edge,
+  '--card-under': 'auto',
+})
 
 const diamonds = (a: string, b: string) =>
   [
@@ -275,6 +403,54 @@ const diamonds = (a: string, b: string) =>
     `linear-gradient(45deg, ${b} 25%, transparent 25%) 0 0 / 12px 12px`,
     a,
   ].join(', ')
+
+/** Fine white grain over a whole 50 × 70 back, like an old photo. */
+const GRAIN =
+  `<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.6' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.22 0 0 0 0'/></filter>`
+const GRAIN_RECT = `<rect width='50' height='70' filter='url(#n)'/>`
+
+/** A pale face peeping round a dark doorway, in murky teal. */
+const PEEKER = svg(
+  50,
+  70,
+  `<defs>${GRAIN}<linearGradient id='w' x1='0' y1='0' x2='.3' y2='1'><stop offset='0' stop-color='#1e4855'/><stop offset='1' stop-color='#0d2730'/></linearGradient><radialGradient id='fc' cx='.6' cy='.4' r='.7'><stop offset='0' stop-color='#a7c7cf'/><stop offset='.55' stop-color='#5f8a96'/><stop offset='1' stop-color='#24434d'/></radialGradient><radialGradient id='ho'><stop offset='.5' stop-color='#010405'/><stop offset='1' stop-color='#010405' stop-opacity='0'/></radialGradient><filter id='s'><feGaussianBlur stdDeviation='0.45'/></filter><radialGradient id='vg' cx='.45' cy='.4' r='.8'><stop offset='.45' stop-color='#000' stop-opacity='0'/><stop offset='1' stop-color='#000' stop-opacity='.75'/></radialGradient></defs>` +
+    `<rect width='50' height='70' fill='url(#w)'/>` +
+    `<path d='M50 0H35C33 5 33.5 10 35 13C35.4 14.2 34.8 15.2 33.6 15.6H21C14.5 15.6 10.6 20 10.6 25.2C10.6 30.4 14.5 34.6 21 34.6H33.6C34.8 35 35.4 36 35 37.2C33 42 34 48 36 54C37 58 37.5 62 37 70H50Z' fill='#030809' filter='url(#s)'/>` +
+    `<g filter='url(#s)'><ellipse cx='22.5' cy='25' rx='9' ry='7.8' transform='rotate(-12 22.5 25)' fill='url(#fc)'/><ellipse cx='19.6' cy='21.4' rx='3.4' ry='3.1' fill='url(#ho)'/><ellipse cx='20.4' cy='29' rx='3.2' ry='2.8' fill='url(#ho)'/><ellipse cx='27' cy='24.6' rx='2.4' ry='4' fill='#c3dde3' opacity='.35'/></g>` +
+    `<rect y='56' width='50' height='14' fill='#0a1f27'/><path d='M0 56.2H38' stroke='#3d6c79' stroke-width='.5' opacity='.6' filter='url(#s)'/>` +
+    `<g filter='url(#s)' opacity='.5'><rect x='9' y='61' width='14' height='3' fill='#5d6d34'/><rect x='12' y='60' width='9' height='1.2' fill='#8a9a4a'/><ellipse cx='27' cy='62.5' rx='2.2' ry='2.6' fill='#8ea23a'/><path d='M29 60L44 64' stroke='#4b6670' stroke-width='1.6'/></g>` +
+    `<rect width='50' height='70' fill='url(#vg)'/>` +
+    GRAIN_RECT,
+)
+
+/** A tall faceless man in a suit holding a little girl's hand in a misty wood, in black and white. */
+const SLENDER = svg(
+  50,
+  70,
+  `<defs>${GRAIN}<linearGradient id='sk' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#26292c'/><stop offset='.55' stop-color='#686c71'/><stop offset='.7' stop-color='#8a8e92'/><stop offset='1' stop-color='#2a2c2e'/></linearGradient><filter id='bl'><feGaussianBlur stdDeviation='0.9'/></filter><filter id='b2'><feGaussianBlur stdDeviation='0.22'/></filter><radialGradient id='vg' cx='.5' cy='.5' r='.75'><stop offset='.45' stop-color='#000' stop-opacity='0'/><stop offset='1' stop-color='#000' stop-opacity='.85'/></radialGradient></defs>` +
+    `<rect width='50' height='70' fill='url(#sk)'/>` +
+    `<g filter='url(#bl)' fill='#17191b' opacity='.75'><rect x='3' width='2.4' height='70'/><rect x='9.5' width='1' height='70' opacity='.5'/><rect x='39.5' width='1.4' height='70' opacity='.55'/><rect x='45.5' width='2.8' height='70'/></g>` +
+    `<g filter='url(#bl)' stroke='#17191b' stroke-width='.7' fill='none' opacity='.7'><path d='M5 12L14 4M5 22L11 19M46 14L37 6M46 26L41 22M40 18L34 14'/></g>` +
+    `<ellipse cx='25' cy='49' rx='32' ry='6.5' fill='#b1b5b8' opacity='.45' filter='url(#bl)'/><path d='M17 70L23 51H30L37 70Z' fill='#7d8185' opacity='.35' filter='url(#bl)'/>` +
+    `<g filter='url(#bl)' fill='#141617'><circle cx='46' cy='58' r='4'/><circle cx='43' cy='62' r='3.4'/><circle cx='48' cy='64' r='4'/><circle cx='4' cy='60' r='3'/></g>` +
+    `<g filter='url(#b2)'><path d='M17.6 34H20.6L20.3 64H17.8ZM21.4 34H24.4L24.2 64H21.7Z' fill='#0e0f10'/><path d='M16.4 15.6Q21 14.2 25.6 15.6L24.8 35H17.2Z' fill='#121314'/><path d='M20.4 15.2L21 19L21.6 15.2Z' fill='#9a9c9e'/><path d='M20.85 15.8H21.15L21.3 19L21 19.6L20.7 19Z' fill='#0a0a0a'/>` +
+    `<path d='M16.4 16Q15.2 30 15.4 45' stroke='#121314' stroke-width='2' stroke-linecap='round' fill='none'/><ellipse cx='15.5' cy='46.2' rx='1' ry='1.6' fill='#b9bbbc'/><path d='M25.6 16Q27.8 34 29.2 52' stroke='#121314' stroke-width='2' stroke-linecap='round' fill='none'/><ellipse cx='29.5' cy='53.5' rx='1' ry='1.4' fill='#b9bbbc'/>` +
+    `<rect x='20.3' y='13' width='1.8' height='2.6' fill='#a9abad'/><ellipse cx='21.2' cy='10.6' rx='2.7' ry='3.4' fill='#c4c6c7'/><ellipse cx='22.2' cy='11.2' rx='1.4' ry='2.6' fill='#8f9294' opacity='.5'/>` +
+    `<path d='M30.1 45.2C30 42.4 31.2 41.4 32.4 41.4C33.8 41.4 34.8 42.4 34.7 45.2L35 50H29.8Z' fill='#1e1a18'/><ellipse cx='32.4' cy='44.1' rx='1.25' ry='1.65' fill='#b7b4af'/><path d='M30.4 47.6H34.4L35.6 60.4H29.2Z' fill='#2a2b2e'/><rect x='29.2' y='59.8' width='6.4' height='.8' fill='#8d8f91'/><path d='M30.6 48.4Q30 51 29.9 53.4' stroke='#2a2b2e' stroke-width='1' fill='none' stroke-linecap='round'/><path d='M31.4 60.6V63.4M33.4 60.6V63.4' stroke='#a7a7a5' stroke-width='.7'/><path d='M30.8 63.4H32M32.8 63.4H34' stroke='#111' stroke-width='.8'/></g>` +
+    `<rect width='50' height='70' fill='url(#vg)'/>` +
+    GRAIN_RECT,
+)
+
+/** Two yellow cat's eyes with slit pupils in the dark, flat like a cut-out. */
+function catEyes() {
+  const outline = 'M6 28.4Q14.4 26 22.6 34.2Q12 39.6 6 28.4Z'
+  const eye = `<path d='${outline}' fill='#f7b416'/><path d='M16.2 26.6Q18.3 32.6 16.2 38.6Q14.1 32.6 16.2 26.6Z' fill='#0b0b0b' clip-path='url(#ce)'/>`
+  return svg(
+    50,
+    70,
+    `<defs><clipPath id='ce'><path d='${outline}'/></clipPath></defs><rect width='50' height='70' fill='#0e0e0f'/>${eye}<g transform='translate(50 0) scale(-1 1)'>${eye}</g>`,
+  )
+}
 
 const DORSOS: Record<string, Vars> = {
   'dorso.rojo': back(cross('#8e1d2c')),
@@ -324,7 +500,12 @@ const DORSOS: Record<string, Vars> = {
     ),
     '--card-back-origin': 'border-box',
     '--card-back-blur': 'blur(3px) saturate(1.4)',
+    // Through the glass the up card would show blurred, so this back tucks under it
+    '--card-under': '-1',
   },
+  'dorso.asoma': back(`${PEEKER} center / 100% 100% no-repeat, #0a1f27`, '#0f2d36'),
+  'dorso.slender': back(`${SLENDER} center / 100% 100% no-repeat, #141516`, '#d8d9da'),
+  'dorso.gato': back(`${catEyes()} center / 100% 100% no-repeat, #0e0e0f`, '#222'),
 }
 
 // ── Card faces and shapes ───────────────────────────────────────────────────
@@ -350,6 +531,65 @@ function blossoms() {
     `<circle cx='49' cy='3.4' r='1.3' fill='#f48fb1'/>` +
     `<ellipse cx='30' cy='12' rx='1.1' ry='0.7' fill='#f9b3c9' transform='rotate(30 30 12)'/>`
   return svg(50, 70, `${branch}<g transform='rotate(180 25 35)'>${branch}</g>`)
+}
+
+/**
+ * Old paper slashed five times from the edges in, on a 50 × 70 card: each gash
+ * dark inside, with a notch cut out of the edge where it starts, a raised lip and
+ * blood dripping under it, and more blood running down from the top.
+ */
+function slashedPaper() {
+  const red = '#8e0a14'
+  const dark = '#5e0309'
+  const f = (n: number) => n.toFixed(2)
+  const p = ([x, y]: readonly [number, number]) => `${f(x)} ${f(y)}`
+  // Where each cut comes in from the edge, where its tip ends and how far it gapes
+  const slashes = [
+    [0, 37.6, 9.8, 35.8, 1.5],
+    [50, 21.8, 37.75, 26.7, 1.25],
+    [50, 39.4, 43, 40.4, 0.9],
+    [0, 55.2, 7, 54.4, 0.85],
+    [19.4, 70, 23.3, 64.1, 0.9],
+  ]
+  let notches = ''
+  let cuts = ''
+  for (const [x1, y1, x2, y2, w] of slashes) {
+    const [dx, dy] = [x2 - x1, y2 - y1]
+    const length = Math.hypot(dx, dy)
+    // Square to the cut, on its upper side
+    let [nx, ny] = [-dy / length, dx / length]
+    if (ny > 0) [nx, ny] = [-nx, -ny]
+    const at = (t: number, off: number) => [x1 + dx * t + nx * off, y1 + dy * t + ny * off] as const
+    const [a, b, c1, c2] = [at(-0.05, w), at(-0.05, -w * 0.9), at(0.45, w * 0.95), at(0.5, -w * 0.75)]
+    const gash = `M${p(a)}Q${p(c1)} ${x2} ${y2}Q${p(c2)} ${p(b)}Z`
+    notches += `<path d='M${p(at(-0.1, w * 0.75))}L${p(at(0.12, 0))}L${p(at(-0.1, -w * 0.7))}Z'/>`
+    const drips = [[0.15, 3.2], [0.42, 1.8]]
+      .map(([t, h]) => {
+        const [x, y] = at(t, -w * 0.72)
+        return `<path d='M${f(x - 0.5)} ${f(y)}C${f(x - 0.5)} ${f(y + h * 0.6)} ${f(x - 0.38)} ${f(y + h)} ${f(x)} ${f(y + h)}C${f(x + 0.38)} ${f(y + h)} ${f(x + 0.5)} ${f(y + h * 0.6)} ${f(x + 0.5)} ${f(y)}Z' fill='${red}'/>`
+      })
+      .join('')
+    cuts +=
+      `<path d='${gash}' fill='${red}' opacity='.28' stroke='${red}' stroke-width='2' stroke-linejoin='round'/>` +
+      `<path d='M${p(b)}Q${p(c2)} ${x2} ${y2}' fill='none' stroke='${red}' stroke-width='1.2' stroke-linecap='round'/>` +
+      drips +
+      `<path d='${gash}' fill='url(#in)'/>` +
+      `<path d='M${p(at(0.05, 0))}L${p(at(0.7, 0))}' stroke='#000' stroke-width='${f(w * 0.55)}' stroke-linecap='round' opacity='.7'/>` +
+      `<path d='M${p(a)}Q${p(c1)} ${x2} ${y2}' fill='none' stroke='#fff7e4' stroke-width='.45'/>` +
+      `<path d='M${x2} ${y2}L${p(at(1.22, 0))}' stroke='${dark}' stroke-width='.25' stroke-linecap='round' opacity='.8'/>`
+  }
+  return svg(
+    50,
+    70,
+    `<defs><radialGradient id='g' cx='.5' cy='.45' r='.75'><stop offset='.5' stop-color='#efe6d4'/><stop offset='1' stop-color='#c9b591'/></radialGradient>` +
+      `<linearGradient id='in' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#160103'/><stop offset='.6' stop-color='#3a0207'/><stop offset='1' stop-color='#7a0711'/></linearGradient>` +
+      `<mask id='m'><rect x='-2' y='-2' width='54' height='74' fill='#fff'/><g fill='#000'>${notches}</g></mask></defs>` +
+      `<g mask='url(#m)'><rect width='50' height='70' fill='url(#g)'/>` +
+      `<ellipse cx='36' cy='50' rx='7' ry='4' fill='#a8865a' opacity='.2'/><ellipse cx='13' cy='22' rx='5' ry='7' fill='#a8865a' opacity='.14'/>` +
+      `<path d='M0 0H50V3C48.5 3 48 3.6 48 7.5C48 9.6 46.2 9.6 46.2 7.5C46.2 4 45 3.4 41 3.4C38.4 3.4 37.8 4.2 37.8 11C37.8 13.4 35.8 13.4 35.8 11C35.8 4.4 34.6 3.6 31 3.6C28 3.6 27.4 4.4 27.4 6.8C27.4 8.4 25.8 8.4 25.8 6.8C25.8 4 24 3.2 20.5 3.2C18 3.2 17.4 4 17.4 15C17.4 17.6 15.3 17.6 15.3 15C15.3 4.4 14.4 3 11 3H0Z' fill='${red}'/>` +
+      `<rect width='50' height='1.4' fill='${dark}'/><g fill='${red}'><circle cx='9' cy='47' r='1.3'/><circle cx='11.2' cy='45.6' r='.55'/></g>` +
+      `${cuts}</g>`,
+  )
 }
 
 /*
@@ -433,6 +673,13 @@ const CARTAS: Record<string, Vars> = {
     '--card-red': '#9a1222',
     '--card-frame': 'inset 0 0 0 2px rgb(255 255 255 / 0.5), inset 0 0 0 3px rgb(0 0 0 / 0.25)',
   },
+  // Slashed, with blood running down from the top: the corners sit a little lower, clear of it.
+  'cartas.acuchilladas': {
+    '--card-face': `${slashedPaper()} center / 100% 100% no-repeat, #efe6d4`,
+    '--card-ink': '#1d1112',
+    '--card-red': '#9b0d17',
+    '--card-corner-y': '10%',
+  },
 }
 
 // ── Chips ───────────────────────────────────────────────────────────────────
@@ -447,12 +694,33 @@ type Chip = [face: string, edge: string, text: string, stripe: string, art?: str
  * The numbers' font and weight, how far they sit above the middle (as bottom padding, so half of it)
  * and whether a stack shows each chip's darker side (1) or only the chips themselves (0, for flat sprites).
  */
-type ChipText = { font: string; weight: string; lift: string; rim?: string; radius?: string; halo?: string }
+/** `drawn`: the chip is all drawing, with no face or rim, so out of reach it stays drawn, greyed. */
+type ChipText = { font: string; weight: string; lift: string; rim?: string; radius?: string; halo?: string; drawn?: boolean }
 
-function chips(set: Record<ChipValue, Chip>, text: ChipText = { font: 'inherit', weight: '800', lift: '0px' }): Vars {
-  const vars: Vars = { '--chip-font': text.font, '--chip-weight': text.weight, '--chip-lift': text.lift, '--chip-rim': text.rim ?? '1', '--chip-radius': text.radius ?? '50%', '--chip-halo': text.halo ?? 'none' }
+/*
+  The app's own font, written out: 'inherit' in a custom property would take the
+  font of the chip style equipped around a preview (the pixel one's, say)
+*/
+const APP_FONT = "var(--font-sans), system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+
+function chips(set: Record<ChipValue, Chip>, text: ChipText = { font: APP_FONT, weight: '800', lift: '0px' }): Vars {
+  const drawn = text.drawn ?? false
+  const vars: Vars = {
+    '--chip-font': text.font,
+    '--chip-weight': text.weight,
+    '--chip-lift': text.lift,
+    '--chip-rim': text.rim ?? '1',
+    '--chip-radius': text.radius ?? '50%',
+    '--chip-halo': text.halo ?? 'none',
+    '--chip-off-border': drawn ? 'transparent' : 'rgb(255 255 255 / 0.3)',
+    '--chip-off-look': drawn ? 'grayscale(1) brightness(0.55)' : 'none',
+    // Drawings are smoothed; only the pixel art keeps its hard edges
+    '--chip-render': drawn ? 'auto' : 'pixelated',
+  }
   for (const value of CHIP_VALUES) {
     const [face, edge, text, stripe, art = 'none'] = set[value]
+    vars[`--chip${value}-off`] = drawn ? `${art} border-box center / 100% 100% no-repeat` : '#2a1e16'
+    vars[`--chip${value}-off-ink`] = drawn ? text : 'rgb(242 193 78 / 0.4)'
     vars[`--chip${value}-face`] = face
     vars[`--chip${value}-edge`] = edge
     vars[`--chip${value}-text`] = text
@@ -584,7 +852,7 @@ function gemChip([deep, dark, mid, light, text]: Gem): Chip {
 
 /** Gems stand on their own drawn side, with no round chip, stripe or painted rim under them. */
 const GEM_TEXT: ChipText = {
-  font: 'inherit',
+  font: APP_FONT,
   weight: '900',
   lift: '2px',
   rim: '0',
@@ -592,6 +860,39 @@ const GEM_TEXT: ChipText = {
   // A white outline round the black number, so it reads on the dark facets too
   halo: '0 0 1px #fff, 0 0 2px #fff, 0 0 3px rgb(255 255 255 / 0.9)',
 }
+
+/** Something drawn on a 72 × 72 see-through chip, round its middle, with no round chip, stripe or rim under it. */
+const drawnChip = (text: string, art: string): Chip => ['transparent', 'transparent', text, 'transparent', svg(72, 72, `<g transform='translate(36 36)'>${art}</g>`)]
+
+const DRAWN_TEXT = { rim: '0', radius: '0', drawn: true }
+
+/** A jack-o'-lantern without a mouth: the number glows where it would be. */
+function pumpkinChip(skin: string, dark: string, eyes: string): string {
+  return (
+    `<defs><radialGradient id='s' cx='.4' cy='.35' r='.8'><stop offset='0' stop-color='#fff' stop-opacity='.35'/><stop offset='.4' stop-color='${skin}' stop-opacity='0'/></radialGradient></defs>` +
+    `<path d='M-2 -24C-3 -30 0 -33 4 -33L5 -30C2 -30 2 -27 2 -24Z' fill='#5a4320'/><path d='M3 -27C9 -33 16 -31 17 -27C11 -24 7 -25 3 -27Z' fill='#4f8f37'/>` +
+    [-17, 17, -8, 8, 0].map((x, k) => `<ellipse cx='${x}' cy='3' rx='${k < 2 ? 14 : k < 4 ? 15 : 13}' ry='25' fill='${skin}' stroke='${dark}' stroke-width='1.6'/>`).join('') +
+    `<ellipse cy='3' rx='31' ry='26' fill='url(#s)'/>` +
+    `<path d='${eyes}' transform='translate(0 -3)' fill='${skin === '#2a2530' ? '#9dff6a' : '#ffd23a'}' stroke='${dark}' stroke-width='.8'/>`
+  )
+}
+
+/** The twisted ends of a wrapped sweet, on the left. */
+const twist = (colour: string, dark: string) =>
+  `<path d='M-17 -3L-33 -14Q-29 0 -33 14L-17 3Z' fill='${colour}' stroke='${dark}' stroke-width='1.2' stroke-linejoin='round'/><path d='M-30 -9L-21 -1M-30 9L-21 1M-31 0H-20' stroke='${dark}' stroke-width='.8' opacity='.6'/>`
+const wrapped = (colour: string, dark: string) => `${twist(colour, dark)}<g transform='scale(-1 1)'>${twist(colour, dark)}</g>`
+
+function lollipopSpiral() {
+  let d = ''
+  for (let t = 0; t <= 20; t += 0.25) d += `${d ? 'L' : 'M'}${(1.1 * t * Math.cos(t)).toFixed(1)} ${(1.1 * t * Math.sin(t)).toFixed(1)}`
+  return d
+}
+
+const CANDY_CORN = 'M0 -31C6 -31 27 15 27 22C27 31 -27 31 -27 22C-27 15 -6 -31 0 -31Z'
+
+/** A little grave on its mound of grass. */
+const grave = (stone: string) =>
+  `<ellipse cy='29' rx='27' ry='5.5' fill='#3b2a1a'/><path d='M-22 27l1.5-5 1 5M-15 28l1-4 1.4 4M12 28l1.2-5 1 5M19 27l1.4-4 .8 4M-4 30l1-3.6 1 3.6' stroke='#4f8f37' stroke-width='1.4' fill='#4f8f37' stroke-linejoin='round'/>${stone}`
 
 const FICHAS: Record<string, Vars> = {
   'fichas.casino': chips(casinoChips({
@@ -705,6 +1006,45 @@ const FICHAS: Record<string, Vars> = {
       1000: spriteChip('fichas-pixel/1000', '#f2c255', '#bd983c', '#445457'),
     },
     { font: 'var(--font-pixel), monospace', weight: '400', lift: '2px', rim: '0' },
+  ),
+  // Jack-o'-lanterns in seven skins; the number glows where the mouth would be.
+  'fichas.calabaza': chips(
+    {
+      1: drawnChip('#ffd23a', pumpkinChip('#ff8a1f', '#b9530a', 'M-9 -4L-4 -9L1 -4ZM9 -4L4 -9L-1 -4Z')),
+      5: drawnChip('#ffd23a', pumpkinChip('#8fbf3a', '#4f7a1c', 'M-10 -9L-3 -4L-9 -2ZM10 -9L3 -4L9 -2Z')),
+      10: drawnChip('#ffd23a', pumpkinChip('#efe7d6', '#b3a68a', 'M-8 -8A3 3 0 1 0 -8 -2A3 3 0 1 0 -8 -8ZM8 -8A3 3 0 1 0 8 -2A3 3 0 1 0 8 -8Z')),
+      25: drawnChip('#ffd23a', pumpkinChip('#9b5ad6', '#5a2a8a', 'M-11 -8L-2 -5L-6 -1ZM11 -8L2 -5L6 -1Z')),
+      100: drawnChip('#ffd23a', pumpkinChip('#ff5a1f', '#a8230a', 'M-10 -4L-6 -10L-2 -4ZM10 -4L6 -10L2 -4Z')),
+      500: drawnChip('#9dff6a', pumpkinChip('#2a2530', '#0d0b10', 'M-10 -5Q-6 -10 -2 -5ZM10 -5Q6 -10 2 -5Z')),
+      1000: drawnChip('#ffd23a', pumpkinChip('#f2c255', '#a8801c', 'M-11 -3L-6 -11L-1 -3ZM11 -3L6 -11L1 -3Z')),
+    },
+    { ...DRAWN_TEXT, font: APP_FONT, weight: '900', lift: '-0.75em', halo: '0 0 1px #3a1400, 0 0 2px #3a1400, 0 0 6px rgb(255 160 40 / 0.9)' },
+  ),
+  // A sweet for each value: candy corn, a wrapped sweet, a lollipop, a gummy, a toffee, a marshmallow ghost and a gold bonbon.
+  'fichas.caramelos': chips(
+    {
+      1: drawnChip('#a8500a', `<defs><clipPath id='c'><path d='${CANDY_CORN}'/></clipPath></defs><g clip-path='url(#c)'><rect x='-30' y='-34' width='60' height='70' fill='#ffd23a'/><rect x='-30' y='-34' width='60' height='48' fill='#ff8a1a'/><rect x='-30' y='-34' width='60' height='24' fill='#fff6e0'/></g><path d='${CANDY_CORN}' fill='none' stroke='#a8500a' stroke-width='1.6'/><path d='M-5 -22Q-9 -10 -13 0' stroke='#fff' stroke-width='2' opacity='.6' fill='none' stroke-linecap='round'/>`),
+      5: drawnChip('#e83a5a', `${wrapped('#ff6d86', '#9b1a33')}<circle r='19' fill='#e83a5a' stroke='#9b1a33' stroke-width='1.4'/>${[0, 60, 120, 180, 240, 300].map((a) => `<path d='M0 0Q10 -6 16 -10' stroke='#fff' stroke-width='3' fill='none' transform='rotate(${a})'/>`).join('')}<circle r='10' fill='#fff' stroke='#9b1a33' stroke-width='1.2'/>`),
+      10: drawnChip('#5a2a8a', `<rect x='-1.8' y='10' width='3.6' height='24' rx='1.5' fill='#efe3c4' stroke='#b3a68a'/><circle r='23' fill='#9b5ad6' stroke='#4a1f78' stroke-width='1.6'/><path d='${lollipopSpiral()}' stroke='#1c1c22' stroke-width='3.4' fill='none' stroke-linecap='round'/><circle r='10.5' fill='#fff' stroke='#4a1f78' stroke-width='1.2'/><path d='M-14 -14Q-8 -19 -2 -20' stroke='#fff' stroke-width='2' opacity='.5' fill='none' stroke-linecap='round'/>`),
+      25: drawnChip('#136b34', `<path d='M-25 22C-27 -8 -13 -27 0 -27C13 -27 27 -8 25 22Q0 29 -25 22Z' fill='#28b45e' stroke='#136b34' stroke-width='1.6'/><path d='M-14 -16Q-8 -22 -1 -23' stroke='#c9ffd9' stroke-width='3' opacity='.6' fill='none' stroke-linecap='round'/>${[[-16, 4], [-10, -10], [12, -12], [17, 6], [-4, 18], [8, 16], [-18, 16], [0, -20], [20, -2]].map(([x, y]) => `<rect x='${x}' y='${y}' width='1.6' height='1.6' fill='#fff' opacity='.85' transform='rotate(30 ${x} ${y})'/>`).join('')}`),
+      100: drawnChip('#1c1c22', `${wrapped('#ffa04a', '#8a3c06')}<rect x='-21' y='-14' width='42' height='28' rx='6' fill='#ff7a1a' stroke='#8a3c06' stroke-width='1.4'/>${[-12, 0, 12].map((x) => `<path d='M${x - 4} -14L${x + 4} 14' stroke='#1c1c22' stroke-width='3' opacity='.9'/>`).join('')}<rect x='-15' y='-7.5' width='30' height='15' rx='3' fill='#fff6e0' stroke='#8a3c06'/>`),
+      500: drawnChip('#5a2a8a', `<g transform='translate(0 -5)'><path d='M-21 27V-5C-21 -20 -11 -29 0 -29C11 -29 21 -20 21 -5V27L14 21L7 27L0 21L-7 27L-14 21Z' fill='#f8f4ec' stroke='#a79e90' stroke-width='1.6' stroke-linejoin='round'/><ellipse cx='-7' cy='-13' rx='2.6' ry='3.6' fill='#1c1c22'/><ellipse cx='7' cy='-13' rx='2.6' ry='3.6' fill='#1c1c22'/><ellipse cx='-12' cy='-5' rx='3' ry='1.6' fill='#ffb3c8' opacity='.7'/><ellipse cx='12' cy='-5' rx='3' ry='1.6' fill='#ffb3c8' opacity='.7'/></g>`),
+      1000: drawnChip('#5a3a06', `<defs><radialGradient id='au' cx='.35' cy='.3' r='.8'><stop offset='0' stop-color='#fff3b8'/><stop offset='.45' stop-color='#f2c255'/><stop offset='1' stop-color='#9a6d12'/></radialGradient></defs>${wrapped('#f2c255', '#7a5208')}<circle r='20' fill='url(#au)' stroke='#7a5208' stroke-width='1.4'/><path d='M-12 -8L-6 -4L-10 2M8 -12L4 -6L10 -2M-4 12L2 8L6 14' stroke='#7a5208' stroke-width='.7' fill='none' opacity='.5'/>`),
+    },
+    { ...DRAWN_TEXT, font: APP_FONT, weight: '900', lift: '0px', halo: GEM_TEXT.halo },
+  ),
+  // A gravestone for each value, on its mound of grass, the number carved low on it.
+  'fichas.lapidas': chips(
+    {
+      1: drawnChip('#3e4247', grave(`<path d='M-19 27V-9C-19 -25 19 -25 19 -9V27Z' fill='#8d9196' stroke='#3e4247' stroke-width='1.6'/><path d='M-14 -12C-14 -19 -6 -21 0 -21' stroke='#c9ccd0' stroke-width='2' fill='none' opacity='.6' stroke-linecap='round'/><text y='-12' font-family='Georgia,serif' font-size='6.5' font-weight='700' text-anchor='middle' fill='#3e4247' letter-spacing='1'>RIP</text>`)),
+      5: drawnChip('#3e4247', grave(`<path d='M-7.5 -31H7.5V-17H20V-4H7.5V27H-7.5V-4H-20V-17H-7.5Z' fill='#9a9ea3' stroke='#3e4247' stroke-width='1.6' stroke-linejoin='round'/><path d='M-4.5 -28V-19' stroke='#d2d5d8' stroke-width='1.6' opacity='.6' stroke-linecap='round'/>`)),
+      10: drawnChip('#36402f', grave(`<path d='M-17 27V-6C-17 -14 -9 -24 0 -31C9 -24 17 -14 17 -6V27Z' fill='#7d8a76' stroke='#36402f' stroke-width='1.6'/><g fill='#4f8f37' opacity='.85'><ellipse cx='-12' cy='20' rx='6' ry='3.4'/><ellipse cx='10' cy='-9' rx='4' ry='2'/><ellipse cx='13' cy='22' rx='4' ry='2.6'/></g>`)),
+      25: drawnChip('#5a4e3a', grave(`<path d='M-24 27V-6H-20C-20 -18 -12 -22 -8 -20C-6 -28 6 -28 8 -20C12 -22 20 -18 20 -6H24V27Z' fill='#b8ad98' stroke='#5a4e3a' stroke-width='1.6' stroke-linejoin='round'/><rect x='-15' y='-4' width='30' height='21' rx='2' fill='none' stroke='#5a4e3a' stroke-width='.8' opacity='.7'/>`)),
+      100: drawnChip('#1e2024', grave(`<path d='M-20 27V-11C-20 -24 20 -24 20 -11V27Z' fill='#5d6168' stroke='#25282c' stroke-width='1.6'/><path d='M4 -22L0 -14L5 -8L1 -3' stroke='#1a1c1f' stroke-width='1.2' fill='none' stroke-linejoin='round'/><path d='M4.6 -22L0.8 -14L5.8 -8' stroke='#8a8f96' stroke-width='.5' fill='none'/>`)),
+      500: drawnChip('#c9cbd6', grave(`<path d='M-18 27V-12C-18 -21 -10 -26 0 -26C10 -26 18 -21 18 -12V27Z' fill='#1f1f24' stroke='#000' stroke-width='1.6'/><path d='M-14 -16C-6 -10 -10 0 -2 6C4 11 2 18 10 22M8 -22C4 -14 12 -10 14 -2' stroke='#d8d8e0' stroke-width='.6' fill='none' opacity='.45'/><path d='M-12 -14C-10 -19 -5 -22 0 -22' stroke='#6a6a78' stroke-width='2' fill='none' opacity='.7' stroke-linecap='round'/>`)),
+      1000: drawnChip('#5a3a06', grave(`<defs><linearGradient id='tg' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#fff1b8'/><stop offset='.45' stop-color='#e2b33c'/><stop offset='1' stop-color='#8a5f10'/></linearGradient></defs><path d='M-20 27V-10C-20 -25 20 -25 20 -10V27Z' fill='url(#tg)' stroke='#7a5208' stroke-width='1.6'/><g transform='translate(0 -11)'><path d='M-6 0C-6 -5 6 -5 6 0C6 3 4 3.6 4 5H-4C-4 3.6 -6 3 -6 0Z' fill='#fff6d0' stroke='#7a5208' stroke-width='.8'/><circle cx='-2.3' cy='-.4' r='1.5' fill='#7a5208'/><circle cx='2.3' cy='-.4' r='1.5' fill='#7a5208'/><path d='M-1.6 5V6.6M0 5V6.6M1.6 5V6.6' stroke='#7a5208' stroke-width='.6'/></g>`)),
+    },
+    { ...DRAWN_TEXT, font: 'Georgia, serif', weight: '700', lift: '-0.85em', halo: '0 1px 0 rgb(255 255 255 / 0.35)' },
   ),
 }
 

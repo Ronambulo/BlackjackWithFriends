@@ -44,41 +44,6 @@
   box-shadow: inset 0 0 0 5px #c99a2e;
 }
 
-/* ---------- The small table that wears what's being tried on ---------- */
-
-.showcase {
-  --card-w: 54px;
-
-  display: grid;
-  justify-items: center;
-  gap: 14px;
-  padding: 20px 16px 16px;
-  border-radius: var(--radius);
-  background: var(--felt-bg, #0c5a34);
-  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.25), inset 0 -30px 50px rgb(0 0 0 / 0.25);
-  color: #f4f1e8;
-  overflow: hidden;
-}
-
-.cards {
-  display: flex;
-  isolation: isolate;
-  min-height: calc(var(--card-w) * 1.75);
-  align-items: center;
-}
-
-.seat {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-top: 4px;
-}
-
-.chips {
-  display: flex;
-  gap: 6px;
-}
-
 /* ---------- What's picked ---------- */
 
 .selected {

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { useUser } from '@/auth/session-context'
 import { ChallengesCard } from '@/challenges/ChallengesCard'
 import { DailyCard } from '@/daily/DailyCard'
+import { EventBanners } from '@/events/EventBox'
 import { TopList } from '@/groups/Ranking'
 import { useCurrentGroup, useGroups } from '@/groups/useGroups'
 import { useFriendsRanking } from '@/groups/useRankings'
@@ -44,6 +45,8 @@ export default function HomePage() {
         <h2 className={`label ${styles.sectionLabel}`}>{t('home.today')}</h2>
 
         <CeremonyReplayCard />
+
+        <EventBanners />
 
         <DailyCard />
 
