@@ -399,3 +399,33 @@ export async function getUnread(request: Request): Promise<Response> {
   const me = await requireUser(request)
   return json({ [GLOBAL]: unreadGlobal(me.id), ...Object.fromEntries(unreadCounts(me.id)) })
 }
+
+// GET /api/chat/latest: each of the player's chats' newest message this week, for the list of chats.
+export async function getLatest(request: Request): Promise<Response> {
+  const me = await requireUser(request)
+  const groupIds = db()
+    .select({ id: groupMembers.groupId })
+    .from(groupMembers)
+    .where(eq(groupMembers.userId, me.id))
+    .all()
+    .map((row) => row.id)
+  const latest = (groupId: string | null) => {
+    const row = db()
+      .select({
+        userId: messages.userId,
+        nombre: sql<string>`coalesce(${profiles.nombre}, ${user.displayUsername}, ${user.name})`,
+        texto: messages.texto,
+        mano: sql<boolean>`${messages.mano} is not null`.mapWith(Boolean),
+        createdAt: messages.createdAt,
+      })
+      .from(messages)
+      .innerJoin(user, eq(user.id, messages.userId))
+      .leftJoin(profiles, eq(profiles.id, messages.userId))
+      .where(and(inRoom(groupId), gte(messages.createdAt, shownSince())))
+      .orderBy(desc(messages.createdAt), desc(messages.id))
+      .limit(1)
+      .get()
+    return row ? { ...row, createdAt: row.createdAt.toISOString() } : null
+  }
+  return json(Object.fromEntries([[GLOBAL, latest(null)], ...groupIds.map((id) => [id, latest(id)])]))
+}

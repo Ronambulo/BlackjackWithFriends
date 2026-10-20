@@ -15,7 +15,7 @@ import { useLeague } from '@/league/useLeague'
 import { formatNumber } from '@/lib/format'
 import { GroupHistory } from '@/season/GroupHistory'
 import { ConfirmSheet, SheetIcon } from '@/ui/ConfirmSheet'
-import { ChevronLeftIcon, LeaveIcon, ShareIcon, TimerIcon } from '@/ui/icons'
+import { ChatIcon, ChevronLeftIcon, LeaveIcon, ShareIcon, TimerIcon } from '@/ui/icons'
 import { PullToRefresh } from '@/ui/PullToRefresh'
 import styles from '../../pages.module.css'
 import { AdminCard, MembersCard } from './sections'
@@ -36,7 +36,9 @@ export default function GroupPage() {
   // Whoever is just above the player, to say how far they are.
   const ahead = mineIndex > 0 ? ranking[mineIndex - 1] : undefined
   const gap = ahead ? ahead.balance - ranking[mineIndex].balance : 0
-  const name = data?.nombre ?? groups.data?.find((summary) => summary.id === id)?.nombre
+  const summary = groups.data?.find((group) => group.id === id)
+  const name = data?.nombre ?? summary?.nombre
+  const unread = summary?.unread ?? 0
 
   return (
     <PullToRefresh>
@@ -54,6 +56,10 @@ export default function GroupPage() {
               </p>
             )}
           </div>
+          <Link href={`/social?chat=${id}`} className={`${styles.iconButton} ${styles.titleAction}`} aria-label={t('social.openChat')}>
+            <ChatIcon width={22} height={22} />
+            {unread > 0 && <span className={styles.dotBadge}>{unread > 99 ? '99+' : unread}</span>}
+          </Link>
         </div>
 
         {group.isError ? (

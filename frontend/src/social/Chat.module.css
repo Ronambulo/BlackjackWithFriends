@@ -832,3 +832,110 @@
 .empty svg {
   color: var(--accent);
 }
+
+/* ---------- The groups' chats ---------- */
+
+.groupTile {
+  display: grid;
+  flex: none;
+  place-items: center;
+  border-radius: 30%;
+  color: var(--bg);
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.chatList {
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+}
+
+.chatList li + li .chatRow {
+  border-top: 1px solid rgb(255 255 255 / 0.06);
+}
+
+.chatRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chatRow:active {
+  background: rgb(255 255 255 / 0.04);
+}
+
+.chatRowText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.chatRowText > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chatRowName {
+  font-weight: 800;
+}
+
+.chatRowPreview {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.chatRow[data-unread='true'] .chatRowPreview {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.chatRowSide {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+}
+
+.chatRow[data-unread='true'] time {
+  color: var(--danger-solid);
+  font-weight: 700;
+}
+
+.chatHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.chatBack {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgb(255 255 255 / 0.07);
+  border-radius: 50%;
+  background: var(--layer-1);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.groupTile[data-global='true'] {
+  background: radial-gradient(circle at 35% 30%, rgb(242 193 78 / 0.9), var(--accent));
+}

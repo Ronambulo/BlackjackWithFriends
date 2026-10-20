@@ -95,6 +95,24 @@ export function useUnread() {
   })
 }
 
+/** A chat's newest message this week, for the list of chats. */
+export interface ChatLatest {
+  userId: string
+  nombre: string
+  texto: string | null
+  mano: boolean
+  createdAt: string
+}
+
+/** GET /api/chat/latest, per chat. Under the unread badges' key, so it refreshes with them. */
+export function useLatest() {
+  const user = useUser()
+  return useQuery({
+    queryKey: ['chatUnread', user.id, 'latest'],
+    queryFn: () => api<Record<string, ChatLatest | null>>('/chat/latest'),
+  })
+}
+
 function useRefreshChat(chatId: string) {
   const user = useUser()
   const queryClient = useQueryClient()

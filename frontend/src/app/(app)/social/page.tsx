@@ -1,35 +1,54 @@
 'use client'
 
-import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useUser } from '@/auth/session-context'
 import { Ranking } from '@/groups/Ranking'
-import { useCurrentGroup } from '@/groups/useGroups'
+import { useGroups } from '@/groups/useGroups'
 import { useGlobalRanking } from '@/groups/useRankings'
 import { currentLanguage } from '@/i18n'
 import { formatNumber } from '@/lib/format'
 import { Chat } from '@/social/Chat'
+import { ChatHeader, ChatList, chatsOf } from '@/social/ChatList'
 import chatStyles from '@/social/Chat.module.css'
-import { GLOBAL, useUnread } from '@/social/useChat'
-import { GroupIcon } from '@/ui/icons'
+import { useUnread } from '@/social/useChat'
 import { PullToRefresh } from '@/ui/PullToRefresh'
 import styles from '../pages.module.css'
 
-type View = 'global' | 'group' | 'ranking'
+type View = 'chats' | 'ranking'
 
-/** The global chat, the chat of the group in view (the top bar's picker) and everyone's week. */
+/**
+ * The chats, the global one and each group's, listed like a messaging app; and everyone's week.
+ */
 export default function SocialPage() {
   const { t } = useTranslation()
-  const group = useCurrentGroup()
+  const { data: groups } = useGroups()
   const { data: unread } = useUnread()
-  const [view, setView] = useState<View>('global')
+  const [view, setView] = useState<View>('chats')
+  const [open, setOpen] = useState<string | null>(null)
+
+  // From a group's page (/social?chat=id): straight into that chat.
+  useEffect(() => {
+    const chat = new URLSearchParams(window.location.search).get('chat')
+    if (!chat) return
+    setOpen(chat)
+    window.history.replaceState(null, '', window.location.pathname)
+  }, [])
+
+  const chats = groups ? chatsOf(groups, t('social.globalChat')) : []
+  const opened = chats.find((chat) => chat.id === open)
+  const total = chats.reduce((sum, chat) => sum + (unread?.[chat.id] ?? 0), 0)
 
   const tabs: { key: View; label: string; count?: number }[] = [
-    { key: 'global', label: t('social.globalChat'), count: unread?.[GLOBAL] },
-    { key: 'group', label: group?.nombre ?? t('social.groupChat'), count: group && unread?.[group.id] },
+    // The open chat gets read as it comes in; the list shows each one's.
+    { key: 'chats', label: t('social.chats'), count: view !== 'chats' ? total : opened ? total - (unread?.[opened.id] ?? 0) : 0 },
     { key: 'ranking', label: t('social.ranking') },
   ]
+  const pick = (key: View) => {
+    // Again on the chats' tab: back to the list.
+    if (key === 'chats' && view === 'chats') setOpen(null)
+    setView(key)
+  }
 
   return (
     <div className={`${styles.page} ${chatStyles.screen}`}>
@@ -38,29 +57,23 @@ export default function SocialPage() {
       <div className={chatStyles.tabsBar}>
         <div className={`segmented ${chatStyles.tabs}`} role="group" aria-label={t('social.title')}>
           {tabs.map(({ key, label, count }) => (
-            <button key={key} type="button" aria-pressed={view === key} onClick={() => setView(key)}>
+            <button key={key} type="button" aria-pressed={view === key} onClick={() => pick(key)}>
               <span className={chatStyles.tabName}>{label}</span>
-              {/* The one on screen gets read as it comes in. */}
-              {view !== key && Boolean(count) && (
-                <span className={chatStyles.badge}>{count! > 99 ? '99+' : count}</span>
-              )}
+              {Boolean(count) && <span className={chatStyles.badge}>{count! > 99 ? '99+' : count}</span>}
             </button>
           ))}
         </div>
       </div>
 
-      {view === 'global' && <Chat key={GLOBAL} chatId={GLOBAL} name={t('social.globalChat')} />}
-      {view === 'group' &&
-        (group ? (
-          <Chat key={group.id} chatId={group.id} name={group.nombre} />
+      {view === 'chats' &&
+        groups &&
+        (opened ? (
+          <>
+            <ChatHeader chat={opened} onBack={() => setOpen(null)} />
+            <Chat key={opened.id} chatId={opened.id} name={opened.nombre} />
+          </>
         ) : (
-          <section className={`card ${chatStyles.empty}`}>
-            <GroupIcon width={28} height={28} />
-            <p className="muted">{t('social.noGroup')}</p>
-            <Link className="btn btn-primary" href="/grupos">
-              {t('social.toGroups')}
-            </Link>
-          </section>
+          <ChatList chats={chats} onOpen={setOpen} />
         ))}
       {view === 'ranking' && <GlobalRanking />}
     </div>

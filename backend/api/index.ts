@@ -107,7 +107,7 @@ import {
 import { getAchievements, postAchievementsSeen } from '../routes/achievements.js'
 import { getCosmetics, postBuy, postEquip } from '../routes/cosmetics.js'
 import { getAdminChallenges, getChallenges, postAdminChallenges } from '../routes/challenges.js'
-import { deleteMessage, getChat, getUnread, postMessage, postReaction, share } from '../routes/chat.js'
+import { deleteMessage, getChat, getLatest, getUnread, postMessage, postReaction, share } from '../routes/chat.js'
 import { getLeague, postPay } from '../routes/league.js'
 import { getFriendsRanking, getGlobalRanking } from '../routes/ranking.js'
 import { getTable, postPlay } from '../routes/play.js'
@@ -226,6 +226,7 @@ const routes: Routes = {
   '/api/chat': { GET: getChat, POST: postMessage },
   '/api/chat/share': { POST: share },
   '/api/chat/unread': { GET: getUnread },
+  '/api/chat/latest': { GET: getLatest },
   '/api/chat/react': { POST: postReaction },
   '/api/chat/delete': { POST: deleteMessage },
   '/api/invite': { GET: getInvite },
