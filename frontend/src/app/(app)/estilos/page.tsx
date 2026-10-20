@@ -1,32 +1,18 @@
 'use client'
 
-import type { Card } from '@bwf/engine'
 import Link from 'next/link'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useUser } from '@/auth/session-context'
-import { Chip, StylePreview } from '@/cosmetics/StylePreview'
-import { KINDS, themeStyle, type CosmeticKind, type Equipped } from '@/cosmetics/themes'
+import { Showcase } from '@/cosmetics/Showcase'
+import { StylePreview } from '@/cosmetics/StylePreview'
+import { KINDS, type CosmeticKind, type Equipped } from '@/cosmetics/themes'
 import { useBuy, useCosmetics, useEquip, type CosmeticItem } from '@/cosmetics/useCosmetics'
 import { currentLanguage } from '@/i18n'
 import { ApiError } from '@/lib/api'
 import { formatNumber } from '@/lib/format'
-import { useProfile } from '@/profile/useProfile'
-import { PlayingCard } from '@/table/PlayingCard'
-import { Avatar } from '@/ui/Avatar'
 import { ConfirmSheet, SheetIcon } from '@/ui/ConfirmSheet'
 import { CheckIcon, ChevronLeftIcon, LockIcon } from '@/ui/icons'
 import styles from './styles.module.css'
-
-const SHOWN_CHIPS = [5, 25, 100, 500] as const
-
-// As at the table: the up card, then the hole card tucked under it
-const DEALER: (Card | null)[] = [{ rank: '7', suit: 'C' }, null]
-const PLAYER: Card[] = [
-  { rank: 'A', suit: 'H' },
-  { rank: 'K', suit: 'S' },
-  { rank: '10', suit: 'D' },
-]
 
 /** The cosmetics shop: try each style on a small table, buy it with coins, wear it. */
 export default function StylesPage() {
@@ -149,34 +135,6 @@ export default function StylesPage() {
         }
         onCancel={() => setBuying(null)}
       />
-    </div>
-  )
-}
-
-/** A small table wearing the styles being tried on. */
-function Showcase({ equipped }: { equipped: Equipped | undefined }) {
-  const user = useUser()
-  const { data: profile } = useProfile()
-  return (
-    <div className={styles.showcase} style={themeStyle(equipped)} aria-hidden="true">
-      <div className={styles.cards}>
-        {DEALER.map((card, i) => (
-          <PlayingCard key={i} card={card} still />
-        ))}
-      </div>
-      <div className={styles.cards}>
-        {PLAYER.map((card, i) => (
-          <PlayingCard key={i} card={card} still />
-        ))}
-      </div>
-      <div className={styles.seat}>
-        <Avatar seed={user.id} name={profile?.nombre ?? ''} src={profile?.avatar_url} size={40} frame={equipped?.marco} />
-        <div className={styles.chips}>
-          {SHOWN_CHIPS.map((value) => (
-            <Chip key={value} value={value} />
-          ))}
-        </div>
-      </div>
     </div>
   )
 }

@@ -287,6 +287,38 @@
   font-size: 0.66rem;
 }
 
+/* The whole tile opens the style up close */
+.itemButton {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+.itemButton:disabled {
+  cursor: default;
+}
+
+.itemButton:focus-visible {
+  outline: 2px solid var(--event-accent);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+
+@media (hover: hover) {
+  .item:has(.itemButton:not(:disabled):hover) {
+    border-color: color-mix(in srgb, var(--event-accent) 55%, transparent);
+  }
+}
+
 /* Out of the box already: faded, with the player's stamp on it */
 .item[data-owned] .preview,
 .item[data-owned] .itemName,
@@ -558,4 +590,33 @@
   .item {
     transition: none;
   }
+}
+
+/* ---------- A style up close ---------- */
+
+.peekFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  margin-top: 14px;
+}
+
+.peekNote {
+  color: var(--text-dim);
+  font-size: 0.88rem;
+}
+
+/* Bigger than the shop's: the table is all there is to look at (doubled to win over the showcase's own size) */
+.peekTable.peekTable {
+  --card-w: 76px;
+
+  gap: 20px;
+  padding: 30px 16px 26px;
+}
+
+.peekTable.peekTable > :last-child {
+  margin-top: 10px;
+  transform: scale(1.25);
 }

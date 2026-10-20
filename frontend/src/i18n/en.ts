@@ -232,6 +232,8 @@ export const en: Messages = {
     changed: 'The box’s price has changed. Take another look.',
     gone: 'The {{name}} box is gone.',
     missing: 'Event',
+    stillIn: 'Still in the box: it can come out when you open it.',
+    yours: 'It’s yours already.',
   },
   daily: {
     title: 'Daily deck #{{number}}',

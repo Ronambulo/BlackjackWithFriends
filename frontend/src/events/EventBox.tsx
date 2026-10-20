@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Showcase } from '@/cosmetics/Showcase'
 import { StylePreview } from '@/cosmetics/StylePreview'
 import { useCosmetics, useEquip, useOpenEventBox, type EventBox as Box, type EventId, type StyleId } from '@/cosmetics/useCosmetics'
 import { currentLanguage } from '@/i18n'
@@ -10,6 +11,7 @@ import { ApiError } from '@/lib/api'
 import { formatNumber } from '@/lib/format'
 import { play } from '@/sound/sounds'
 import { CheckIcon, ChevronRightIcon } from '@/ui/icons'
+import { Modal } from '@/ui/Modal'
 import styles from './EventBox.module.css'
 import { EVENT_THEMES, eventPath } from './themes'
 
@@ -89,6 +91,8 @@ export function EventBoxPage({ id }: { id: EventId }) {
   const [landed, setLanded] = useState(false)
   // The prize just won: its stamp lands with a thud back in the box.
   const [fresh, setFresh] = useState<StyleId | null>(null)
+  // The style being looked at up close, on a small table with the rest of what's worn.
+  const [peek, setPeek] = useState<StyleId | null>(null)
   const alive = useRef(true)
   // Set on every mount: in development React mounts, unmounts and mounts again.
   useEffect(() => {
@@ -116,6 +120,7 @@ export function EventBoxPage({ id }: { id: EventId }) {
   const busy = before !== null || open.isPending
   const daysLeft = Math.max(1, Math.ceil((new Date(box.hasta).getTime() - Date.now()) / DAY))
   const prize = won ? box.items.find((item) => item.id === won) : undefined
+  const peeked = peek ? box.items.find((item) => item.id === peek) : undefined
 
   /** A light runs over the styles still in the box, slows down and stops on the prize. */
   const openBox = async () => {
@@ -205,9 +210,11 @@ export function EventBoxPage({ id }: { id: EventId }) {
               data-landed={(landed && lit === item.id) || undefined}
               data-fresh={fresh === item.id || undefined}
             >
-              <StylePreview id={item.id} tipo={item.tipo} equipped={data.equipped} spot={false} className={styles.preview} />
-              <span className={styles.itemName}>{t(`styles.items.${item.id}`)}</span>
-              <span className={styles.itemKind}>{t(`styles.kind.${item.tipo}`)}</span>
+              <button className={styles.itemButton} type="button" disabled={busy} onClick={() => setPeek(item.id)}>
+                <StylePreview id={item.id} tipo={item.tipo} equipped={data.equipped} spot={false} className={styles.preview} />
+                <span className={styles.itemName}>{t(`styles.items.${item.id}`)}</span>
+                <span className={styles.itemKind}>{t(`styles.kind.${item.tipo}`)}</span>
+              </button>
               {owns(item.id, item.owned) && (
                 <span className={styles.stamp}>
                   <CheckIcon width={10} height={10} /> {t('styles.owned')}
@@ -249,6 +256,28 @@ export function EventBoxPage({ id }: { id: EventId }) {
           <span className={styles.done}>{t('eventBox.all')}</span>
         )}
       </div>
+
+      {peeked && (
+        <Modal title={t(`styles.items.${peeked.id}`)} eyebrow={t(`styles.kind.${peeked.tipo}`)} onClose={() => setPeek(null)}>
+          <Showcase equipped={{ ...data.equipped, [peeked.tipo]: peeked.id }} className={styles.peekTable} />
+          <div className={styles.peekFoot}>
+            {!peeked.owned ? (
+              <span className={styles.peekNote}>{t('eventBox.stillIn')}</span>
+            ) : data.equipped[peeked.tipo] === peeked.id ? (
+              <span className={styles.worn}>
+                <CheckIcon width={14} height={14} /> {t('styles.wearing')}
+              </span>
+            ) : (
+              <>
+                <span className={styles.peekNote}>{t('eventBox.yours')}</span>
+                <button className="btn btn-primary" type="button" disabled={equip.isPending} onClick={() => equip.mutate({ id: peeked.id })}>
+                  {t('styles.wear')}
+                </button>
+              </>
+            )}
+          </div>
+        </Modal>
+      )}
 
       {prize && (
         <div className={styles.overlay} role="dialog" aria-modal="true" aria-labelledby="event-prize">

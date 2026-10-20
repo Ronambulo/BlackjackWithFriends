@@ -231,6 +231,8 @@ export const es = {
     changed: 'El precio de la caja ha cambiado. Míralo otra vez.',
     gone: 'La caja de {{name}} ya se ha ido.',
     missing: 'Evento',
+    stillIn: 'Sigue en la caja: puede tocarte al abrirla.',
+    yours: 'Ya es tuyo.',
   },
   daily: {
     title: 'Baraja del día #{{number}}',
