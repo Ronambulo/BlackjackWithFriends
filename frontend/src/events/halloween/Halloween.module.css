@@ -1,0 +1,101 @@
+/* Halloween's decorations: gravestones, a crescent moon, bats and the pumpkin's flickering face */
+
+/* A row of rounded gravestones along the bottom edge */
+.graves {
+  position: absolute;
+  inset: auto 0 0;
+  height: 22px;
+  background:
+    radial-gradient(circle at 50% 8px, #07040c 7px, transparent 7.5px) 0 0 / 58px 22px repeat-x,
+    linear-gradient(90deg, transparent 22px, #07040c 22px 36px, transparent 36px) 0 8px / 58px 14px repeat-x;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.moon {
+  position: absolute;
+  top: -22px;
+  right: -14px;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 40%, #fff6d8, #f2d58c 60%, #c99a3e);
+  box-shadow: 0 0 40px rgb(255 220 140 / 0.35);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+/* A bite taken out by the night, so it reads as a crescent */
+.moon::after {
+  content: '';
+  position: absolute;
+  inset: -8px 20px 18px -18px;
+  border-radius: 50%;
+  background: #24133a;
+}
+
+.bats {
+  position: absolute;
+  top: 4px;
+  right: 70px;
+  width: 120px;
+  fill: #07040c;
+  opacity: 0.8;
+  pointer-events: none;
+  animation: flutter 6s ease-in-out infinite alternate;
+}
+
+@keyframes flutter {
+  to {
+    transform: translate(-10px, 4px);
+  }
+}
+
+.heroBats {
+  top: 0;
+  right: auto;
+  left: 0;
+  width: 150px;
+}
+
+/* A crescent cut out of a full moon, so it sits on any sky */
+.heroMoon {
+  position: absolute;
+  top: -6px;
+  right: 4px;
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 40%, #fff6d8, #f2d58c 60%, #c99a3e);
+  filter: drop-shadow(0 0 22px rgb(255 220 140 / 0.45));
+  mask: radial-gradient(circle at 26% 30%, transparent 46%, #000 47%);
+  pointer-events: none;
+}
+
+.face {
+  filter: drop-shadow(0 0 3px #ffb02e);
+  animation: flicker 2.4s steps(1) infinite;
+}
+
+@keyframes flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  47% {
+    opacity: 0.75;
+  }
+  52% {
+    opacity: 1;
+  }
+  78% {
+    opacity: 0.85;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bats,
+  .face {
+    animation: none;
+  }
+}

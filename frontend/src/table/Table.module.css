@@ -34,8 +34,12 @@
   /* Sized by the space left, never by its content, so the rail always stays on screen */
   min-height: 0;
   container: felt / size;
+  /* Keeps what's drawn under the cards (the ouija's board) above the felt itself */
+  isolation: isolate;
   padding: 0 var(--page-x) 16px;
   overflow: hidden;
+  /* What a felt draws over the play area only, clear of the bar and the rail */
+  background: var(--felt-art, none);
 }
 
 .feltTop {
@@ -85,7 +89,8 @@
 
 /* What's printed on the cloth */
 .print {
-  display: block;
+  /* A felt with its own rules drawn on it (the ouija) hides these */
+  display: var(--felt-printed, block);
   width: calc(100% + 2 * var(--page-x));
   max-width: 460px;
   margin: 0 calc(-1 * var(--page-x));
@@ -112,6 +117,35 @@
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 2.5px;
+}
+
+/* The same words as a board draws them (the ouija): straight, in old serif ink */
+/* Pinned to one spot on the felt, under the cards, so it never moves when a hand is dealt */
+.board {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  z-index: -1;
+  display: var(--felt-board, none);
+  width: calc(100% - 2 * var(--page-x) - 24px);
+  max-width: 420px;
+  overflow: visible;
+  transform: translate(-50%, -50%);
+}
+
+.boardPayout {
+  fill: rgb(var(--felt-ink, 244 241 232) / 0.92);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 34px;
+  font-weight: 700;
+}
+
+.boardRules {
+  fill: rgb(var(--felt-ink, 244 241 232) / 0.75);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
 }
 
 /* ---------- Betting ---------- */
@@ -167,7 +201,7 @@
   position: absolute;
   inset: 0;
   border-radius: var(--chip-radius, 50%);
-  image-rendering: pixelated;
+  image-rendering: var(--chip-render, pixelated);
 }
 
 .stack {
@@ -180,7 +214,9 @@
   border-radius: var(--chip-radius, 50%);
   font-family: var(--chip-font, inherit);
   padding-bottom: var(--chip-lift, 0px);
-  image-rendering: pixelated;
+  /* A lift below zero pushes the number down instead */
+  padding-top: max(0px, calc(-1 * var(--chip-lift, 0px)));
+  image-rendering: var(--chip-render, pixelated);
   font-size: 15px;
   font-weight: var(--chip-weight, 800);
   text-shadow: var(--chip-halo, none);
@@ -396,13 +432,13 @@
 }
 
 .note {
-  color: rgb(244 241 232 / 0.85);
+  color: rgb(var(--felt-ink, 244 241 232) / 0.85);
   font-size: 0.9rem;
   text-align: center;
 }
 
 .note small {
-  color: rgb(244 241 232 / 0.55);
+  color: rgb(var(--felt-ink, 244 241 232) / 0.55);
   font-size: 0.8rem;
 }
 
@@ -421,9 +457,11 @@
   padding: 0;
   font-family: var(--chip-font, inherit);
   padding-bottom: var(--chip-lift, 0px);
+  /* A lift below zero pushes the number down instead */
+  padding-top: max(0px, calc(-1 * var(--chip-lift, 0px)));
   border: 5px dashed #fff;
   border-radius: var(--chip-radius, 50%);
-  image-rendering: pixelated;
+  image-rendering: var(--chip-render, pixelated);
   color: #fff;
   font-size: 14px;
   font-weight: var(--chip-weight, 800);
@@ -438,10 +476,12 @@
   box-shadow: 0 1px 0 var(--edge);
 }
 
+/* An empty dark chip; a chip that's all drawing keeps its drawing, greyed */
 .chip:disabled {
-  border-color: rgb(255 255 255 / 0.3);
-  background: #2a1e16;
-  color: rgb(242 193 78 / 0.4);
+  border-color: var(--chip-off-border, rgb(255 255 255 / 0.3));
+  background: var(--off, #2a1e16);
+  color: var(--off-ink, rgb(242 193 78 / 0.4));
+  filter: var(--chip-off-look, none);
   box-shadow: none;
   cursor: not-allowed;
 }
@@ -449,6 +489,8 @@
 /* The colours come from the player's chip style (cosmetics/themes.ts) */
 .chip1 {
   --edge: var(--chip1-edge, #a9a291);
+  --off: var(--chip1-off, #2a1e16);
+  --off-ink: var(--chip1-off-ink, rgb(242 193 78 / 0.4));
 
   border-color: var(--chip1-stripe, #9a968c);
   background:
@@ -459,6 +501,8 @@
 
 .chip5 {
   --edge: var(--chip5-edge, #8f2731);
+  --off: var(--chip5-off, #2a1e16);
+  --off-ink: var(--chip5-off-ink, rgb(242 193 78 / 0.4));
 
   border-color: var(--chip5-stripe, #fff);
   background:
@@ -469,6 +513,8 @@
 
 .chip10 {
   --edge: var(--chip10-edge, #1e4a92);
+  --off: var(--chip10-off, #2a1e16);
+  --off-ink: var(--chip10-off-ink, rgb(242 193 78 / 0.4));
 
   border-color: var(--chip10-stripe, #fff);
   background:
@@ -479,6 +525,8 @@
 
 .chip25 {
   --edge: var(--chip25-edge, #11693c);
+  --off: var(--chip25-off, #2a1e16);
+  --off-ink: var(--chip25-off-ink, rgb(242 193 78 / 0.4));
 
   border-color: var(--chip25-stripe, #fff);
   background:
@@ -489,6 +537,8 @@
 
 .chip100 {
   --edge: var(--chip100-edge, #050506);
+  --off: var(--chip100-off, #2a1e16);
+  --off-ink: var(--chip100-off-ink, rgb(242 193 78 / 0.4));
 
   border-color: var(--chip100-stripe, #fff);
   background:
@@ -499,6 +549,8 @@
 
 .chip500 {
   --edge: var(--chip500-edge, #522d8c);
+  --off: var(--chip500-off, #2a1e16);
+  --off-ink: var(--chip500-off-ink, rgb(242 193 78 / 0.4));
 
   border-color: var(--chip500-stripe, #fff);
   background:
@@ -509,6 +561,8 @@
 
 .chip1000 {
   --edge: var(--chip1000-edge, #b26f12);
+  --off: var(--chip1000-off, #2a1e16);
+  --off-ink: var(--chip1000-off-ink, rgb(242 193 78 / 0.4));
 
   border-color: var(--chip1000-stripe, #fff);
   background:
@@ -702,7 +756,7 @@
 }
 
 .net.push {
-  color: rgb(244 241 232 / 0.6);
+  color: rgb(var(--felt-ink, 244 241 232) / 0.6);
 }
 
 /*

@@ -1,0 +1,561 @@
+/*
+  An event's box: a banner on the home screen, and its own page under the event's sky.
+  Its colours are the --event-* variables each event's theme sets (src/events/themes.tsx).
+*/
+
+.themed {
+  --event-dim: color-mix(in srgb, var(--event-ink) 72%, transparent);
+  --event-faint: color-mix(in srgb, var(--event-ink) 50%, transparent);
+
+  color: var(--event-ink);
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: hidden;
+  border-color: var(--event-border);
+  background: var(--event-card);
+}
+
+/* ---------- The banner on the home screen ---------- */
+
+.banner {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding-block: 14px 20px;
+  text-decoration: none;
+  transition: transform 0.15s ease;
+}
+
+.banner:active {
+  transform: scale(0.99);
+}
+
+/* Above the event's decorations */
+.banner .icon,
+.banner .titles {
+  position: relative;
+}
+
+.banner .titles {
+  flex: 1;
+}
+
+/* Night falling over the right edge, so the arrow stands out on whatever is there */
+.banner::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 0 auto;
+  z-index: 1;
+  width: 120px;
+  background: linear-gradient(
+    to left,
+    color-mix(in srgb, var(--event-shade) 92%, transparent),
+    color-mix(in srgb, var(--event-shade) 60%, transparent) 45%,
+    transparent
+  );
+  pointer-events: none;
+}
+
+.chevron {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  color: var(--event-accent);
+}
+
+/* The event's box, drawn by the event */
+.icon {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  filter: drop-shadow(0 4px 12px color-mix(in srgb, var(--event-glow) 45%, transparent));
+}
+
+.iconBig {
+  width: 132px;
+  height: 132px;
+  filter: drop-shadow(0 10px 30px color-mix(in srgb, var(--event-glow) 55%, transparent));
+}
+
+.shaking {
+  animation: rattle 0.3s ease-in-out infinite;
+}
+
+@keyframes rattle {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(-9deg) translateY(-2px);
+  }
+  75% {
+    transform: rotate(9deg) translateY(-2px);
+  }
+}
+
+.titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.eyebrow {
+  color: var(--event-accent);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--event-title-font);
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-shadow: 0 2px 10px color-mix(in srgb, var(--event-glow) 35%, transparent);
+}
+
+.text {
+  margin: 2px 0 0;
+  color: var(--event-dim);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+/* The event in the admin's list: its box on its card */
+.badge {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--event-border);
+  border-radius: 12px;
+  background: var(--event-card);
+}
+
+.badge .icon {
+  width: 36px;
+  height: 36px;
+}
+
+/* ---------- The box's page ---------- */
+
+.box {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-height: 100%;
+}
+
+.hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0 4px;
+  text-align: center;
+}
+
+.hero .icon {
+  position: relative;
+  margin-bottom: 4px;
+}
+
+.heroTitle {
+  position: relative;
+  margin: 0;
+  font-family: var(--event-title-font);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-shadow: 0 2px 16px color-mix(in srgb, var(--event-glow) 45%, transparent);
+}
+
+.heroText {
+  position: relative;
+  max-width: 34ch;
+  margin: 2px 0 6px;
+  color: var(--event-dim);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.progress {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(320px, 100%);
+  color: color-mix(in srgb, var(--event-ink) 65%, transparent);
+  font-size: 0.75rem;
+}
+
+.bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 0.1);
+}
+
+.bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--event-bar);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--event-glow) 60%, transparent);
+  transition: width 0.4s ease;
+}
+
+/* ---------- What's in the box ---------- */
+
+.inside {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.insideLabel {
+  margin: 0 2px;
+  color: var(--event-accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px 5px 8px;
+  border: 1px solid var(--event-item-border);
+  border-radius: 14px;
+  background: var(--event-item);
+  transition:
+    border-color 0.08s,
+    box-shadow 0.08s,
+    transform 0.08s;
+}
+
+.preview {
+  --card-w: 38px;
+  --felt-scale: 0.4;
+  --preview-zoom: 1.15;
+
+  height: 88px;
+  margin-bottom: 4px;
+  border-radius: 10px;
+}
+
+.itemName,
+.itemKind {
+  overflow: hidden;
+  padding: 0 2px;
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.itemName {
+  color: color-mix(in srgb, var(--event-ink) 92%, transparent);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.itemKind {
+  color: var(--event-faint);
+  font-size: 0.66rem;
+}
+
+/* Out of the box already: faded, with the player's stamp on it */
+.item[data-owned] .preview,
+.item[data-owned] .itemName,
+.item[data-owned] .itemKind {
+  filter: grayscale(0.85);
+  opacity: 0.4;
+}
+
+.stamp {
+  position: absolute;
+  top: 36px;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border: 1.5px solid var(--event-accent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--event-shade) 85%, transparent);
+  color: var(--event-accent);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transform: translateX(-50%) rotate(-8deg);
+}
+
+/* The light running over the box while it opens */
+.item[data-lit] {
+  z-index: 1;
+  border-color: var(--event-accent);
+  box-shadow:
+    0 0 0 1px var(--event-accent),
+    0 0 22px color-mix(in srgb, var(--event-glow) 60%, transparent);
+  transform: scale(1.06);
+}
+
+/* Stopped on the prize: it throbs before it's shown */
+.item[data-landed] {
+  animation: throb 0.45s ease-in-out infinite alternate;
+}
+
+@keyframes throb {
+  to {
+    box-shadow:
+      0 0 0 2px var(--event-bright),
+      0 0 34px color-mix(in srgb, var(--event-glow) 90%, transparent);
+    transform: scale(1.12);
+  }
+}
+
+/* The prize's stamp lands with a thud when you're back at the box */
+.item[data-fresh] .stamp {
+  animation: stampIn 0.45s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+
+@keyframes stampIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) rotate(-24deg) scale(2.4);
+  }
+}
+
+/* ---------- The open button, docked at the bottom of the screen ---------- */
+
+/* Stuck over the shell's 32px bottom padding, fading the grid out behind it */
+.dock {
+  position: sticky;
+  bottom: -32px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: auto 0 -32px;
+  padding: 28px 0 44px;
+  background: linear-gradient(180deg, transparent, var(--bg) 45%);
+}
+
+.open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--event-button);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    0 6px 22px color-mix(in srgb, var(--event-glow) 45%, transparent);
+  color: var(--event-button-ink);
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.open:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.open:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.price {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--event-button-ink) 18%, transparent);
+}
+
+.coin {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #f2c14e;
+  box-shadow: inset 0 0 0 3px #c99a2e;
+}
+
+.done {
+  padding: 16px;
+  color: var(--event-accent);
+  font-size: 1rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.hint {
+  margin: 0;
+  color: color-mix(in srgb, var(--event-ink) 60%, transparent);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+/* ---------- What came out: over the whole screen ---------- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--event-shade) 84%, transparent);
+  backdrop-filter: blur(6px);
+  animation: fade 0.3s ease both;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.reveal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: min(360px, 100%);
+  text-align: center;
+  animation: rise 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.85);
+  }
+}
+
+.revealGlow {
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  width: 440px;
+  height: 360px;
+  background:
+    repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--event-accent) 20%, transparent) 0 8deg, transparent 8deg 24deg),
+    radial-gradient(circle, color-mix(in srgb, var(--event-glow) 40%, transparent), transparent 65%);
+  border-radius: 50%;
+  mask-image: radial-gradient(circle, #000 30%, transparent 70%);
+  transform: translateX(-50%);
+  animation: spin 14s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes spin {
+  to {
+    transform: translateX(-50%) rotate(360deg);
+  }
+}
+
+.revealLabel {
+  position: relative;
+  color: var(--event-accent);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.revealPreview {
+  --card-w: 72px;
+  --felt-scale: 0.55;
+  --preview-zoom: 2.2;
+
+  position: relative;
+  width: 100%;
+  height: 220px;
+  margin: 6px 0;
+  border-radius: 18px;
+  box-shadow:
+    0 0 0 2px var(--event-accent),
+    0 14px 40px color-mix(in srgb, var(--event-glow) 40%, transparent);
+}
+
+.revealName {
+  position: relative;
+  font-family: var(--event-title-font);
+  font-size: 1.7rem;
+}
+
+.revealKind {
+  position: relative;
+  color: color-mix(in srgb, var(--event-ink) 60%, transparent);
+  font-size: 0.85rem;
+}
+
+.revealActions {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+  margin-top: 14px;
+}
+
+.worn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 48px;
+  color: var(--event-accent);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shaking,
+  .overlay,
+  .revealGlow,
+  .reveal,
+  .item[data-landed],
+  .item[data-fresh] .stamp {
+    animation: none;
+  }
+
+  .item {
+    transition: none;
+  }
+}

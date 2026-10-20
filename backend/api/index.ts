@@ -37,7 +37,9 @@ import {
   renameUser,
   postFlag,
   postRules,
+  getAdminEvents,
   getAdminShop,
+  postAdminEvent,
   postShopItem,
   postShopOrder,
   postShopSale,
@@ -105,7 +107,7 @@ import {
   postVote,
 } from '../routes/notices.js'
 import { getAchievements, postAchievementsSeen } from '../routes/achievements.js'
-import { getCosmetics, postBuy, postEquip } from '../routes/cosmetics.js'
+import { getCosmetics, postBuy, postEquip, postEventBox } from '../routes/cosmetics.js'
 import { getAdminChallenges, getChallenges, postAdminChallenges } from '../routes/challenges.js'
 import { deleteMessage, getChat, getLatest, getUnread, postMessage, postReaction, share } from '../routes/chat.js'
 import { getLeague, postPay } from '../routes/league.js'
@@ -194,6 +196,7 @@ const routes: Routes = {
   // The frame shows next to the player's name for their groupmates too.
   '/api/cosmetics/equip': { POST: live(postEquip) },
   '/api/cosmetics/buy': { POST: live(postBuy) },
+  '/api/cosmetics/box': { POST: postEventBox },
   '/api/push/key': { GET: getPushKey },
   '/api/push/subscribe': { POST: postSubscribe },
   '/api/push/unsubscribe': { POST: postUnsubscribe },
@@ -260,6 +263,7 @@ const routes: Routes = {
   '/api/admin/shop/item': { POST: postShopItem },
   '/api/admin/shop/order': { POST: postShopOrder },
   '/api/admin/shop/sale': { POST: postShopSale },
+  '/api/admin/event-boxes': { GET: getAdminEvents, POST: postAdminEvent },
   '/api/admin/challenges': { GET: getAdminChallenges, POST: postAdminChallenges },
   '/api/admin/backups': { GET: getBackups, POST: postBackup },
   '/api/admin/backups/download': { GET: downloadBackup },

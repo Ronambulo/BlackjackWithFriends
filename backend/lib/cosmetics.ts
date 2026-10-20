@@ -2,7 +2,8 @@
 // chips and the avatar look like. Bought with coins, never chips, so spending
 // in the shop never moves anyone in the ranking. The looks live in the app
 // (frontend/src/cosmetics/themes.ts); here is only who owns what and what it costs.
-import { and, eq, sql } from 'drizzle-orm'
+import { randomInt } from 'node:crypto'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 import type { AchievementId } from './achievements.js'
 import { db, type Tx } from './db.js'
 import { HttpError } from './http.js'
@@ -57,7 +58,9 @@ export const COSMETICS: readonly Cosmetic[] = [
   { id: 'tapete.pixel', tipo: 'tapete', source: shop(DESIGN) },
   { id: 'tapete.obsidiana', tipo: 'tapete', source: shop(DESIGN) },
   { id: 'tapete.ondas', tipo: 'tapete', source: shop(DESIGN) },
+  { id: 'tapete.cripta', tipo: 'tapete', source: shop(DESIGN) },
   { id: 'tapete.cosmos', tipo: 'tapete', source: shop(SPECIAL) },
+  { id: 'tapete.ouija', tipo: 'tapete', source: shop(SPECIAL) },
   { id: 'tapete.montecarlo', tipo: 'tapete', source: shop(LEGEND) },
   { id: 'tapete.holografico', tipo: 'tapete', source: shop(MYTH) },
   { id: 'tapete.medianoche', tipo: 'tapete', source: { from: 'logro', logro: 'blackjack100' } },
@@ -76,6 +79,9 @@ export const COSMETICS: readonly Cosmetic[] = [
   { id: 'dorso.artdeco', tipo: 'dorso', source: shop(DESIGN) },
   { id: 'dorso.pixel', tipo: 'dorso', source: shop(DESIGN) },
   { id: 'dorso.obsidiana', tipo: 'dorso', source: shop(DESIGN) },
+  { id: 'dorso.asoma', tipo: 'dorso', source: shop(DESIGN) },
+  { id: 'dorso.slender', tipo: 'dorso', source: shop(DESIGN) },
+  { id: 'dorso.gato', tipo: 'dorso', source: shop(DESIGN) },
   { id: 'dorso.cristal', tipo: 'dorso', source: shop(SPECIAL) },
   { id: 'dorso.kamikaze', tipo: 'dorso', source: { from: 'logro', logro: 'allIn' } },
 
@@ -88,6 +94,7 @@ export const COSMETICS: readonly Cosmetic[] = [
   { id: 'cartas.sakura', tipo: 'cartas', source: shop(DESIGN) },
   { id: 'cartas.sangre', tipo: 'cartas', source: shop(DESIGN) },
   { id: 'cartas.acero', tipo: 'cartas', source: shop(DESIGN) },
+  { id: 'cartas.acuchilladas', tipo: 'cartas', source: shop(DESIGN) },
   { id: 'cartas.cristal', tipo: 'cartas', source: shop(SPECIAL) },
 
   { id: 'fichas.casino', tipo: 'fichas', source: free },
@@ -100,6 +107,9 @@ export const COSMETICS: readonly Cosmetic[] = [
   { id: 'fichas.neon', tipo: 'fichas', source: shop(DESIGN) },
   { id: 'fichas.acero', tipo: 'fichas', source: shop(DESIGN) },
   { id: 'fichas.pixel', tipo: 'fichas', source: shop(SPECIAL) },
+  { id: 'fichas.calabaza', tipo: 'fichas', source: shop(SPECIAL) },
+  { id: 'fichas.caramelos', tipo: 'fichas', source: shop(SPECIAL) },
+  { id: 'fichas.lapidas', tipo: 'fichas', source: shop(SPECIAL) },
   { id: 'fichas.joyas', tipo: 'fichas', source: shop(LEGEND) },
 
   { id: 'marco.ninguno', tipo: 'marco', source: free },
@@ -121,12 +131,93 @@ export const COSMETICS: readonly Cosmetic[] = [
   { id: 'marco.flores', tipo: 'marco', source: shop(SPECIAL) },
   { id: 'marco.angel', tipo: 'marco', source: shop(SPECIAL) },
   { id: 'marco.orbita', tipo: 'marco', source: shop(SPECIAL) },
+  { id: 'marco.cuchillo', tipo: 'marco', source: shop(SPECIAL) },
+  { id: 'marco.calabaza', tipo: 'marco', source: shop(SPECIAL) },
   { id: 'marco.diamante', tipo: 'marco', source: shop(LEGEND) },
   { id: 'marco.corona', tipo: 'marco', source: shop(MYTH) },
   { id: 'marco.laurel', tipo: 'marco', source: { from: 'trofeo', trofeos: 5 } },
 ]
 
 const byId = new Map(COSMETICS.map((c) => [c.id, c]))
+
+// ── Event boxes ──────────────────────────────────────────────────────────────
+
+/**
+ * An event's styles aren't sold one by one: they come out of a box on the home screen,
+ * one at a time and never one the player already has, until the event is over.
+ * A new event is one more entry here; its settings, admin panel and box come with it.
+ */
+interface EventDef {
+  styles: readonly string[]
+  /** What the box starts as, before an admin changes anything. */
+  defaults: { precio: number; subida: number; hasta: string }
+}
+
+export const EVENTS = {
+  halloween: {
+    styles: [
+      'tapete.cripta',
+      'tapete.ouija',
+      'dorso.asoma',
+      'dorso.slender',
+      'dorso.gato',
+      'cartas.acuchilladas',
+      'fichas.calabaza',
+      'fichas.caramelos',
+      'fichas.lapidas',
+      'marco.cuchillo',
+      'marco.calabaza',
+    ],
+    // Midnight at the end of 1 November in Spain (CET).
+    defaults: { precio: 25, subida: 25, hasta: '2026-11-01T23:00:00.000Z' },
+  },
+} as const satisfies Record<string, EventDef>
+
+export type EventId = keyof typeof EVENTS
+export const EVENT_IDS = Object.keys(EVENTS) as EventId[]
+
+/** Every style that only comes out of an event's box: never sold in the shop. */
+const EVENT_STYLES = new Set<string>(EVENT_IDS.flatMap((id) => EVENTS[id].styles))
+
+const eventStyles = (event: EventId): readonly string[] => EVENTS[event].styles
+
+export function eventId(value: unknown): EventId {
+  if (typeof value !== 'string' || !Object.hasOwn(EVENTS, value)) throw new HttpError(400, 'Evento no válido')
+  return value as EventId
+}
+
+/** What the admins change (settings under the event's id): on top of the event's defaults. */
+export interface EventSettings {
+  /** Off takes the box off the home screen at once, whatever the date. */
+  activa: boolean
+  /** What the first box costs. */
+  precio: number
+  /** How much dearer it gets every two styles the player takes out of it. */
+  subida: number
+  /** When the box goes, as an ISO date. */
+  hasta: string
+  /** Styles the admins took out of the box: nobody gets them from it. */
+  fuera: string[]
+}
+
+export function eventSettings(event: EventId): EventSettings {
+  const saved = getSetting<Partial<EventSettings>>(event)
+  const defaults = EVENTS[event].defaults
+  return {
+    activa: saved?.activa ?? true,
+    precio: saved?.precio ?? defaults.precio,
+    subida: saved?.subida ?? defaults.subida,
+    hasta: saved?.hasta ?? defaults.hasta,
+    fuera: saved?.fuera ?? [],
+  }
+}
+
+const eventOn = (box: EventSettings, now = new Date()) => box.activa && now < new Date(box.hasta)
+
+/** What the box costs this player: dearer every two of its styles they already have. */
+const boxPrice = (event: EventId, box: EventSettings, owned: Set<string>) =>
+  box.precio + box.subida * Math.floor(eventStyles(event).filter((id) => owned.has(id)).length / 2)
+
 const DEFAULTS = Object.fromEntries(COSMETIC_KINDS.map((k) => [k, COSMETICS.find((c) => c.tipo === k)!.id])) as Record<CosmeticKind, string>
 
 // ── What the admins change (settings 'shop') ────────────────────────────────
@@ -254,9 +345,24 @@ export function cosmeticsFor(userId: string) {
     return {
       monedas: profile?.monedas ?? 0,
       equipped: equipped(profile?.estilos),
+      // The events' boxes on the home screen while they're on: every style in each, and which have come out.
+      eventos: EVENT_IDS.flatMap((event) => {
+        const box = eventSettings(event)
+        if (!eventOn(box)) return []
+        return [
+          {
+            id: event,
+            precio: boxPrice(event, box, owned),
+            hasta: box.hasta,
+            items: eventStyles(event)
+              .filter((id) => !box.fuera.includes(id))
+              .map((id) => ({ id, tipo: byId.get(id)!.tipo, owned: owned.has(id) })),
+          },
+        ]
+      }),
       // Out of the shop, a style is still there for whoever has it.
       items: catalogue(undefined, userId)
-        .filter((l) => !l.retirado || owned.has(l.cosmetic.id))
+        .filter((l) => owned.has(l.cosmetic.id) || (!l.retirado && !EVENT_STYLES.has(l.cosmetic.id)))
         .map((l) => ({ id: l.cosmetic.id, tipo: l.cosmetic.tipo, ...l.source, antes: l.antes, owned: owned.has(l.cosmetic.id) })),
     }
   })
@@ -290,7 +396,7 @@ export function buyCosmetic(userId: string, id: unknown, seen: unknown) {
   const cosmetic = find(id)
   const listed = catalogue(undefined, userId).find((l) => l.cosmetic === cosmetic)!
   const source = listed.source
-  if (source.from !== 'tienda') throw new HttpError(400, 'Ese estilo no se vende')
+  if (source.from !== 'tienda' || EVENT_STYLES.has(cosmetic.id)) throw new HttpError(400, 'Ese estilo no se vende')
   if (listed.retirado) throw new HttpError(410, 'Ese estilo ya no está a la venta')
   if (typeof seen === 'number' && seen !== source.precio) throw new HttpError(409, 'El precio ha cambiado')
   db().transaction((tx) => {
@@ -305,6 +411,87 @@ export function buyCosmetic(userId: string, id: unknown, seen: unknown) {
     tx.insert(userCosmetics).values({ userId, estilo: cosmetic.id, monedas: source.precio }).run()
     wear(tx, userId, cosmetic)
   })
+}
+
+/** Opens an event's box: its price for this player in coins for one of its styles the player doesn't have yet. Returns which. */
+export function openEventBox(userId: string, event: EventId, seen: unknown): string {
+  const box = eventSettings(event)
+  if (!eventOn(box)) throw new HttpError(410, 'La caja ya se ha ido')
+  return db().transaction((tx) => {
+    const owned = ownedCosmetics(tx, userId)
+    const precio = boxPrice(event, box, owned)
+    if (typeof seen === 'number' && seen !== precio) throw new HttpError(409, 'El precio ha cambiado')
+    const left = eventStyles(event).filter((id) => !owned.has(id) && !box.fuera.includes(id))
+    if (left.length === 0) throw new HttpError(409, 'Ya tienes todo lo de la caja')
+    const paid = tx
+      .update(profiles)
+      .set({ monedas: sql`${profiles.monedas} - ${precio}` })
+      .where(and(eq(profiles.id, userId), sql`${profiles.monedas} >= ${precio}`))
+      .returning({ monedas: profiles.monedas })
+      .get()
+    if (!paid) throw new HttpError(402, 'No tienes monedas suficientes')
+    const won = left[randomInt(left.length)]
+    tx.insert(userCosmetics).values({ userId, estilo: won, monedas: precio }).run()
+    return won
+  })
+}
+
+/** For the admin panel: an event's box as set, and what has come out of it. */
+export function eventStats(event: EventId) {
+  const box = eventSettings(event)
+  const styles = eventStyles(event)
+  const rows = db()
+    .select({ userId: userCosmetics.userId, id: userCosmetics.estilo, monedas: userCosmetics.monedas })
+    .from(userCosmetics)
+    .where(inArray(userCosmetics.estilo, [...styles]))
+    .all()
+  const out = new Map<string, number>()
+  const perPlayer = new Map<string, number>()
+  for (const row of rows) {
+    out.set(row.id, (out.get(row.id) ?? 0) + 1)
+    perPlayer.set(row.userId, (perPlayer.get(row.userId) ?? 0) + 1)
+  }
+  const inBox = styles.length - box.fuera.length
+  return {
+    id: event,
+    ...box,
+    abierta: eventOn(box),
+    cajas: rows.length,
+    monedas: rows.reduce((sum, row) => sum + row.monedas, 0),
+    jugadores: perPlayer.size,
+    completos: [...perPlayer.values()].filter((n) => n >= inBox).length,
+    items: styles.map((id) => ({ id, tipo: byId.get(id)!.tipo, fuera: box.fuera.includes(id), salidos: out.get(id) ?? 0 })),
+  }
+}
+
+/** An admin changes an event's box: on or off, its price and how it goes up, when it goes and what's in it. Returns it for the log. */
+export function setEvent(event: EventId, body: { activa?: unknown; precio?: unknown; subida?: unknown; hasta?: unknown; fuera?: unknown }): string {
+  const next = eventSettings(event)
+  const styles = eventStyles(event)
+  if (body.activa != null) {
+    if (typeof body.activa !== 'boolean') throw new HttpError(400, 'Valor no válido')
+    next.activa = body.activa
+  }
+  if (body.precio != null) next.precio = price(body.precio, 100_000)
+  if (body.subida != null) {
+    // Nought keeps the price flat.
+    if (typeof body.subida !== 'number' || !Number.isInteger(body.subida) || body.subida < 0 || body.subida > 100_000) throw new HttpError(400, 'Precio no válido')
+    next.subida = body.subida
+  }
+  if (body.hasta != null) {
+    const when = typeof body.hasta === 'string' ? new Date(body.hasta) : null
+    if (!when || Number.isNaN(when.getTime())) throw new HttpError(400, 'Fecha no válida')
+    next.hasta = when.toISOString()
+  }
+  if (body.fuera != null) {
+    if (!Array.isArray(body.fuera) || body.fuera.some((id) => !styles.includes(id))) throw new HttpError(400, 'Estilo no válido')
+    if (new Set(body.fuera).size >= styles.length) throw new HttpError(400, 'La caja no puede quedarse vacía')
+    next.fuera = [...new Set(body.fuera as string[])]
+  }
+  setSetting(event, next)
+  return [event, next.activa ? 'activa' : 'apagada', `${next.precio} monedas`, `+${next.subida} cada 2`, `hasta ${next.hasta.slice(0, 10)}`, next.fuera.length && `${next.fuera.length} fuera`]
+    .filter(Boolean)
+    .join(' · ')
 }
 
 /** For the admin panel: how many bought and wear each style. */

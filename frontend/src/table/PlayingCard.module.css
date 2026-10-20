@@ -25,9 +25,12 @@
   animation: none;
 }
 
-/* A card lying face down tucks under the one beside it, so the dealer's up card stays on top */
+/*
+  A card lying face down stays over the one beside it, so its back shows off;
+  a back you can see through tucks under it instead (--card-under: -1)
+*/
 .under {
-  z-index: -1;
+  z-index: var(--card-under, auto);
 }
 
 /* The card takes no room until it's about to land; then the ones already there slide over to make it */

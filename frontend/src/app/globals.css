@@ -532,6 +532,14 @@ select {
   --frame: conic-gradient(from 30deg, #2a1f6a, #6a8aff, #0d0a2a, #b06aff, #2a1f6a);
 }
 
+.frame-cuchillo {
+  --frame: conic-gradient(from 20deg, #d6dbe0, #4a5058, #9aa3ad, #2a2e33, #d6dbe0);
+}
+
+.frame-calabaza {
+  --frame: repeating-conic-gradient(#ff8a1f 0 12deg, #c95a0c 12deg 15deg);
+}
+
 /* The whole drawing turns, so it turns around the avatar in its middle */
 .frame-orbit {
   animation: frame-spin 18s linear infinite;

@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useUser } from '@/auth/session-context'
 import type { ChallengeId, Tier } from '@/challenges/useChallenges'
 import type { CosmeticKind } from '@/cosmetics/themes'
-import type { Source, StyleId } from '@/cosmetics/useCosmetics'
+import type { EventId, Source, StyleId } from '@/cosmetics/useCosmetics'
 import { api } from '@/lib/api'
 import type { Audience } from '@/push/device'
 
@@ -248,6 +248,34 @@ export const useSetShopItem = () =>
   useShopAction<{ id: string; precio: number | null; oferta: number | null; retirado: boolean }>('/admin/shop/item')
 export const useSetShopOrder = () => useShopAction<{ tipo: CosmeticKind; ids: string[] }>('/admin/shop/order')
 export const useSetShopSale = () => useShopAction<{ rebaja: number }>('/admin/shop/sale')
+
+/** GET /api/admin/event-boxes: every event's box as set, and what has come out of each. */
+export interface AdminEventBox {
+  id: EventId
+  activa: boolean
+  /** What the first box costs. */
+  precio: number
+  /** How much dearer it gets every two styles a player takes out. */
+  subida: number
+  hasta: string
+  fuera: StyleId[]
+  /** On the home screen right now: on and before its date. */
+  abierta: boolean
+  cajas: number
+  monedas: number
+  jugadores: number
+  /** Players who have everything left in the box. */
+  completos: number
+  items: { id: StyleId; tipo: CosmeticKind; fuera: boolean; salidos: number }[]
+}
+
+export function useAdminEventBoxes() {
+  const user = useUser()
+  return useQuery({ queryKey: ['admin', user.id, 'event-boxes'], queryFn: () => api<AdminEventBox[]>('/admin/event-boxes') })
+}
+
+export const useSetEventBox = () =>
+  useShopAction<{ evento: EventId } & Partial<Pick<AdminEventBox, 'activa' | 'precio' | 'subida' | 'hasta' | 'fuera'>>>('/admin/event-boxes')
 
 export interface EconomyRules {
   startBalance: number

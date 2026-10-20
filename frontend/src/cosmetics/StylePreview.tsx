@@ -43,6 +43,7 @@ export function StylePreview({
   const style = themeStyle({ ...equipped, [tipo]: id })
   return (
     <span className={`${styles.preview} ${styles[`preview_${tipo}`]} ${className}`} style={style} aria-hidden="true">
+      {tipo === 'tapete' && <span className={styles.feltArt} />}
       {tipo === 'tapete' && spot && <span className={styles.previewSpot} />}
       {tipo === 'cartas' && <PlayingCard card={{ rank: 'A', suit: 'H' }} still />}
       {tipo === 'dorso' && <PlayingCard card={null} still />}

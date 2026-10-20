@@ -27,6 +27,19 @@ export interface Cosmetics {
   monedas: number
   equipped: Equipped
   items: CosmeticItem[]
+  /** The events' boxes on the home screen while they're on: every style in each, and which the player has. */
+  eventos: EventBox[]
+}
+
+/** The events with a box of their own (backend/lib/cosmetics.ts EVENTS). */
+export type EventId = 'halloween'
+
+export interface EventBox {
+  id: EventId
+  precio: number
+  /** When it goes, as an ISO date. */
+  hasta: string
+  items: { id: StyleId; tipo: CosmeticKind; owned: boolean }[]
 }
 
 export function useCosmetics() {
@@ -38,11 +51,11 @@ export function useCosmetics() {
 }
 
 /** Equipping or buying: the shop and the profile (coins, the look) change at once. */
-function useCosmeticChange<T extends { id: string }>(path: string) {
+function useCosmeticChange<T, R extends Cosmetics = Cosmetics>(path: string) {
   const user = useUser()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (body: T) => api<Cosmetics>(path, { method: 'POST', body }),
+    mutationFn: (body: T) => api<R>(path, { method: 'POST', body }),
     onSuccess: (cosmetics) => {
       queryClient.setQueryData(['cosmetics', user.id], cosmetics)
       queryClient.setQueryData<Profile>(['profile', user.id], (profile) =>
@@ -61,3 +74,5 @@ function useCosmeticChange<T extends { id: string }>(path: string) {
 export const useEquip = () => useCosmeticChange<{ id: string }>('/cosmetics/equip')
 /** precio is the price the player saw: if it changed, nothing is charged. */
 export const useBuy = () => useCosmeticChange<{ id: string; precio: number }>('/cosmetics/buy')
+/** Opens an event's box at the price the player saw; won is the style that came out. */
+export const useOpenEventBox = () => useCosmeticChange<{ evento: EventId; precio: number }, Cosmetics & { won: StyleId }>('/cosmetics/box')

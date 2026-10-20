@@ -2420,3 +2420,28 @@
   color: var(--text-dim);
   opacity: 1;
 }
+
+/* ---------- Event boxes ---------- */
+
+/* Under the row so it beats the preview's own full width, whichever stylesheet loads last */
+.boxRow .boxPreview {
+  --card-w: 24px;
+
+  flex: none;
+  width: 64px;
+  height: 44px;
+  border-radius: 8px;
+}
+
+/* A framed photo shrunk to fit the swatch, knife and all */
+.boxRow .boxFrame {
+  --preview-zoom: 0.5;
+
+  overflow: hidden;
+}
+
+/* Taken out of the box: faded */
+.boxRow[data-out] .boxPreview,
+.boxRow[data-out] .userName {
+  opacity: 0.45;
+}

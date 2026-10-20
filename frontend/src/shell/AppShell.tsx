@@ -12,6 +12,7 @@ import { InstallBanner } from '@/install/InstallBanner'
 import { useMaintenance } from '@/maintenance/useMaintenance'
 import { formatNumber } from '@/lib/format'
 import type { Profile } from '@/profile/useProfile'
+import { EVENT_THEMES, eventOfPath } from '@/events/themes'
 import { CeremonyGate } from '@/season/Ceremony'
 import { GroupPicker } from '@/groups/GroupPicker'
 import { joinPath, pendingInvite } from '@/groups/pendingInvite'
@@ -59,6 +60,8 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
   const felted = pathname.startsWith('/jugar')
   // The daily deck has a felt of its own that no one can buy.
   const daily = pathname.startsWith('/jugar/baraja')
+  // An event's page turns the whole app to the event's sky.
+  const event = eventOfPath(pathname)
 
   // The content is what scrolls, not the page, so Next can't reset it on navigation.
   const content = useRef<HTMLElement>(null)
@@ -68,7 +71,9 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
   }, [pathname])
 
   return (
-    <div className={`${styles.shell} ${felted ? styles.felted : ''}`} style={daily ? { ...themeStyle(profile.estilos), ...DAILY_FELT } : themeStyle(profile.estilos)}>
+    <div className={`${styles.shell} ${felted ? styles.felted : ''} ${event ? styles.eventSky : ''}`}
+      style={{ ...themeStyle(profile.estilos), ...(daily ? DAILY_FELT : {}), ...(event ? EVENT_THEMES[event].sky : {}) }}
+    >
       {/* iOS 27 paints the status bar from a fixed element at the top; without it the edge is blurred */}
       <div className={styles.statusTint} aria-hidden="true" />
       <header className={styles.topbar}>

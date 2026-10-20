@@ -16,6 +16,7 @@ import { AutomationsTab } from './AutomationsTab'
 import { CalendarTab } from './CalendarTab'
 import { AdminContext, type Focus, type Tab, TABS } from './context'
 import { EconomyTab } from './EconomyTab'
+import { EventsTab } from './EventsTab'
 import { InboxTab } from './InboxTab'
 import { LeagueTab } from './LeagueTab'
 import { LogTab } from './LogTab'
@@ -36,7 +37,7 @@ const GROUPS: ['today' | 'community' | 'comms' | 'game' | 'system', Tab[]][] = [
   ['today', ['stats', 'inbox', 'calendar']],
   ['community', ['users', 'moderation', 'league']],
   ['comms', ['notices', 'polls']],
-  ['game', ['economy', 'shop']],
+  ['game', ['economy', 'shop', 'events']],
   ['system', ['automations', 'team', 'log', 'system']],
 ]
 
@@ -51,6 +52,7 @@ const PANELS: Record<Tab, (focus: Focus | null) => React.ReactNode> = {
   polls: () => <PollsTab />,
   economy: () => <EconomyTab />,
   shop: () => <ShopTab />,
+  events: () => <EventsTab />,
   automations: () => <AutomationsTab />,
   team: () => <TeamTab />,
   log: () => <LogTab />,

@@ -232,10 +232,12 @@
   flex-direction: column;
   /* The player's felt (cosmetics/themes.ts) */
   background: var(--felt-bg, radial-gradient(ellipse 90% 60% at 50% 38%, #14834c 0%, #0c5a34 60%, #073a22 100%));
-  color: #f4f1e8;
+  /* A light felt (the ouija) asks for dark writing on it; the bar keeps the light */
+  color: var(--felt-text, #f4f1e8);
 }
 
 .felted .topbar {
+  color: #f4f1e8;
   border-bottom: 0;
   background: var(--felt-bar, #0b5231);
   box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
@@ -255,6 +257,22 @@
   padding: 0 env(safe-area-inset-right) 0 env(safe-area-inset-left);
   /* The table always fits the screen: it never scrolls */
   overflow: hidden;
+}
+
+/* ---------- An event's page (/eventos/…) ---------- */
+
+/* The whole app turns to the event's sky: its theme sets the colours, the sky and the bars' line */
+.eventSky {
+  background: var(--event-sky);
+  color: var(--text);
+}
+
+.eventSky .topbar {
+  border-bottom: 1px solid var(--event-line);
+}
+
+.eventSky .tabbar {
+  border-color: var(--event-line);
 }
 
 /* ---------- Desktop ---------- */

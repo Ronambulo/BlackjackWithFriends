@@ -5,7 +5,7 @@ import { and, count, desc, eq, inArray, or, sql } from 'drizzle-orm'
 import { activeBan, dropReview, forgetBans, isAdmin, logAction, MOD_LIMIT, requireAdmin, setUsername } from '../lib/admin.js'
 import { forgetAuth } from '../lib/auth.js'
 import { backupDir, createBackup, listBackups, restoreBackup } from '../lib/backup.js'
-import { cosmeticStats, setShopItem, setShopOrder, setShopSale } from '../lib/cosmetics.js'
+import { cosmeticStats, EVENT_IDS, eventId, eventStats, setEvent, setShopItem, setShopOrder, setShopSale } from '../lib/cosmetics.js'
 import { snapshot } from '../lib/metrics.js'
 import { FLAGS, flags, forgetSettings, getSetting, maintenance, setSetting, type Flag, type Maintenance } from '../lib/settings.js'
 import { databasePath, db } from '../lib/db.js'
@@ -623,6 +623,22 @@ export async function postShopSale(request: Request): Promise<Response> {
   const body = await readBody(request)
   const before = getSetting('shop') ?? null
   logAction(me, 'shop_sale', null, `${setShopSale(body.rebaja)} %`, { kind: 'setting', key: 'shop', value: before })
+  return json({ ok: true })
+}
+
+// GET /api/admin/event-boxes: every event's box as set, and what has come out of each.
+export async function getAdminEvents(request: Request): Promise<Response> {
+  await requireAdmin(request)
+  return json(EVENT_IDS.map(eventStats))
+}
+
+// POST /api/admin/event-boxes { evento, activa, precio, subida, hasta, fuera }: the event, and any of the rest.
+export async function postAdminEvent(request: Request): Promise<Response> {
+  const me = await requireAdmin(request, 'dueno')
+  const body = await readBody(request)
+  const event = eventId(body.evento)
+  const before = getSetting(event) ?? null
+  logAction(me, 'event_box', null, setEvent(event, body), { kind: 'setting', key: event, value: before })
   return json({ ok: true })
 }
 
