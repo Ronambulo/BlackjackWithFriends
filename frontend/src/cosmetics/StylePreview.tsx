@@ -30,6 +30,7 @@ export function StylePreview({
   equipped,
   className = '',
   spot = true,
+  avatar,
 }: {
   id: string
   tipo: CosmeticKind
@@ -37,6 +38,8 @@ export function StylePreview({
   className?: string
   /** The betting spot on a felt; off where the felt is a small swatch */
   spot?: boolean
+  /** Whose photo wears a frame; the viewer's by default */
+  avatar?: { seed: string; name: string; src: string | null }
 }) {
   const user = useUser()
   const { data: profile } = useProfile()
@@ -48,7 +51,15 @@ export function StylePreview({
       {tipo === 'cartas' && <PlayingCard card={{ rank: 'A', suit: 'H' }} still />}
       {tipo === 'dorso' && <PlayingCard card={null} still />}
       {tipo === 'fichas' && [5, 25, 100].map((value) => <Chip key={value} value={value} small />)}
-      {tipo === 'marco' && <Avatar seed={user.id} name={profile?.nombre ?? ''} src={profile?.avatar_url} size={40} frame={id} />}
+      {tipo === 'marco' && (
+        <Avatar
+          seed={avatar?.seed ?? user.id}
+          name={avatar ? avatar.name : (profile?.nombre ?? '')}
+          src={avatar ? avatar.src : profile?.avatar_url}
+          size={40}
+          frame={id}
+        />
+      )}
     </span>
   )
 }

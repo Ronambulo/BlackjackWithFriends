@@ -2366,11 +2366,16 @@
   font-variant-numeric: tabular-nums;
 }
 
-.shopMini {
+.shopRanking li > .shopMini,
+.buyerItems li > .shopMini {
   --card-w: 24px;
+  --preview-zoom: 0.7;
 
+  width: 56px;
   height: 38px;
+  overflow: hidden;
   border-radius: 8px;
+  background: var(--layer-3);
 }
 
 @media (width >= 640px) {
@@ -2450,19 +2455,30 @@
 .buyerMinis {
   display: flex;
   flex: none;
+  align-items: center;
+  gap: 4px;
 }
 
-.buyerMini {
+/* Every kind in the same small box: chips, cards and a framed photo shrunk to fit */
+.buyerMinis > .buyerMini {
   --card-w: 16px;
+  --preview-zoom: 0.5;
 
-  width: 34px;
-  height: 26px;
-  border: 2px solid var(--layer-2);
-  border-radius: 7px;
+  flex: none;
+  gap: 1px;
+  width: 44px;
+  height: 32px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--layer-3);
 }
 
-.buyerMini + .buyerMini {
-  margin-left: -10px;
+.buyerMore {
+  min-width: 28px;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
 }
 
 .buyerSpent {
