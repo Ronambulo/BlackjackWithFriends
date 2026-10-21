@@ -220,6 +220,14 @@ export const useSetMarks = () =>
 export const usePostNote = () => useAdminAction<{ userId: string; texto: string }>('/admin/notes')
 export const useDeleteNote = () => useAdminAction<{ id: number }>('/admin/notes/delete')
 export const useCloseSessions = () => useAdminAction<{ userId: string }>('/admin/users/sessions')
+/** Starts a player's week over: their chips change everywhere, so everything refreshes. */
+export function useResetWeek() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { userId: string }) => api<{ ok: true; removed: number }>('/admin/users/reset-week', { method: 'POST', body }),
+    onSuccess: () => void queryClient.invalidateQueries(),
+  })
+}
 export const useRemoveAvatar = () => useAdminAction<{ userId: string }>('/admin/users/avatar')
 export const usePostEvent = () =>
   useAdminAction<{ tipo: EventKind; titulo: string; inicio: number; fin?: number | null; valor?: number | null; detalle?: string | null }>(

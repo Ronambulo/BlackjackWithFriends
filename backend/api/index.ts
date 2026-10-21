@@ -63,6 +63,7 @@ import {
 } from '../routes/admin.js'
 import {
   closeSessions,
+  resetWeek,
   deleteEvent,
   deleteNote,
   dismissInbox,
@@ -283,6 +284,7 @@ const routes: Routes = {
   '/api/admin/notes': { POST: postNote },
   '/api/admin/notes/delete': { POST: deleteNote },
   '/api/admin/users/sessions': { POST: closeSessions },
+  '/api/admin/users/reset-week': { POST: resetWeek },
   '/api/admin/users/avatar': { POST: removeAvatar },
   '/api/admin/users/view': { GET: viewAsPlayer },
   '/api/admin/users/push': { POST: pushUser },
