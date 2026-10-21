@@ -15,6 +15,8 @@ import { useAdminPanel } from './context'
 type Kind = CosmeticKind | 'all'
 type Sort = 'spent' | 'items' | 'recent'
 const SORTS: Sort[] = ['spent', 'items', 'recent']
+// Styles shown in a player's row before "+N"
+const MINIS = 4
 
 const sold = (item: AdminShopItem) => item.from === 'tienda'
 const lastAt = (buyer: ShopBuyer) => Math.max(...buyer.items.map((item) => item.at))
@@ -136,6 +138,7 @@ function Buyers({ buyers }: { buyers: ShopBuyer[] }) {
           {shown.map((buyer) => {
             const expanded = open === buyer.id
             const spent = buyer.items.reduce((sum, item) => sum + item.monedas, 0)
+            const face = { seed: buyer.id, name: buyer.nombre ?? buyer.username, src: buyer.avatarUrl }
             return (
               <li key={buyer.id} className={styles.buyer}>
                 <button type="button" className={styles.buyerHead} aria-expanded={expanded} onClick={() => setOpen(expanded ? null : buyer.id)}>
@@ -147,9 +150,10 @@ function Buyers({ buyers }: { buyers: ShopBuyer[] }) {
                     </small>
                   </span>
                   <span className={styles.buyerMinis} aria-hidden="true">
-                    {buyer.items.slice(0, 4).map((item) => (
-                      <StylePreview key={item.id} id={item.id} tipo={item.tipo} className={styles.buyerMini} spot={false} />
+                    {buyer.items.slice(0, MINIS).map((item) => (
+                      <StylePreview key={item.id} id={item.id} tipo={item.tipo} className={styles.buyerMini} spot={false} avatar={face} />
                     ))}
+                    {buyer.items.length > MINIS && <span className={styles.buyerMore}>+{buyer.items.length - MINIS}</span>}
                   </span>
                   <span className={styles.buyerSpent}>
                     <b>
@@ -164,7 +168,7 @@ function Buyers({ buyers }: { buyers: ShopBuyer[] }) {
                     <ul className={styles.buyerItems}>
                       {buyer.items.map((item) => (
                         <li key={item.id}>
-                          <StylePreview id={item.id} tipo={item.tipo} className={styles.shopMini} />
+                          <StylePreview id={item.id} tipo={item.tipo} className={styles.shopMini} avatar={face} />
                           <span className={styles.userName}>
                             <b>{name(item.id)}</b>
                             <small>
