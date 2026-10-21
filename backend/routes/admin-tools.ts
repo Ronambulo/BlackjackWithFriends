@@ -8,7 +8,7 @@ import { catalogue, COSMETICS, equipped, ownedCosmetics } from '../lib/cosmetics
 import { db } from '../lib/db.js'
 import { notifyGroups } from '../lib/events.js'
 import { HttpError, json } from '../lib/http.js'
-import { addDays, currentBalance, leagueClock, madridAt, madridMidnight, rollover } from '../lib/league.js'
+import { addDays, currentBalance, leagueClock, madridAt, madridMidnight, rollover, rulesFor } from '../lib/league.js'
 import { sendPush } from '../lib/push.js'
 import { forgetSchedule, testGroup } from '../lib/schedule.js'
 import { getSetting, setSetting } from '../lib/settings.js'
@@ -28,6 +28,7 @@ import {
   ipBans,
   messages,
   notices,
+  pays,
   playerMarks,
   polls,
   pollVotes,
@@ -395,6 +396,36 @@ export async function closeSessions(request: Request): Promise<Response> {
   const closed = db().delete(session).where(eq(session.userId, id)).returning({ id: session.id }).all().length
   logAction(me, 'close_sessions', `@${usernames([id]).get(id)}`, String(closed))
   return json({ ok: true, closed })
+}
+
+// POST /api/admin/users/reset-week { userId }: starts the player's league week over,
+// as if they had not played it: their hands, pay and chip corrections go, and the
+// balance is back at the start. For testing on a real account.
+export async function resetWeek(request: Request): Promise<Response> {
+  const me = await requireAdmin(request, 'dueno')
+  const id = playerId((await readBody(request)).userId)
+  const c = leagueClock()
+  const { startBalance } = rulesFor(c.weekStart)
+  const removed = db().transaction((tx) => {
+    rollover(tx, id, c)
+    const gone = tx
+      .delete(hands)
+      .where(and(eq(hands.userId, id), eq(hands.modo, 'liga'), gte(hands.createdAt, c.weekBegin)))
+      .returning({ id: hands.id })
+      .all().length
+    tx.delete(pays).where(and(eq(pays.userId, id), gte(pays.createdAt, c.weekBegin))).run()
+    tx.delete(adjustments)
+      .where(and(eq(adjustments.userId, id), eq(adjustments.tipo, 'saldo'), gte(adjustments.createdAt, c.weekBegin)))
+      .run()
+    tx.update(profiles)
+      .set({ saldo: startBalance, saldoInicioDia: startBalance, ultimaPaga: null, semana: c.weekStart, dia: c.today })
+      .where(eq(profiles.id, id))
+      .run()
+    return gone
+  })
+  notifyGroups([id])
+  logAction(me, 'reset_week', `@${usernames([id]).get(id)}`, String(removed))
+  return json({ ok: true, removed })
 }
 
 // POST /api/admin/users/avatar { userId }: takes the photo down (back to initials).

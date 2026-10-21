@@ -18,6 +18,7 @@ import {
 } from '@/admin/useAdmin'
 import {
   useCloseSessions,
+  useResetWeek,
   useDeleteNote,
   usePlayerView,
   usePostNote,
@@ -451,6 +452,8 @@ function Player({ user, onBack, onBan, onDelete }: { user: AdminUser; onBack?: (
   const postNote = usePostNote()
   const deleteNote = useDeleteNote()
   const closeSessions = useCloseSessions()
+  const resetWeek = useResetWeek()
+  const [resetting, setResetting] = useState(false)
   const removeAvatar = useRemoveAvatar()
   const [modal, setModal] = useState<'adjust' | 'push' | 'view' | null>(null)
   const [more, setMore] = useState(false)
@@ -786,6 +789,11 @@ function Player({ user, onBack, onBan, onDelete }: { user: AdminUser; onBack?: (
               <button type="button" className="btn btn-secondary" onClick={() => run(closeSessions.mutateAsync({ userId: user.id }), t('panel.user.sessionsClosed'))}>
                 {t('panel.user.closeSessions')}
               </button>
+              {owner && (
+                <button type="button" className={`btn ${styles.softDanger}`} onClick={() => setResetting(true)}>
+                  {t('panel.user.resetWeek')}
+                </button>
+              )}
               {!user.admin &&
                 (silencedUntil && silencedUntil > now ? (
                   <button type="button" className={`btn ${styles.softDanger}`} title={t('panel.user.silencedUntil', { date: date(silencedUntil) })} onClick={() => marks.mutate({ userId: user.id, silenceHours: 0 })}>
@@ -825,6 +833,19 @@ function Player({ user, onBack, onBan, onDelete }: { user: AdminUser; onBack?: (
             )}
           </section>
         )}
+        <ConfirmSheet
+          open={resetting}
+          icon={<Avatar seed={user.id} name={user.nombre ?? user.username} src={user.avatarUrl} size={64} />}
+          title={t('panel.user.resetWeekTitle', { name: user.username })}
+          text={t('panel.user.resetWeekText')}
+          confirm={t('panel.user.resetWeek')}
+          busy={resetWeek.isPending}
+          onCancel={() => setResetting(false)}
+          onConfirm={() => {
+            setResetting(false)
+            run(resetWeek.mutateAsync({ userId: user.id }), t('panel.user.weekReset'))
+          }}
+        />
         {marks.isError && <p className="error-text">{marks.error instanceof Error && marks.error.message ? marks.error.message : t('common.error')}</p>}
       </div>
 
