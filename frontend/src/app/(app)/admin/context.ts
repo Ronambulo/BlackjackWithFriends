@@ -14,6 +14,7 @@ export const TABS = [
   'polls',
   'economy',
   'shop',
+  'styles',
   'events',
   'automations',
   'team',

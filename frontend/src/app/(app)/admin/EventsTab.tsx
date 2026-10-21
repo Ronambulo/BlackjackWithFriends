@@ -54,7 +54,7 @@ export function EventsTab() {
         <Tile value={number(data.jugadores)} label={t('admin.events.players')} />
         <Tile value={number(data.completos)} label={t('admin.events.complete')} />
       </section>
-      <Settings key={`${data.id}${data.activa}${data.precio}${data.subida}${data.hasta}`} data={data} owner={owner} />
+      <Settings key={`${data.id}${data.activa}${data.precio}${data.subida}${data.cada}${data.hasta}`} data={data} owner={owner} />
       <Contents data={data} owner={owner} />
     </>
   )
@@ -108,12 +108,13 @@ function Settings({ data, owner }: { data: AdminEventBox; owner: boolean }) {
   const set = useSetEventBox()
   const [precio, setPrecio] = useState(String(data.precio))
   const [subida, setSubida] = useState(String(data.subida))
+  const [cada, setCada] = useState(String(data.cada))
   const [hasta, setHasta] = useState(toLocal(data.hasta))
-  const changed = Number(precio) !== data.precio || Number(subida) !== data.subida || hasta !== toLocal(data.hasta)
+  const changed = Number(precio) !== data.precio || Number(subida) !== data.subida || Number(cada) !== data.cada || hasta !== toLocal(data.hasta)
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
-    set.mutate({ evento: data.id, precio: Number(precio), subida: Number(subida), hasta: new Date(hasta).toISOString() })
+    set.mutate({ evento: data.id, precio: Number(precio), subida: Number(subida), cada: Number(cada), hasta: new Date(hasta).toISOString() })
   }
 
   return (
@@ -163,6 +164,19 @@ function Settings({ data, owner }: { data: AdminEventBox; owner: boolean }) {
         />
       </label>
       <label className={styles.formField}>
+        {t('admin.events.every')}
+        <input
+          className={styles.fieldInput}
+          type="number"
+          min={1}
+          max={data.items.length}
+          inputMode="numeric"
+          value={cada}
+          disabled={!owner}
+          onChange={(event) => setCada(event.target.value)}
+        />
+      </label>
+      <label className={styles.formField}>
         {t('admin.events.goes')}
         <input
           className={styles.fieldInput}
@@ -174,7 +188,7 @@ function Settings({ data, owner }: { data: AdminEventBox; owner: boolean }) {
       </label>
       {set.error && <p className="error-text">{set.error.message || t('common.error')}</p>}
       {owner ? (
-        <button className="btn btn-primary" type="submit" disabled={!changed || !hasta || !(Number(precio) >= 1) || !(Number(subida) >= 0) || set.isPending}>
+        <button className="btn btn-primary" type="submit" disabled={!changed || !hasta || !(Number(precio) >= 1) || !(Number(subida) >= 0) || !Number.isInteger(Number(cada)) || !(Number(cada) >= 1 && Number(cada) <= data.items.length) || set.isPending}>
           {t('common.save')}
         </button>
       ) : (
