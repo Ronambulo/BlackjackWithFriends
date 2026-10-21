@@ -230,6 +230,24 @@ export function useAdminShop() {
   return useQuery({ queryKey: ['admin', user.id, 'shop'], queryFn: () => api<AdminShop>('/admin/shop') })
 }
 
+/** A player who has bought styles: each one, what it cost and whether they wear it, newest first. */
+export interface ShopBuyer {
+  id: string
+  username: string
+  nombre: string | null
+  avatarUrl: string | null
+  /** Coins they have now. */
+  monedas: number
+  spent: number
+  items: { id: StyleId; tipo: CosmeticKind; monedas: number; at: number; wearing: boolean }[]
+}
+
+/** GET /api/admin/shop/buyers */
+export function useShopBuyers() {
+  const user = useUser()
+  return useQuery({ queryKey: ['admin', user.id, 'shop', 'buyers'], queryFn: () => api<ShopBuyer[]>('/admin/shop/buyers') })
+}
+
 /** The shop changes for the admin too, who may be looking at it as a player. */
 function useShopAction<T>(path: string) {
   const user = useUser()
@@ -257,6 +275,7 @@ export interface AdminEventBox {
   precio: number
   /** How much dearer it gets every two styles a player takes out. */
   subida: number
+  cada: number
   hasta: string
   fuera: StyleId[]
   /** On the home screen right now: on and before its date. */
@@ -275,7 +294,7 @@ export function useAdminEventBoxes() {
 }
 
 export const useSetEventBox = () =>
-  useShopAction<{ evento: EventId } & Partial<Pick<AdminEventBox, 'activa' | 'precio' | 'subida' | 'hasta' | 'fuera'>>>('/admin/event-boxes')
+  useShopAction<{ evento: EventId } & Partial<Pick<AdminEventBox, 'activa' | 'precio' | 'subida' | 'cada' | 'hasta' | 'fuera'>>>('/admin/event-boxes')
 
 export interface EconomyRules {
   startBalance: number

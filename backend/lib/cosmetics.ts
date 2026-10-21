@@ -9,7 +9,7 @@ import { db, type Tx } from './db.js'
 import { HttpError } from './http.js'
 import { priceFactor, scheduledSale, testFor, testGroup } from './schedule.js'
 import { getSetting, setSetting } from './settings.js'
-import { achievements, COSMETIC_KINDS, profiles, seasonStandings, userCosmetics, type CosmeticKind } from './schema.js'
+import { achievements, COSMETIC_KINDS, profiles, seasonStandings, user, userCosmetics, type CosmeticKind } from './schema.js'
 
 /** How a style is had: everyone's, an achievement's, for winning weeks, or bought. */
 export type Source = { from: 'gratis' } | { from: 'logro'; logro: AchievementId } | { from: 'trofeo'; trofeos: number } | { from: 'tienda'; precio: number }
@@ -150,7 +150,7 @@ const byId = new Map(COSMETICS.map((c) => [c.id, c]))
 interface EventDef {
   styles: readonly string[]
   /** What the box starts as, before an admin changes anything. */
-  defaults: { precio: number; subida: number; hasta: string }
+  defaults: { precio: number; subida: number; cada: number; hasta: string }
 }
 
 export const EVENTS = {
@@ -169,7 +169,7 @@ export const EVENTS = {
       'marco.calabaza',
     ],
     // Midnight at the end of 1 November in Spain (CET).
-    defaults: { precio: 25, subida: 25, hasta: '2026-11-01T23:00:00.000Z' },
+    defaults: { precio: 25, subida: 25, cada: 2, hasta: '2026-11-01T23:00:00.000Z' },
   },
 } as const satisfies Record<string, EventDef>
 
@@ -192,8 +192,10 @@ export interface EventSettings {
   activa: boolean
   /** What the first box costs. */
   precio: number
-  /** How much dearer it gets every two styles the player takes out of it. */
+  /** How much dearer it gets every so many styles the player takes out of it. */
   subida: number
+  /** How many styles the player takes out before it gets dearer. */
+  cada: number
   /** When the box goes, as an ISO date. */
   hasta: string
   /** Styles the admins took out of the box: nobody gets them from it. */
@@ -207,6 +209,7 @@ export function eventSettings(event: EventId): EventSettings {
     activa: saved?.activa ?? true,
     precio: saved?.precio ?? defaults.precio,
     subida: saved?.subida ?? defaults.subida,
+    cada: saved?.cada ?? defaults.cada,
     hasta: saved?.hasta ?? defaults.hasta,
     fuera: saved?.fuera ?? [],
   }
@@ -214,9 +217,9 @@ export function eventSettings(event: EventId): EventSettings {
 
 const eventOn = (box: EventSettings, now = new Date()) => box.activa && now < new Date(box.hasta)
 
-/** What the box costs this player: dearer every two of its styles they already have. */
+/** What the box costs this player: dearer every so many of its styles they already have. */
 const boxPrice = (event: EventId, box: EventSettings, owned: Set<string>) =>
-  box.precio + box.subida * Math.floor(eventStyles(event).filter((id) => owned.has(id)).length / 2)
+  box.precio + box.subida * Math.floor(eventStyles(event).filter((id) => owned.has(id)).length / box.cada)
 
 const DEFAULTS = Object.fromEntries(COSMETIC_KINDS.map((k) => [k, COSMETICS.find((c) => c.tipo === k)!.id])) as Record<CosmeticKind, string>
 
@@ -465,7 +468,7 @@ export function eventStats(event: EventId) {
 }
 
 /** An admin changes an event's box: on or off, its price and how it goes up, when it goes and what's in it. Returns it for the log. */
-export function setEvent(event: EventId, body: { activa?: unknown; precio?: unknown; subida?: unknown; hasta?: unknown; fuera?: unknown }): string {
+export function setEvent(event: EventId, body: { activa?: unknown; precio?: unknown; subida?: unknown; cada?: unknown; hasta?: unknown; fuera?: unknown }): string {
   const next = eventSettings(event)
   const styles = eventStyles(event)
   if (body.activa != null) {
@@ -478,6 +481,10 @@ export function setEvent(event: EventId, body: { activa?: unknown; precio?: unkn
     if (typeof body.subida !== 'number' || !Number.isInteger(body.subida) || body.subida < 0 || body.subida > 100_000) throw new HttpError(400, 'Precio no válido')
     next.subida = body.subida
   }
+  if (body.cada != null) {
+    if (typeof body.cada !== 'number' || !Number.isInteger(body.cada) || body.cada < 1 || body.cada > styles.length) throw new HttpError(400, 'Número no válido')
+    next.cada = body.cada
+  }
   if (body.hasta != null) {
     const when = typeof body.hasta === 'string' ? new Date(body.hasta) : null
     if (!when || Number.isNaN(when.getTime())) throw new HttpError(400, 'Fecha no válida')
@@ -489,7 +496,7 @@ export function setEvent(event: EventId, body: { activa?: unknown; precio?: unkn
     next.fuera = [...new Set(body.fuera as string[])]
   }
   setSetting(event, next)
-  return [event, next.activa ? 'activa' : 'apagada', `${next.precio} monedas`, `+${next.subida} cada 2`, `hasta ${next.hasta.slice(0, 10)}`, next.fuera.length && `${next.fuera.length} fuera`]
+  return [event, next.activa ? 'activa' : 'apagada', `${next.precio} monedas`, `+${next.subida} cada ${next.cada}`, `hasta ${next.hasta.slice(0, 10)}`, next.fuera.length && `${next.fuera.length} fuera`]
     .filter(Boolean)
     .join(' · ')
 }
@@ -526,6 +533,51 @@ export function cosmeticStats() {
       wearing: worn.get(c.id) ?? 0,
     })),
   }
+}
+
+/** Everyone who has bought a style, what with and when, the one who spent most first. */
+export function cosmeticBuyers() {
+  const rows = db()
+    .select({
+      userId: userCosmetics.userId,
+      username: sql<string>`coalesce(${user.displayUsername}, ${user.username}, ${user.name})`,
+      nombre: profiles.nombre,
+      avatarUrl: profiles.avatarUrl,
+      monedasAhora: profiles.monedas,
+      estilos: profiles.estilosEquipados,
+      estilo: userCosmetics.estilo,
+      monedas: userCosmetics.monedas,
+      at: sql<number>`${userCosmetics.createdAt}`,
+    })
+    .from(userCosmetics)
+    .innerJoin(user, eq(user.id, userCosmetics.userId))
+    .leftJoin(profiles, eq(profiles.id, userCosmetics.userId))
+    .orderBy(sql`${userCosmetics.createdAt} desc`)
+    .all()
+  const buyers = new Map<
+    string,
+    {
+      id: string
+      username: string
+      nombre: string | null
+      avatarUrl: string | null
+      monedas: number
+      spent: number
+      items: { id: string; tipo: CosmeticKind; monedas: number; at: number; wearing: boolean }[]
+    }
+  >()
+  for (const row of rows) {
+    const cosmetic = byId.get(row.estilo)
+    if (!cosmetic) continue
+    let buyer = buyers.get(row.userId)
+    if (!buyer) {
+      buyer = { id: row.userId, username: row.username, nombre: row.nombre, avatarUrl: row.avatarUrl, monedas: row.monedasAhora ?? 0, spent: 0, items: [] }
+      buyers.set(row.userId, buyer)
+    }
+    buyer.spent += row.monedas
+    buyer.items.push({ id: cosmetic.id, tipo: cosmetic.tipo, monedas: row.monedas, at: row.at, wearing: equipped(row.estilos)[cosmetic.tipo] === cosmetic.id })
+  }
+  return [...buyers.values()].sort((a, b) => b.spent - a.spent || b.items.length - a.items.length)
 }
 
 function price(value: unknown, max = 1_000_000): number {

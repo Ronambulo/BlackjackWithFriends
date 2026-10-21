@@ -27,6 +27,7 @@ import { Palette } from './Palette'
 import { PollsTab } from './PollsTab'
 import { ShopTab } from './ShopTab'
 import { StatsTab } from './StatsTab'
+import { StylesTab } from './StylesTab'
 import { SystemTab } from './SystemTab'
 import { TeamTab } from './TeamTab'
 import ui from './tools.module.css'
@@ -37,7 +38,7 @@ const GROUPS: ['today' | 'community' | 'comms' | 'game' | 'system', Tab[]][] = [
   ['today', ['stats', 'inbox', 'calendar']],
   ['community', ['users', 'moderation', 'league']],
   ['comms', ['notices', 'polls']],
-  ['game', ['economy', 'shop', 'events']],
+  ['game', ['economy', 'shop', 'styles', 'events']],
   ['system', ['automations', 'team', 'log', 'system']],
 ]
 
@@ -52,6 +53,7 @@ const PANELS: Record<Tab, (focus: Focus | null) => React.ReactNode> = {
   polls: () => <PollsTab />,
   economy: () => <EconomyTab />,
   shop: () => <ShopTab />,
+  styles: () => <StylesTab />,
   events: () => <EventsTab />,
   automations: () => <AutomationsTab />,
   team: () => <TeamTab />,
@@ -60,7 +62,7 @@ const PANELS: Record<Tab, (focus: Focus | null) => React.ReactNode> = {
 }
 
 /** Tabs that are one long list or a wide board rather than a grid of cards. */
-const SINGLE: Tab[] = ['users', 'shop', 'inbox', 'calendar', 'log']
+const SINGLE: Tab[] = ['users', 'shop', 'styles', 'inbox', 'calendar', 'log']
 
 export default function AdminPage() {
   return (

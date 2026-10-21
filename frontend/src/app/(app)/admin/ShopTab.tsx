@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useAdminShop, useSetShopItem, useSetShopOrder, useSetShopSale, type AdminShop, type AdminShopItem } from '@/admin/useAdmin'
 import { number } from '@/admin/format'
 import { StylePreview } from '@/cosmetics/StylePreview'
-import { KINDS, type CosmeticKind } from '@/cosmetics/themes'
+import type { CosmeticKind } from '@/cosmetics/themes'
 import { ChevronLeftIcon, ChevronRightIcon } from '@/ui/icons'
 import { Modal } from '@/ui/Modal'
 
@@ -13,7 +13,6 @@ import { Modal } from '@/ui/Modal'
 const TAB_KINDS: CosmeticKind[] = ['tapete', 'dorso', 'cartas', 'fichas', 'marco']
 import styles from './admin.module.css'
 
-type View = CosmeticKind | 'stats'
 type Filter = 'all' | 'onSale' | 'retired' | 'offer'
 const FILTERS: Filter[] = ['all', 'onSale', 'retired', 'offer']
 const SALE_PRESETS = [10, 20, 30, 50, 75]
@@ -25,11 +24,11 @@ const matches = (item: AdminShopItem, filter: Filter) =>
   (filter === 'retired' && item.retirado) ||
   (filter === 'offer' && !!item.oferta)
 
-/** The style shop as a grid: tap a style to change it, or see how it sells. */
+/** The style shop as a grid: tap a style to change it. How it sells is in the styles tab. */
 export function ShopTab() {
   const { t } = useTranslation()
   const { data, isPending, isError, refetch } = useAdminShop()
-  const [view, setView] = useState<View>('tapete')
+  const [view, setView] = useState<CosmeticKind>('tapete')
   const [filter, setFilter] = useState<Filter>('all')
   const [editing, setEditing] = useState<string | null>(null)
   const [saleOpen, setSaleOpen] = useState(false)
@@ -46,7 +45,7 @@ export function ShopTab() {
     )
 
   const shop = data.items.filter(sold)
-  const kindItems = view === 'stats' ? [] : data.items.filter((item) => item.tipo === view)
+  const kindItems = data.items.filter((item) => item.tipo === view)
   const shown = kindItems.filter((item) => matches(item, filter))
   // Looked up again on every render, so the modal shows the style as it is after a save or a move.
   const edited = editing ? data.items.find((item) => item.id === editing) : undefined
@@ -81,38 +80,27 @@ export function ShopTab() {
                 <span className={styles.shopCount}>{data.items.filter((item) => item.tipo === k).length}</span>
               </button>
             ))}
-            <button type="button" aria-pressed={view === 'stats'} onClick={() => setView('stats')}>
-              {t('admin.shop.statsTab')}
-            </button>
           </div>
-          {view !== 'stats' && (
-            <div className={styles.shopFilters} role="group" aria-label={t('admin.shop.filter')}>
-              {FILTERS.map((f) => (
-                <button key={f} type="button" aria-pressed={filter === f} onClick={() => setFilter(f)}>
-                  {t(`admin.shop.filters.${f}`)}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className={styles.shopFilters} role="group" aria-label={t('admin.shop.filter')}>
+            {FILTERS.map((f) => (
+              <button key={f} type="button" aria-pressed={filter === f} onClick={() => setFilter(f)}>
+                {t(`admin.shop.filters.${f}`)}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {view === 'stats' ? (
-          <ShopStats items={data.items} />
+        <p className={styles.shopHint}>{t('admin.shop.gridHint')}</p>
+        {shown.length === 0 ? (
+          <p className={styles.dim}>{t('admin.shop.emptyFilter')}</p>
         ) : (
-          <>
-            <p className={styles.shopHint}>{t('admin.shop.gridHint')}</p>
-            {shown.length === 0 ? (
-              <p className={styles.dim}>{t('admin.shop.emptyFilter')}</p>
-            ) : (
-              <ul className={styles.shopGrid}>
-                {shown.map((item) => (
-                  <li key={item.id}>
-                    <ShopTile item={item} position={kindItems.indexOf(item)} onOpen={() => setEditing(item.id)} />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
+          <ul className={styles.shopGrid}>
+            {shown.map((item) => (
+              <li key={item.id}>
+                <ShopTile item={item} position={kindItems.indexOf(item)} onOpen={() => setEditing(item.id)} />
+              </li>
+            ))}
+          </ul>
         )}
       </section>
 
@@ -404,69 +392,5 @@ function SaleModal({ rebaja, onClose }: { rebaja: AdminShop['rebaja']; onClose: 
         </div>
       </form>
     </Modal>
-  )
-}
-
-/** How the shop sells: coins per kind, and the styles that sell, are worn and earn the most. */
-function ShopStats({ items }: { items: AdminShopItem[] }) {
-  const { t } = useTranslation()
-  const perKind = KINDS.map((kind) => {
-    const of = items.filter((item) => item.tipo === kind)
-    return { kind, coins: of.reduce((sum, item) => sum + item.coins, 0), bought: of.reduce((sum, item) => sum + item.bought, 0) }
-  })
-  const most = Math.max(1, ...perKind.map((row) => row.coins))
-  // Only what can be bought: the free styles everyone starts with would top "most worn".
-  const top = (key: 'bought' | 'wearing' | 'coins') =>
-    items
-      .filter((item) => sold(item) && item[key] > 0)
-      .sort((a, b) => b[key] - a[key])
-      .slice(0, 5)
-  const never = items.filter((item) => sold(item) && !item.retirado && item.bought === 0).length
-
-  return (
-    <div className={styles.shopStats}>
-      <section className={styles.shopStatsWide}>
-        <h3 className="label">{t('admin.shop.byKind')}</h3>
-        {perKind.map((row) => (
-          <div key={row.kind} className={styles.shopBarRow}>
-            <b>{t(`styles.kind.${row.kind}`)}</b>
-            <span className={styles.shopBarTrack}>
-              <span style={{ width: `${(row.coins / most) * 100}%` }} />
-            </span>
-            <span>
-              {number(row.coins)} <small className={styles.dim}>· {t('admin.shop.boughtN', { count: row.bought, n: number(row.bought) })}</small>
-            </span>
-          </div>
-        ))}
-        <small className={styles.dim}>{t('admin.shop.neverBought', { count: never })}</small>
-      </section>
-      <div className={styles.shopRankings}>
-        {(['bought', 'wearing', 'coins'] as const).map((key) => {
-          const rows = top(key)
-          return (
-            <section key={key} className={styles.shopRanking}>
-              <h3 className="label">{t(`admin.shop.top.${key}`)}</h3>
-              {rows.length === 0 ? (
-                <p className={styles.dim}>{t('admin.shop.nothingYet')}</p>
-              ) : (
-                <ol>
-                  {rows.map((item, i) => (
-                    <li key={item.id}>
-                      <span className={styles.dim}>{i + 1}</span>
-                      <StylePreview id={item.id} tipo={item.tipo} className={styles.shopMini} />
-                      <span className={styles.userName}>
-                        <b>{t(`styles.items.${item.id}`)}</b>
-                        <small>{t(`styles.kind.${item.tipo}`)}</small>
-                      </span>
-                      <b>{number(item[key])}</b>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </section>
-          )
-        })}
-      </div>
-    </div>
   )
 }

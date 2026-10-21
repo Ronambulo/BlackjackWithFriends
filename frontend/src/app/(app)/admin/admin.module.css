@@ -2412,6 +2412,113 @@
   }
 }
 
+/* Who bought what */
+
+.buyerList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.buyer {
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--layer-2);
+}
+
+.buyerHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.buyerHead[aria-expanded='true'] {
+  background: var(--layer-3);
+}
+
+.buyerMinis {
+  display: flex;
+  flex: none;
+}
+
+.buyerMini {
+  --card-w: 16px;
+
+  width: 34px;
+  height: 26px;
+  border: 2px solid var(--layer-2);
+  border-radius: 7px;
+}
+
+.buyerMini + .buyerMini {
+  margin-left: -10px;
+}
+
+.buyerSpent {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+
+.buyerSpent b {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.buyerBody {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px 14px;
+}
+
+.buyerItems {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.buyerItems li {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.buyerWearing {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(242 193 78 / 0.12);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+@media (width < 520px) {
+  .buyerMinis {
+    display: none;
+  }
+}
+
 /* A coloured button that can't be pressed yet reads as grey, not as a faded call to action. */
 .main :global(.btn-primary:disabled),
 .main :global(.btn-danger:disabled) {
