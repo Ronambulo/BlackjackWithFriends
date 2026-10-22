@@ -14,7 +14,6 @@ import { formatNumber } from '@/lib/format'
 import type { Profile } from '@/profile/useProfile'
 import { EVENT_THEMES, eventOfPath } from '@/events/themes'
 import { CeremonyGate } from '@/season/Ceremony'
-import { GroupPicker } from '@/groups/GroupPicker'
 import { joinPath, pendingInvite } from '@/groups/pendingInvite'
 import { useLiveUpdates } from '@/groups/useLiveUpdates'
 import { useReportDevice } from '@/push/device'
@@ -77,7 +76,11 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
       {/* iOS 27 paints the status bar from a fixed element at the top; without it the edge is blurred */}
       <div className={styles.statusTint} aria-hidden="true" />
       <header className={styles.topbar}>
-        <GroupPicker className={styles.group} />
+        <Link href="/" className={styles.brand}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- tiny local SVG */}
+          <img src="/icon.svg" alt="" width={30} height={30} />
+          <span className={styles.brandName}>Blackjack with Friends</span>
+        </Link>
         <div className={styles.coins} aria-label={t('common.coins', { count: profile.monedas })}>
           <span className={styles.coin} aria-hidden="true" />
           {formatNumber(profile.monedas, currentLanguage())}

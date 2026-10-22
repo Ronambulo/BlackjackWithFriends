@@ -122,7 +122,7 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener)
 }
 
-/** The group in view: the one picked last, or the first one. undefined while loading or without groups. */
+/** The group opened last (or created/joined last), or the first one. undefined while loading or without groups. */
 export function useCurrentGroup(): GroupSummary | undefined {
   const { data: groups } = useGroups()
   const stored = useSyncExternalStore(subscribe, readStored, () => null)

@@ -54,14 +54,6 @@ export const en: Messages = {
     social: 'Social',
     profile: 'Profile',
   },
-  topbar: {
-    noGroup: 'No group',
-    groups: 'Your groups',
-    newGroup: 'Create group',
-    joinGroup: 'Join with code',
-    first: 'You’re first',
-    groupSettings: 'Open {{name}}',
-  },
   home: {
     greeting: 'Hi, {{name}}',
     today: 'For today',
@@ -75,6 +67,8 @@ export const en: Messages = {
     seeLess: 'See less',
     seeRanking: 'See ranking',
     invite: 'Invite',
+    inviteTitle: 'Invite to which group?',
+    inviteText: 'Each group has its own invite link.',
   },
   league: {
     balance: 'Your balance',
@@ -693,8 +687,6 @@ export const en: Messages = {
     usernameLocked: 'That username can’t be used.',
     edit: 'Edit',
     general: 'General',
-    group: 'Group settings',
-    groupHint: '{{name}} · invites, members',
     signOut: 'Sign out',
     changePhoto: 'Change photo',
     removePhoto: 'Remove photo',

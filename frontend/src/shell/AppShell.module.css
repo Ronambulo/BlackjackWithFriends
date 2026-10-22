@@ -20,7 +20,7 @@
 /*
   Fixed and opaque from the very top of the screen: iOS 27 blurs the top edge of a
   standalone app unless a fixed element with a solid colour sits there, and the
-  blur would cover (and swallow taps on) the group and coin buttons.
+  blur would cover (and swallow taps on) the coin pill.
 */
 .topbar {
   position: fixed;
@@ -39,38 +39,45 @@
   background: var(--bg);
 }
 
-/* With the group menu open the top bar goes over the tabs, so its backdrop dims them too */
-.topbar:has([aria-expanded='true']) {
-  z-index: 40;
-}
-
-.group {
+.brand {
   display: inline-flex;
+  flex: 0 1 auto;
   align-items: center;
-  gap: 6px;
-  max-width: 100%;
+  gap: 10px;
+  min-width: 0;
   min-height: 40px;
-  padding: 0 14px;
-  border: 1px solid rgb(255 255 255 / 0.1);
-  border-radius: 999px;
-  background: var(--layer-1);
-  color: var(--text);
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
+  color: inherit;
+  text-decoration: none;
 }
 
-.group[aria-expanded='true'] {
-  border-color: var(--accent);
-  background: var(--layer-2);
+.brand img {
+  flex: none;
+  border-radius: 8px;
 }
 
-.group[aria-expanded='true'] svg {
-  transform: rotate(180deg);
+/* Too narrow for the whole name: it fades out, the logo stays */
+.brandName {
+  overflow: hidden;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 359px) {
+  .brand {
+    gap: 8px;
+  }
+
+  .brandName {
+    font-size: 0.88rem;
+  }
 }
 
 .coins {
   display: inline-flex;
+  flex: none;
   align-items: center;
   gap: 8px;
   min-height: 40px;
@@ -245,7 +252,10 @@
   box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
 }
 
-.felted .group,
+.felted .brand {
+  color: #f4f1e8;
+}
+
 .felted .coins {
   border: 0;
   background: rgb(0 0 0 / 0.28);
