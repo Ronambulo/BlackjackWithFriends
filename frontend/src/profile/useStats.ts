@@ -32,6 +32,53 @@ export interface PlayerStats {
   seasons: SeasonRecord
 }
 
+/** A move and how it went. */
+export interface Tally {
+  count: number
+  won: number
+}
+
+/** Totals the player stood on: '16' is 16 or less. */
+export const STANDS = ['16', '17', '18', '19', '20', '21'] as const
+
+export interface Detail {
+  avgBet: number
+  maxBet: number
+  /** The most lost in one hand, 0 or below. */
+  worstHand: number
+  /** Net over everything staked, in %. */
+  roi: number
+  worstStreak: number
+  doubles: Tally
+  splits: Tally
+  insurance: Tally
+  surrenders: number
+  playerHands: number
+  playerBusts: number
+  /** Rounds the dealer had to play out. */
+  dealerPlayed: number
+  dealerBusts: number
+  dealerBlackjacks: number
+  rounds: number
+  stands: Record<(typeof STANDS)[number], Tally>
+  /** The balance after each hand from 0, thinned out. */
+  curve: number[]
+}
+
+/** GET /api/profile/stats/detail */
+export interface PlayerDetail {
+  week: Detail
+  total: Detail
+}
+
+export function useStatsDetail() {
+  const user = useUser()
+  return useQuery({
+    queryKey: ['stats', user.id, 'detail'],
+    queryFn: () => api<PlayerDetail>('/profile/stats/detail'),
+  })
+}
+
 export function useStats() {
   const user = useUser()
   return useQuery({

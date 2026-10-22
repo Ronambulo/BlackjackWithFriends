@@ -351,3 +351,11 @@ export function GlobeIcon(props: IconProps) {
     </Icon>
   )
 }
+
+export function ChartIcon(props: IconProps) {
+  return (
+    <Icon strokeWidth="1.8" {...props}>
+      <path d="M4 20h16M7 16v-4M12 16V7M17 16v-7" />
+    </Icon>
+  )
+}

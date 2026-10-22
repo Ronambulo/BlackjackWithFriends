@@ -11,7 +11,9 @@
   height: var(--app-height);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  /* clip, not hidden: a hidden box can still be scrolled from code (scrollIntoView on
+     a route change did it), which slid the tab bar up and the page title under the top bar */
+  overflow: clip;
   padding-top: calc(var(--topbar-height) + env(safe-area-inset-top));
 }
 
