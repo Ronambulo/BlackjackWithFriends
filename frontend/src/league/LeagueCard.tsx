@@ -6,6 +6,7 @@ import type { GroupSummary } from '@/groups/useGroups'
 import { currentLanguage } from '@/i18n'
 import { formatNumber } from '@/lib/format'
 import { ChevronRightIcon, CoinsIcon, CrownIcon, TimerIcon } from '@/ui/icons'
+import { MinimumProgress } from './MinimumProgress'
 import { useCountdown } from './useCountdown'
 import { useClaimPay, useLeague } from './useLeague'
 import styles from './LeagueCard.module.css'
@@ -71,7 +72,7 @@ export function LeagueCard({ groups, dayChange }: { groups?: GroupSummary[]; day
                   className={styles.placeRank}
                   aria-label={t('league.position', { rank: g.rank, total: g.members })}
                 >
-                  {g.rank === 1 && <CrownIcon width={14} height={12} />}
+                  {g.rank === 1 && g.qualified && <CrownIcon width={14} height={12} />}
                   <span aria-hidden="true">
                     {g.rank}º<span className={styles.of}> {t('league.of', { total: g.members })}</span>
                   </span>
@@ -91,6 +92,7 @@ export function LeagueCard({ groups, dayChange }: { groups?: GroupSummary[]; day
           ))}
         </ul>
       )}
+      {league && <MinimumProgress league={league} />}
       {countdown && (
         <p className={styles.countdown}>
           <TimerIcon width={16} height={16} />

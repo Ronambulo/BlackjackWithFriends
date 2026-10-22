@@ -21,6 +21,10 @@ export interface RankedMember {
   rank: number
   /** Places gained today (negative if lost). */
   rankChange: number
+  /** Hands played this week, towards the minimum. */
+  hands: number
+  /** Reached the week's minimum (hands and chips wagered) to enter the prizes; ranked after those who did otherwise. */
+  qualified: boolean
 }
 
 /** One of the player's groups, as GET /api/groups lists them. */
@@ -31,6 +35,8 @@ export interface GroupSummary {
   members: number
   rank: number
   rankChange: number
+  /** The player reached the week's minimum. */
+  qualified: boolean
   top: RankedMember[]
   /** Others' chat messages since the player last read it. */
   unread: number

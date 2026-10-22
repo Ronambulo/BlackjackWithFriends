@@ -36,7 +36,7 @@ function GroupCard({ group }: { group: GroupSummary }) {
         </span>
         <span className={styles.place}>
           <span className={styles.rank}>
-            {group.rank === 1 && <CrownIcon width={14} height={12} />}
+            {group.rank === 1 && group.qualified && <CrownIcon width={14} height={12} />}
             {group.rank}º
           </span>
           <span className={styles.of}>

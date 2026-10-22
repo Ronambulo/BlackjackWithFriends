@@ -1,0 +1,71 @@
+/* On the league card's felt */
+.box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgb(0 0 0 / 0.22);
+}
+
+.title {
+  color: #b9dcc7;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+}
+
+.name {
+  flex: none;
+  width: 72px;
+  color: #d6ecdf;
+  font-weight: 600;
+}
+
+.track {
+  display: block;
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.3);
+}
+
+.track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.track .full {
+  background: #8ff0b0;
+}
+
+.count {
+  flex: none;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.left {
+  color: #d6ecdf;
+  font-size: 0.8rem;
+}
+
+.done {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #8ff0b0;
+  font-size: 0.85rem;
+  font-weight: 700;
+}

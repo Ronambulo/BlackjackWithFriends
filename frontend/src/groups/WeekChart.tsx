@@ -7,6 +7,7 @@ import { useUser } from '@/auth/session-context'
 import { currentLanguage } from '@/i18n'
 import { api } from '@/lib/api'
 import { formatNumber } from '@/lib/format'
+import { Avatar } from '@/ui/Avatar'
 import { GroupIcon } from '@/ui/icons'
 import type { RankedMember } from './useGroups'
 import styles from './WeekChart.module.css'
@@ -87,8 +88,24 @@ function compact(value: number) {
   return new Intl.NumberFormat(currentLanguage(), { notation: 'compact', maximumFractionDigits: 1 }).format(value)
 }
 
-/** Everyone's balance over the week, one line each, Monday to Sunday. */
-export function WeekChart({ groupId, ranking }: { groupId: string; ranking: RankedMember[] }) {
+/**
+ * Everyone's balance over the week, one line each, Monday to Sunday. Those in `picked` are
+ * drawn in colour and set the scale; the rest stay as faint lines. With nobody picked,
+ * everyone is in colour.
+ */
+export function WeekChart({
+  groupId,
+  ranking,
+  picked,
+  onPick,
+  onShowAll,
+}: {
+  groupId: string
+  ranking: RankedMember[]
+  picked: string[]
+  onPick: (userId: string) => void
+  onShowAll: () => void
+}) {
   const { t } = useTranslation()
   const me = useUser()
   const { data } = useGroupHistory(groupId)
@@ -96,8 +113,6 @@ export function WeekChart({ groupId, ranking }: { groupId: string; ranking: Rank
   const [width, setWidth] = useState(0)
   // The moment being looked at, while a finger or the mouse is on the chart.
   const [cursor, setCursor] = useState<number | null>(null)
-  // Someone picked in the legend: only their line is drawn.
-  const [only, setOnly] = useState<string | null>(null)
   const language = currentLanguage()
 
   useEffect(() => {
@@ -114,11 +129,15 @@ export function WeekChart({ groupId, ranking }: { groupId: string; ranking: Rank
   // Drawn last to first, with the player's own line on top.
   const order = (userId: string) => (userId === me.id ? -1 : (place.get(userId) ?? ranking.length))
   const everyone = [...(data?.series ?? [])].sort((a, b) => order(b.userId) - order(a.userId))
-  const picked = everyone.some((line) => line.userId === only) ? only : null
-  const series = picked ? everyone.filter((line) => line.userId === picked) : everyone
+  const shown = everyone.filter((line) => picked.includes(line.userId))
+  // Those picked, or everyone if nobody is (or the picked ones haven't played yet).
+  const series = shown.length ? shown : everyone
+  const faint = shown.length ? everyone.filter((line) => !picked.includes(line.userId)) : []
+  const member = new Map(ranking.map((m) => [m.userId, m]))
 
   const plot = Math.max(0, width - GUTTER)
-  const values = series.flatMap((line) => line.points.map(([, value]) => value)).concat(series.length ? [] : [START])
+  // Everyone sets the scale, so the faint lines fit too.
+  const values = everyone.flatMap((line) => line.points.map(([, value]) => value)).concat(everyone.length ? [] : [START])
   const high = Math.max(...values)
   const low = Math.min(...values)
   const pad = (high - low) * 0.1 || 200
@@ -140,8 +159,12 @@ export function WeekChart({ groupId, ranking }: { groupId: string; ranking: Rank
     .map((line) => ({ ...line, balance: balanceAt(line.points, at) }))
     .sort((a, b) => b.balance - a.balance)
   const average = legend.length ? Math.round(legend.reduce((sum, line) => sum + line.balance, 0) / legend.length) : START
-  // With someone picked, the dashed line is their balance instead of the group's average.
-  const marked = picked ? (legend.find((line) => line.userId === picked)?.balance ?? START) : average
+  // With one person picked, the dashed line is their balance instead of the group's average.
+  const marked = shown.length === 1 ? (legend.find((line) => line.userId === shown[0].userId)?.balance ?? START) : average
+
+  // Steps, not slopes: the balance only moves when a hand ends or the pay comes in.
+  const stepPath = (points: [number, number][]) =>
+    points.map(([time, value], i) => (i === 0 ? `M${x(time)},${y(value)}` : `H${x(time)}V${y(value)}`)).join('')
 
   const onPointer = (event: PointerEvent<SVGSVGElement>) => {
     if (!data || !warp || plot === 0) return
@@ -196,11 +219,12 @@ export function WeekChart({ groupId, ranking }: { groupId: string; ranking: Rank
                 </text>
               ))}
 
+            {faint.map((line) => (
+              <path key={line.userId} d={stepPath(line.points)} className={styles.faint} />
+            ))}
+
             {series.map((line) => {
-              // Steps, not slopes: the balance only moves when a hand ends or the pay comes in.
-              const d = line.points
-                .map(([time, value], i) => (i === 0 ? `M${x(time)},${y(value)}` : `H${x(time)}V${y(value)}`))
-                .join('')
+              const d = stepPath(line.points)
               const last = line.points[line.points.length - 1]
               const mine = line.userId === me.id
               return (
@@ -230,30 +254,37 @@ export function WeekChart({ groupId, ranking }: { groupId: string; ranking: Rank
         )}
       </div>
 
-      {/* Tapping someone shows only their line; tapping them again, everyone's. */}
-      <ul className={styles.legend}>
-        {legend.map((line) => (
-          <li key={line.userId}>
-            <button
-              type="button"
-              className={`${styles.person} ${picked && picked !== line.userId ? styles.faded : ''}`}
-              style={{ '--swatch': color(line.userId) } as CSSProperties}
-              aria-pressed={picked === line.userId}
-              onClick={() => setOnly(picked === line.userId ? null : line.userId)}
-            >
-              <span className={styles.swatch} aria-hidden="true" />
-              <span className={styles.name}>{line.userId === me.id ? t('ranking.you') : line.nombre}</span>
-              <b>{formatNumber(line.balance, language)}</b>
-            </button>
-          </li>
-        ))}
+      {/* Tapping someone adds their line or takes it off. */}
+      <ul className={styles.legend} aria-label={t('ranking.chartPick')}>
+        {legend.map((line) => {
+          const on = shown.some((s) => s.userId === line.userId)
+          const who = member.get(line.userId)
+          return (
+            <li key={line.userId}>
+              <button
+                type="button"
+                className={`${styles.person} ${shown.length && !on ? styles.faded : ''}`}
+                style={{ '--swatch': color(line.userId) } as CSSProperties}
+                aria-pressed={on}
+                onClick={() => onPick(line.userId)}
+              >
+                <Avatar seed={line.userId} name={line.nombre} src={who?.avatarUrl} size={24} className={styles.chipAvatar} />
+                <span className={styles.name}>{line.userId === me.id ? t('ranking.you') : line.nombre}</span>
+                <b>{formatNumber(line.balance, language)}</b>
+              </button>
+            </li>
+          )
+        })}
       </ul>
-      {picked && (
-        <button type="button" className={styles.showAll} onClick={() => setOnly(null)}>
-          <GroupIcon width={16} height={16} aria-hidden="true" />
-          {t('ranking.showAll')}
-        </button>
-      )}
+      <div className={styles.foot}>
+        <span className={styles.hint}>{t('ranking.chartHint')}</span>
+        {shown.length > 0 && shown.length < everyone.length && (
+          <button type="button" className={styles.showAll} onClick={onShowAll}>
+            <GroupIcon width={16} height={16} aria-hidden="true" />
+            {t('ranking.showAll')}
+          </button>
+        )}
+      </div>
     </div>
   )
 }

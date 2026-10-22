@@ -41,6 +41,8 @@ export interface WeekStanding {
   avatarUrl: string | null
   posicion: number
   saldo: number
+  /** Reached the week's minimum; without it, the place gave no prize. */
+  clasificado: boolean
   trofeo: boolean
   premios: JokePrize[]
 }
@@ -66,6 +68,8 @@ export interface Ceremony {
   semana: string
   coins: number
   bestPlace: number | null
+  /** Whether the player reached the week's minimum. */
+  qualified: boolean
   stats: SeasonStats
   group: (GroupWeek & { id: string; nombre: string }) | null
   otherGroups: number

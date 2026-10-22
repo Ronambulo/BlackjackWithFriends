@@ -53,6 +53,7 @@ Separarlas es clave: gastar en la tienda **nunca** te baja en el ranking.
 ### Premios semanales (monedas)
 - 1º: **100** 🪙 + trofeo · 2º: **60** 🪙 · 3º: **30** 🪙 · Haber jugado al menos 1 día: **10** 🪙.
 - **Solo cobras por tu mejor puesto**: si estás en varios grupos, recibes el premio del grupo donde mejor has quedado, no la suma. El de haber jugado se cobra una vez.
+- **Mínimo para entrar en premios y en el podio: 100 manos y 15.000 fichas apostadas en la semana** (contando dobladas, separaciones y seguros). Quien no llega sigue en la clasificación, pero detrás de los que sí, sin medalla ni corona y con la etiqueta «Sin mínimo»; no cobra premio por puesto ni trofeo, y si gana un premio de broma ese título queda desierto. Se ve en Inicio (barras de manos y apostado con lo que falta), en el aviso de cierre del grupo, bajo el ranking global y en las reglas. Cada perfil lleva sus contadores de la semana (`manos_semana`, `apostado_semana`, `MIN_HANDS` y `MIN_WAGERED` en `lib/league.ts`) y el cierre guarda `season_standings.clasificado`. Para contar que el grupo tenga 2 personas que han jugado, cuentan todos, lleguen o no.
 - **Un grupo solo reparte premios si tiene al menos 2 personas** que hayan jugado esa semana 🔧 (que hayan jugado, para que un amigo que nunca entra no cuente). Así no sirve de nada crear grupos vacíos para ser 1º. La ceremonia y los premios de broma se ven igual en cualquier grupo.
 - Premios de broma (solo para presumir, sin monedas): más blackjacks, apuesta más loca, peor racha, más manos jugadas, "rey del seguro". Se dan en cualquier grupo; en empate se los llevan todos los empatados, salvo si empata el grupo entero (entonces no hay premio).
 - Cuentan las manos de liga cerradas entre el lunes y el domingo. Los empates comparten puesto (1, 2, 2, 4).
@@ -622,7 +623,7 @@ Para empezar a probar con amigos de verdad bastan las fases 1–5 (incluida la 4
 | Cierre de semana | Domingo 23:59, hora de Madrid |
 | Baraja del día | 10 manos con apuesta fija; el 1º del día gana +50 monedas para estilos, al día siguiente |
 | Saldo | Uno por jugador, común a todos sus grupos; los grupos son clasificaciones |
-| Premios en monedas | 100 / 60 / 30 para el podio, 10 por haber jugado; solo cuenta tu mejor puesto y el grupo necesita al menos 2 personas que hayan jugado |
+| Premios en monedas | 100 / 60 / 30 para el podio, 10 por haber jugado; solo cuenta tu mejor puesto, el grupo necesita al menos 2 personas que hayan jugado y para el podio hay que llegar a 100 manos y 15.000 fichas apostadas |
 | Premio de los retos diarios | Monedas para estilos, no fichas: los retos son personales y no deben dar ventaja en la liga |
 | Nombre | Blackjack with Friends |
 | Dominio | El del servidor casero (ZimaOS), con HTTPS por proxy inverso o túnel |

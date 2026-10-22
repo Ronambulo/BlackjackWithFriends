@@ -206,3 +206,30 @@
     transition: none;
   }
 }
+
+/* Those not picked stay as a faint trace behind. */
+.faint {
+  fill: none;
+  stroke: rgb(255 255 255 / 0.1);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.chipAvatar {
+  flex: none;
+  box-shadow: 0 0 0 2px var(--swatch);
+}
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.hint {
+  flex: 1 1 180px;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+}

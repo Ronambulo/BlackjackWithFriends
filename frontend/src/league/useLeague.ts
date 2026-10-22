@@ -10,9 +10,16 @@ export interface League {
   balance: number
   /** What the pay button gives right now; 0 once today's is claimed. */
   pendingPay: number
+  /** The week's rules, as set in the admin panel. */
+  startBalance: number
   dailyPay: number
   /** When the week closes (ISO). */
   weekEndsAt: string
+  /** This week's settled hands and chips wagered, against the minimum to enter the prizes. */
+  hands: number
+  wagered: number
+  minHands: number
+  minWagered: number
 }
 
 export function useLeague() {

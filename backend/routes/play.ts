@@ -17,7 +17,7 @@ import { requireUser } from '../lib/auth.js'
 import { syncChallenges, type CompletedChallenge } from '../lib/challenges.js'
 import { db, sqliteCode, type Tx } from '../lib/db.js'
 import { HttpError, json } from '../lib/http.js'
-import { rollover } from '../lib/league.js'
+import { countHand, rollover } from '../lib/league.js'
 import { hands, profiles } from '../lib/schema.js'
 
 // The table, played with the league balance (profiles.saldo, see lib/league.ts).
@@ -42,8 +42,9 @@ interface Rewards {
 
 const NONE: Rewards = { unlocked: [], challenges: [] }
 
-/** After a hand settles: the achievements it unlocked and the day's challenges it completed. */
-function settle(tx: Tx, userId: string): Rewards {
+/** After a hand settles: it counts for the week's minimum, then the achievements it unlocked and the day's challenges it completed. */
+function settle(tx: Tx, userId: string, state: RoundState): Rewards {
+  countHand(tx, userId, state.settlement?.totalWagered ?? 0)
   return { unlocked: syncAchievements(tx, userId), challenges: syncChallenges(tx, userId) }
 }
 
@@ -126,7 +127,7 @@ function bet(userId: string, amount: unknown): Response {
           neto: state.settlement?.net ?? null,
         })
         .run()
-      return { chips: profile.chips, rewards: state.settlement ? settle(tx, userId) : NONE }
+      return { chips: profile.chips, rewards: state.settlement ? settle(tx, userId, state) : NONE }
     })
   } catch (err) {
     if (sqliteCode(err) === 'SQLITE_CONSTRAINT_UNIQUE') throw new HttpError(409, 'Ya tienes una mano en juego')
@@ -170,7 +171,7 @@ function act(userId: string, action: Action, handId: unknown, version: unknown):
         .where(eq(profiles.id, userId))
         .returning({ chips: profiles.saldo })
         .get()
-      const rewards = next.settlement ? settle(tx, userId) : NONE
+      const rewards = next.settlement ? settle(tx, userId, next) : NONE
       return { id: hand.id, version: hand.version + 1, next, chips: updated?.chips ?? chips + delta, rewards }
     })
   } catch (err) {

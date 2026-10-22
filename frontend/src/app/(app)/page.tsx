@@ -12,6 +12,7 @@ import { InvitePicker } from '@/groups/InvitePicker'
 import { useGroups } from '@/groups/useGroups'
 import { useFriendsRanking } from '@/groups/useRankings'
 import { LeagueCard } from '@/league/LeagueCard'
+import { LeagueRules } from '@/league/MinimumProgress'
 import { PollCard } from '@/polls/PollCard'
 import { useProfile } from '@/profile/useProfile'
 import { CeremonyReplayCard } from '@/season/Ceremony'
@@ -110,7 +111,7 @@ export default function HomePage() {
           </section>
         ) : null}
 
-        <p className={`muted ${styles.rules}`}>{t('league.rules')}</p>
+        <LeagueRules className={`muted ${styles.rules}`} />
       </div>
     </PullToRefresh>
   )

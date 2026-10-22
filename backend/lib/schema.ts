@@ -132,6 +132,9 @@ export const profiles = sqliteTable(
     // The balance at the start of `dia`, for the day's change in the ranking.
     saldoInicioDia: integer('saldo_inicio_dia').notNull().default(1000),
     dia: text('dia').notNull(),
+    // This week's settled hands and chips wagered, for the minimum to enter the prizes (lib/league.ts).
+    manosSemana: integer('manos_semana').notNull().default(0),
+    apostadoSemana: integer('apostado_semana').notNull().default(0),
     // Up to when they've read the global chat; null: never opened it.
     chatLeido: timestamp('chat_leido'),
     // Push notifications switched off, by kind; a kind not here is on (lib/push.ts).
@@ -545,6 +548,8 @@ export const seasonStandings = sqliteTable(
     saldoFinal: integer('saldo_final').notNull(),
     // Whether the group gave prizes that week (2 or more players).
     conPremios: integer('con_premios', { mode: 'boolean' }).notNull(),
+    // Whether the player reached the week's minimum (hands and chips wagered); without it, no prizes.
+    clasificado: integer('clasificado', { mode: 'boolean' }).notNull().default(true),
     trofeo: integer('trofeo', { mode: 'boolean' }).notNull().default(false),
     // The joke prizes this player took in this group.
     premios: text('premios', { mode: 'json' }).$type<JokePrize[]>().notNull().default([]),

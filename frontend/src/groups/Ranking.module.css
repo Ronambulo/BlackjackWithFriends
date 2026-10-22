@@ -195,3 +195,148 @@
 .rankDown {
   color: var(--danger-soft);
 }
+
+/* Below the week's minimum: still listed, after everyone who reached it, without a place to win */
+.out .name,
+.out .podiumName,
+.out .balance,
+.out .podiumBalance,
+.out .rowBalance {
+  color: var(--text-dim);
+}
+
+.out .podiumAvatar {
+  box-shadow: none;
+}
+
+.noMinimum {
+  flex: none;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.step .noMinimum {
+  margin-top: -6px;
+}
+
+/* ---------- Today and picking ---------- */
+
+.day {
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.step .day {
+  margin-top: -2px;
+}
+
+/* The player's own step on the podium. */
+.mineBlock {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* Tapping someone puts them on the group's chart. */
+.pick {
+  width: 100%;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.1s ease;
+}
+
+.pick:active {
+  transform: scale(0.97);
+}
+
+.pick:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.step.pick {
+  padding: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pick {
+    transition: none;
+  }
+}
+
+/* ---------- Rows with a bar (group page) ---------- */
+
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bars .row {
+  position: relative;
+  overflow: hidden;
+  border: 0;
+  border-radius: 16px;
+  background: var(--layer-1);
+}
+
+.bars .row > * {
+  position: relative;
+}
+
+.bars .rowPlace {
+  color: var(--medal);
+  font-family: var(--font-felt), Georgia, serif;
+  font-size: 1.35rem;
+  font-style: italic;
+  font-weight: 600;
+}
+
+.bars .mine {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.bars .out {
+  min-height: 52px;
+  border: 1px dashed rgb(255 255 255 / 0.14);
+  background: transparent;
+}
+
+.bars .out .rowPlace {
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 1rem;
+  font-style: normal;
+}
+
+.bars .out.mine {
+  border-color: var(--accent);
+  box-shadow: none;
+}
+
+/* As long as the balance next to the leader's, in the place's colour. */
+.bars .bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--medal) 22%, transparent),
+    color-mix(in srgb, var(--medal) 4%, transparent)
+  );
+}
+
+.rowEnd {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+}

@@ -134,6 +134,13 @@
       "when": 1792365285927,
       "tag": "0018_ceremony_replay",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1792678089385,
+      "tag": "0019_week_minimum",
+      "breakpoints": true
     }
   ]
 }
