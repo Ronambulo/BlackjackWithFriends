@@ -50,8 +50,7 @@ const felt = (background: string, bar: string, print = 'rgb(242 193 78)'): Vars 
   '--felt-spot-size': '112px',
   '--felt-spot-size-wide': '132px',
   '--felt-spot-gap': '14px',
-  '--felt-spot-drop': '0px',
-  '--felt-spot-rise': '0px',
+  '--felt-ouija': '0',
 })
 
 /** An SVG drawing as a CSS image. */
@@ -386,11 +385,9 @@ const TAPETES: Record<string, Vars> = {
     // The planchette's lens, a little smaller than a chip, so it sits on it
     '--felt-spot-size': '56px',
     '--felt-spot-size-wide': '56px',
-    '--felt-spot-gap': '30px',
-    // Centred between the board's numbers, wherever the board's width puts them (see .ouijaBoard),
-    // and goodbye over the balance; the drop counts the planchette's tip, 42px over the spot's box
-    '--felt-spot-drop': 'calc(79px + min(60cqw, 252px))',
-    '--felt-spot-rise': '44px',
+    '--felt-spot-gap': '18px',
+    // Its board, planchette and goodbye laid out as in the design, scaled to the felt (see .ouija)
+    '--felt-ouija': '1',
   },
 }
 
