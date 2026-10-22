@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, useSyncExternalStore, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import {
@@ -31,13 +31,49 @@ const flagKey = (flag: ModerationFlag) => `${flag.kind}:${flag.userId ?? flag.ip
 
 // Flags an admin waved through, remembered on this device only.
 const IGNORED = 'admin.ignoredFlags'
+const listeners = new Set<() => void>()
+let cache: { raw: string | null; list: string[] } | null = null
 
 function readIgnored(): string[] {
+  let raw: string | null = null
   try {
-    return JSON.parse(localStorage.getItem(IGNORED) ?? '[]') as string[]
+    raw = localStorage.getItem(IGNORED)
   } catch {
-    return []
+    // Private mode: nothing remembered.
   }
+  if (cache?.raw !== raw) {
+    let list: string[] = []
+    try {
+      list = JSON.parse(raw ?? '[]') as string[]
+    } catch {
+      // A broken value: start over.
+    }
+    cache = { raw, list }
+  }
+  return cache.list
+}
+
+const NONE: string[] = []
+function subscribe(listener: () => void) {
+  listeners.add(listener)
+  return () => listeners.delete(listener)
+}
+
+function ignoreFlag(flag: ModerationFlag) {
+  const next = [...readIgnored(), flagKey(flag)].slice(-200)
+  try {
+    localStorage.setItem(IGNORED, JSON.stringify(next))
+  } catch {
+    // Private mode: it just comes back on the next visit.
+  }
+  cache = { raw: JSON.stringify(next), list: next }
+  for (const listener of listeners) listener()
+}
+
+/** The flags still to look at: the ones waved through on this device are left out, here and in the sidebar's count. */
+export function useOpenFlags(flags: ModerationFlag[] | undefined) {
+  const ignored = useSyncExternalStore(subscribe, readIgnored, () => NONE)
+  return (flags ?? []).filter((flag) => !ignored.includes(flagKey(flag)))
 }
 
 /** The options of the "for how long" select, in hours (null: for good). */
@@ -197,12 +233,11 @@ export function ModerationTab() {
   const { data, isError, refetch } = useModeration()
   const bans = useBans()
   const unban = useUnban()
-  const [ignored, setIgnored] = useState(readIgnored)
   const [target, setTarget] = useState('')
   const [selected, setSelected] = useState(0)
   const [done, setDone] = useState<string | null>(null)
   const marks = useSetMarks()
-  const flags = (data?.flags ?? []).filter((flag) => !ignored.includes(flagKey(flag)))
+  const flags = useOpenFlags(data?.flags)
   const current = flags[Math.min(selected, flags.length - 1)]
 
   // S silences for a day, B takes them to the ban form, D dismisses, J/K move.
@@ -231,15 +266,7 @@ export function ModerationTab() {
   if (isError) return <ErrorCard onRetry={() => void refetch()} />
   if (!data) return <section className={`card ${styles.placeholder}`} aria-busy="true" />
 
-  const ignore = (flag: ModerationFlag) => {
-    const next = [...ignored, flagKey(flag)].slice(-200)
-    setIgnored(next)
-    try {
-      localStorage.setItem(IGNORED, JSON.stringify(next))
-    } catch {
-      // Private mode: it just comes back on the next visit.
-    }
-  }
+  const ignore = ignoreFlag
   const pick = (value: string) => {
     setTarget(value)
     document.getElementById('ban-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
