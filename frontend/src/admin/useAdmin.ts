@@ -208,6 +208,8 @@ export type AdminShopItem = {
   id: StyleId
   tipo: CosmeticKind
   retirado: boolean
+  /** The event whose box it comes out of; never sold in the shop then. */
+  evento: EventId | null
   /** The price in the code, for shop styles. */
   serie: number | null
   /** The price an admin set instead. */
@@ -222,6 +224,8 @@ export type AdminShopItem = {
 export interface AdminShop {
   /** A percentage off everything sold. */
   rebaja: number
+  /** Every event: when its box goes, whether it's on Home now and whether it's over. */
+  eventos: { id: EventId; hasta: string; abierta: boolean; acabado: boolean }[]
   items: AdminShopItem[]
 }
 

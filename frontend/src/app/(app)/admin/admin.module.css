@@ -1900,6 +1900,37 @@
   font-size: 0.8125rem;
 }
 
+.shopEvent {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.shopEventHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 8px 0 0;
+  font-size: 1.05rem;
+}
+
+.shopEventHead small {
+  color: var(--text-dim);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.shopBadge[data-badge='discontinued'] {
+  background: var(--layer-3);
+  color: var(--text-dim);
+}
+
+.shopBadge[data-badge='inBox'] {
+  background: #4a2a12;
+  color: #ffb36b;
+}
+
 .shopSaleButton {
   display: flex;
   align-items: center;

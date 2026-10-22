@@ -516,14 +516,21 @@ export function cosmeticStats() {
   for (const row of wearing) for (const id of Object.values(equipped(row.estilos))) worn.set(id, (worn.get(id) ?? 0) + 1)
   const boughtBy = new Map(bought.map((row) => [row.id, row]))
   const settings = shopSettings()
+  const eventOf = new Map(EVENT_IDS.flatMap((event) => eventStyles(event).map((id) => [id, event] as const)))
   return {
     rebaja: settings.rebaja,
+    // Each event's styles come out of its box, never the shop: the panel shows them apart.
+    eventos: EVENT_IDS.map((id) => {
+      const box = eventSettings(id)
+      return { id, hasta: box.hasta, abierta: eventOn(box), acabado: new Date() >= new Date(box.hasta) }
+    }),
     items: catalogue(settings).map(({ cosmetic: c, source, antes, retirado }) => ({
       id: c.id,
       tipo: c.tipo,
       ...source,
       antes,
       retirado,
+      evento: eventOf.get(c.id) ?? null,
       // The price in the code, and what the admins set instead.
       serie: c.source.from === 'tienda' ? c.source.precio : null,
       propio: settings.items[c.id]?.precio ?? null,
