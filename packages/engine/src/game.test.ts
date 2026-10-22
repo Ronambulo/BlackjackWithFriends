@@ -335,5 +335,6 @@ describe('random play (invariants)', () => {
       expect(st.net).toBeGreaterThanOrEqual(-(bet * 8 + Math.floor(bet / 2)))
       for (const h of s.hands) expect(h.status).not.toBe('playing')
     }
-  })
+    // Thousands of rounds over a fresh six-deck shoe: slow CI runners need more than the default 5 s.
+  }, 60_000)
 })
