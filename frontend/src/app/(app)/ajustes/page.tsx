@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useUser } from '@/auth/session-context'
-import { useCurrentGroup } from '@/groups/useGroups'
 import { currentLanguage, LANGUAGES, type Language } from '@/i18n'
 import { authClient } from '@/lib/auth-client'
 import { AvatarPicker } from '@/profile/AvatarPicker'
@@ -33,7 +32,6 @@ export default function SettingsPage() {
   const { data: profile } = useProfile()
   const updateName = useUpdateProfile()
   const updateLanguage = useUpdateProfile()
-  const group = useCurrentGroup()
   const photo = usePhotoPicker()
   const soundsOn = useSoundsOn()
   const push = usePush()
@@ -250,15 +248,6 @@ export default function SettingsPage() {
               onClick={() => setSoundsOn(!soundsOn)}
             />
           </div>
-          {group && (
-            <Link className={styles.listRow} href={`/grupos/${group.id}`}>
-              <span className={styles.listText}>
-                {t('settings.group')}
-                <small>{t('settings.groupHint', { name: group.nombre })}</small>
-              </span>
-              <ChevronRightIcon className={styles.chevron} width={18} height={18} />
-            </Link>
-          )}
         </div>
       </section>
 

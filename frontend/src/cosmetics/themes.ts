@@ -48,6 +48,7 @@ const felt = (background: string, bar: string, print = 'rgb(242 193 78)'): Vars 
   '--felt-board': 'none',
   '--felt-spot-art': 'none',
   '--felt-spot-size': '112px',
+  '--felt-spot-size-wide': '132px',
   '--felt-spot-gap': '14px',
   '--felt-spot-drop': '0px',
   '--felt-spot-rise': '0px',
@@ -384,6 +385,7 @@ const TAPETES: Record<string, Vars> = {
     '--felt-spot-art': ouijaBoard().planchette,
     // The planchette's lens, a little smaller than a chip, so it sits on it
     '--felt-spot-size': '56px',
+    '--felt-spot-size-wide': '56px',
     '--felt-spot-gap': '30px',
     // Centred between the board's numbers, wherever the board's width puts them (see .ouijaBoard),
     // and goodbye over the balance; the drop counts the planchette's tip, 42px over the spot's box

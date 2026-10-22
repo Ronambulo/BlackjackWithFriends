@@ -29,7 +29,7 @@ export function ShareSheet({
   const current = useCurrentGroup()
   const share = useShare()
   const kind = 'handId' in what ? 'hand' : 'daily' in what ? 'daily' : 'stats'
-  // The group in view to start with; the global chat if there's none.
+  // The group opened last to start with; the global chat if there's none.
   const [picked, setPicked] = useState<Set<string>>(() => new Set([current?.id ?? GLOBAL]))
 
   useEffect(() => {

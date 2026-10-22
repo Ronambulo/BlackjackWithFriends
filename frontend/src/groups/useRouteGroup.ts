@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { selectGroup, useGroup, useGroups } from './useGroups'
 
-/** The group in the URL (/grupos/[id]); it becomes the one in view in the top bar. */
+/** The group in the URL (/grupos/[id]); it becomes the last one opened, which sharing starts from. */
 export function useRouteGroup() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()

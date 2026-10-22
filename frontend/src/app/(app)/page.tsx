@@ -8,7 +8,8 @@ import { ChallengesCard } from '@/challenges/ChallengesCard'
 import { DailyCard } from '@/daily/DailyCard'
 import { EventBanners } from '@/events/EventBox'
 import { TopList } from '@/groups/Ranking'
-import { useCurrentGroup, useGroups } from '@/groups/useGroups'
+import { InvitePicker } from '@/groups/InvitePicker'
+import { useGroups } from '@/groups/useGroups'
 import { useFriendsRanking } from '@/groups/useRankings'
 import { LeagueCard } from '@/league/LeagueCard'
 import { PollCard } from '@/polls/PollCard'
@@ -26,8 +27,11 @@ export default function HomePage() {
   const me = useUser()
   const { data: profile } = useProfile()
   const { data: groups, isError, refetch } = useGroups()
-  const group = useCurrentGroup()
-  const mine = group?.top.find((member) => member.userId === me.id)
+  // One balance for every group, so any of them has today's change.
+  const mine = groups?.flatMap((g) => g.top).find((member) => member.userId === me.id)
+  // With just one group the buttons go straight to it; with more, to the list or a pick.
+  const only = groups?.length === 1 ? groups[0] : undefined
+  const [inviting, setInviting] = useState(false)
   // Everyone from all the player's groups: the first few, or the whole list.
   const { data: friends } = useFriendsRanking()
   const [expanded, setExpanded] = useState(false)
@@ -40,7 +44,7 @@ export default function HomePage() {
         <h1 className={styles.heading}>{t('home.greeting', { name: profile?.nombre ?? '' })}</h1>
 
         {/* Where the player stands first, then what there is to do today, then everyone else. */}
-        <LeagueCard group={group} dayChange={mine?.dayChange} />
+        <LeagueCard groups={groups} dayChange={mine?.dayChange} />
 
         <h2 className={`label ${styles.sectionLabel}`}>{t('home.today')}</h2>
 
@@ -74,7 +78,7 @@ export default function HomePage() {
               </Link>
             </div>
           </section>
-        ) : group ? (
+        ) : groups && groups.length > 0 ? (
           <section className={`card ${styles.section}`}>
             <div className={styles.headerRow}>
               <h2 className="card-title">{t('home.top')}</h2>
@@ -87,14 +91,22 @@ export default function HomePage() {
               </button>
             )}
             <div className={`${styles.actions} ${styles.cardActions}`}>
-              <Link className="btn btn-secondary" href={`/grupos/${group.id}`}>
+              <Link className="btn btn-secondary" href={only ? `/grupos/${only.id}` : '/grupos'}>
                 {t('home.seeRanking')}
               </Link>
-              <Link className="btn btn-outline" href={`/grupos/${group.id}/invitar`}>
-                <ShareIcon width={16} height={16} />
-                {t('home.invite')}
-              </Link>
+              {only ? (
+                <Link className="btn btn-outline" href={`/grupos/${only.id}/invitar`}>
+                  <ShareIcon width={16} height={16} />
+                  {t('home.invite')}
+                </Link>
+              ) : (
+                <button className="btn btn-outline" type="button" onClick={() => setInviting(true)}>
+                  <ShareIcon width={16} height={16} />
+                  {t('home.invite')}
+                </button>
+              )}
             </div>
+            {inviting && <InvitePicker groups={groups} onClose={() => setInviting(false)} />}
           </section>
         ) : null}
 

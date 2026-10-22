@@ -370,11 +370,11 @@ sequenceDiagram
 
 ### Navegación
 
-Barra inferior con 5 pestañas. El botón central **Jugar** es más grande. Arriba, un **selector de grupo** si perteneces a varios.
+Barra inferior con 5 pestañas. El botón central **Jugar** es más grande. Arriba, el logo y el nombre de la app con tus monedas; no hay selector de grupo: el inicio muestra tu puesto en cada grupo y cada uno se abre desde ahí o desde **Grupos**.
 
 ```
 ┌─────────────────────────────┐
-│ Los del Curro ▾      🪙 240 │  ← selector de grupo · monedas
+│ ♠ Blackjack with…    🪙 240 │  ← logo y nombre · monedas
 │                             │
 │          (pantalla)         │
 │                             │
@@ -435,7 +435,7 @@ Al apostar, se toca sobre fichas de 5 / 10 / 25 / 100 / 500 / 1.000, cada valor 
 
 **Inicio**: además del saldo y la paga, las **encuestas** abiertas de los admins (se contesta con un toque y entonces se ven los porcentajes; la respuesta se puede cambiar mientras siga abierta), el ranking de la semana de tus amigos (todos los que comparten algún grupo contigo, `GET /api/ranking/friends`): el top 5, tu fila si vas más abajo y un botón para ver a todos.
 
-**Social**: el **chat global** y el de cada grupo (se elige con el selector de arriba; una insignia en la pestaña cuenta los mensajes sin leer) y el **ranking global** de la semana (`GET /api/ranking/global`, top 100 más tu puesto). Más adelante, el **Feed** con reacciones.
+**Social**: el **chat global** y el de cada grupo (se elige dentro de Social; una insignia en la pestaña cuenta los mensajes sin leer) y el **ranking global** de la semana (`GET /api/ranking/global`, top 100 más tu puesto). Más adelante, el **Feed** con reacciones.
 - Solo se ven los mensajes de los **últimos 7 días** (tabla `messages`, `GET/POST /api/chat/:chat`, con `global` o el id del grupo). Llegan al momento por el mismo canal de eventos (SSE) que la clasificación del grupo, y cada 30 s se vuelve a pedir por si acaso.
 - **Mantener pulsado** un mensaje, como en iOS, lo levanta, oscurece el resto y abre la barra de reacciones (🔥 😂 💀 👏 😱, una por persona y mensaje) y el menú con **Responder** y **Borrar**.
 - **Responder**, como en WhatsApp: también arrastrando la burbuja hacia un lado (a la derecha, o a la izquierda si es tuya). La respuesta cita el mensaje (`reply_to`), y tocar la cita lleva hasta él.

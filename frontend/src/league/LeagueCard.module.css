@@ -64,6 +64,80 @@
   font-weight: 600;
 }
 
+/* One row per group when there are several */
+.places {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.place {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 10px 0 14px;
+  border-radius: 14px;
+  background: rgb(0 0 0 / 0.22);
+  color: inherit;
+  text-decoration: none;
+}
+
+.place:hover {
+  background: rgb(0 0 0 / 0.32);
+}
+
+.placeName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.placeRank {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.placeRank svg {
+  color: var(--accent);
+}
+
+.placeRank .of {
+  font-size: 0.8rem;
+}
+
+.placeUp,
+.placeDown {
+  flex: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.placeUp {
+  color: #8ff0b0;
+}
+
+.placeDown {
+  color: #ffb3b3;
+}
+
+.placeChevron {
+  flex: none;
+  color: #b9dcc7;
+}
+
 .countdown {
   display: flex;
   align-items: center;

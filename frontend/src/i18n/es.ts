@@ -53,14 +53,6 @@ export const es = {
     social: 'Social',
     profile: 'Perfil',
   },
-  topbar: {
-    noGroup: 'Sin grupo',
-    groups: 'Tus grupos',
-    newGroup: 'Crear grupo',
-    joinGroup: 'Unirse con código',
-    first: 'Vas primero',
-    groupSettings: 'Ver {{name}}',
-  },
   home: {
     greeting: 'Hola, {{name}}',
     today: 'Para hoy',
@@ -74,6 +66,8 @@ export const es = {
     seeLess: 'Ver menos',
     seeRanking: 'Ver ranking',
     invite: 'Invitar',
+    inviteTitle: '¿A qué grupo invitas?',
+    inviteText: 'Cada grupo tiene su propio enlace de invitación.',
   },
   league: {
     balance: 'Tu saldo',
@@ -692,8 +686,6 @@ export const es = {
     usernameLocked: 'Ese usuario no se puede usar.',
     edit: 'Editar',
     general: 'General',
-    group: 'Ajustes del grupo',
-    groupHint: '{{name}} · invitar, miembros',
     signOut: 'Cerrar sesión',
     changePhoto: 'Cambiar foto',
     removePhoto: 'Quitar foto',

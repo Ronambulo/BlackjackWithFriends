@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useTranslation } from 'react-i18next'
 import { useUser } from '@/auth/session-context'
 import { RankChange } from '@/groups/RankChange'
-import { selectGroup, useCurrentGroup, useGroups, type GroupSummary } from '@/groups/useGroups'
+import { useGroups, type GroupSummary } from '@/groups/useGroups'
 import { currentLanguage } from '@/i18n'
 import { useCountdown } from '@/league/useCountdown'
 import { useLeague } from '@/league/useLeague'
@@ -17,17 +17,12 @@ import { PullToRefresh } from '@/ui/PullToRefresh'
 import pages from '../pages.module.css'
 import styles from './Groups.module.css'
 
-function GroupCard({ group, current }: { group: GroupSummary; current: boolean }) {
+function GroupCard({ group }: { group: GroupSummary }) {
   const { t } = useTranslation()
   const me = useUser()
   const leader = group.top[0]
   return (
-    <Link
-      href={`/grupos/${group.id}`}
-      className={styles.card}
-      aria-current={current ? 'true' : undefined}
-      onClick={() => selectGroup(group.id)}
-    >
+    <Link href={`/grupos/${group.id}`} className={styles.card}>
       <div className={styles.head}>
         <span className={styles.tile} style={{ background: avatarColor(group.id) }} aria-hidden="true">
           {initials(group.nombre)}
@@ -71,7 +66,6 @@ function GroupCard({ group, current }: { group: GroupSummary; current: boolean }
 export default function GroupsPage() {
   const { t } = useTranslation()
   const { data: groups, isError, refetch } = useGroups()
-  const current = useCurrentGroup()
   const { data: league } = useLeague()
   const countdown = useCountdown(league?.weekEndsAt)
 
@@ -116,7 +110,7 @@ export default function GroupsPage() {
         ) : groups ? (
           <div className={styles.list}>
             {groups.map((group) => (
-              <GroupCard key={group.id} group={group} current={group.id === current?.id} />
+              <GroupCard key={group.id} group={group} />
             ))}
           </div>
         ) : (

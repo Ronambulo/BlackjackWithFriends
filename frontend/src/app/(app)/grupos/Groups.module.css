@@ -19,10 +19,6 @@
 }
 
 /* The group shown in the top bar. */
-.card[aria-current='true'] {
-  border-color: rgb(242 193 78 / 0.35);
-}
-
 .card:active {
   background: var(--layer-2, var(--layer-1));
 }
