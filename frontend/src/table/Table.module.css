@@ -119,33 +119,88 @@
   letter-spacing: 2.5px;
 }
 
-/* The same words as a board draws them (the ouija): straight, in old serif ink */
-/* Pinned to one spot on the felt, under the cards, so it never moves when a hand is dealt */
-.board {
+/* A board the table draws on a felt that asks for it (the ouija), as in the style's design:
+   a rounded frame 12px in, a suit in each corner, the letters, words and numbers in the
+   middle, and goodbye over the player's chips. Under the cards, never moving. */
+.ouija {
   position: absolute;
-  top: 40%;
-  left: 50%;
+  inset: 12px;
   z-index: -1;
   display: var(--felt-board, none);
-  width: calc(100% - 2 * var(--page-x) - 24px);
-  max-width: 420px;
+  border: 2px solid rgb(var(--felt-ink, 244 241 232));
+  border-radius: 22px;
+  color: rgb(var(--felt-ink, 244 241 232) / 0.8);
+  font-family: var(--font-ouija), Georgia, serif;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.ouijaCorner {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  font-size: 26px;
+}
+
+.ouijaCorner b {
+  font-size: 30px;
+  font-weight: 400;
+}
+
+.ouijaCorner[data-at^='top'] {
+  top: 18px;
+}
+
+.ouijaCorner[data-at^='bottom'] {
+  bottom: 14px;
+}
+
+.ouijaCorner[data-at$='left'] {
+  left: 16px;
+}
+
+.ouijaCorner[data-at$='right'] {
+  right: 16px;
+}
+
+/* As wide as the felt up to 420px, its top letters 80px down the felt; the bet spot goes
+   under its numbers by the same sum (--felt-spot-drop on the ouija) */
+.ouijaBoard {
+  position: absolute;
+  top: 68px;
+  left: 50%;
+  width: min(100% + 24px, 420px);
   overflow: visible;
-  transform: translate(-50%, -50%);
+  fill: currentColor;
+  transform: translateX(-50%);
+  transition: opacity 0.3s ease;
 }
 
-.boardPayout {
-  fill: rgb(var(--felt-ink, 244 241 232) / 0.92);
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 34px;
-  font-weight: 700;
+.ouijaRules {
+  fill-opacity: 0.9;
 }
 
-.boardRules {
-  fill: rgb(var(--felt-ink, 244 241 232) / 0.75);
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1px;
+.ouijaBye {
+  position: absolute;
+  bottom: 44px;
+  left: 50%;
+  padding: 3px 16px 2px;
+  border: 1.5px solid currentColor;
+  border-radius: 4px;
+  font-size: 17px;
+  transform: translateX(-50%);
+  transition: opacity 0.3s ease;
+}
+
+.ouijaFaded .ouijaBoard {
+  opacity: 0.35;
+}
+
+/* In play the player's total and bet sit where goodbye is, so it leaves */
+.ouijaFaded .ouijaBye {
+  opacity: 0;
 }
 
 /* ---------- Betting ---------- */
@@ -156,16 +211,35 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  /* A felt with its rules drawn in the middle (the ouija) centres the spot in what's left under them */
+  padding-top: var(--felt-spot-drop, 0px);
+  padding-bottom: var(--felt-spot-rise, 0px);
 }
 
 .spot {
+  position: relative;
   display: grid;
+  /* One cell the spot's size, so a chip wider than it (the ouija's lens) spills evenly on every side */
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
   place-items: center;
-  width: 112px;
-  height: 112px;
+  width: var(--felt-spot-size, 112px);
+  height: var(--felt-spot-size, 112px);
   margin-top: 28px;
   border: 2px dashed color-mix(in srgb, var(--felt-print, rgb(242 193 78)) 60%, transparent);
   border-radius: 50%;
+}
+
+/* What a felt draws around the spot (the ouija's planchette, its lens the spot), behind the chips */
+.spot::before {
+  position: absolute;
+  top: calc(50% - 98px);
+  left: calc(50% - 62px);
+  z-index: -1;
+  width: 124px;
+  height: 149px;
+  background: var(--felt-spot-art, none) center / contain no-repeat;
+  content: '';
+  pointer-events: none;
 }
 
 /* With chips on it the spot is a button that takes the last one back */
@@ -181,7 +255,7 @@
 }
 
 .spotLabel {
-  margin-top: 14px;
+  margin-top: var(--felt-spot-gap, 14px);
   color: rgb(var(--felt-ink, 244 241 232) / 0.55);
   text-shadow: 0 1px 3px var(--felt-shadow, transparent);
   font-size: 12px;

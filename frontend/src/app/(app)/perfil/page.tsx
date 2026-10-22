@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useTranslation } from 'react-i18next'
-import { Achievements } from '@/achievements/Achievements'
+import { AchievementsCard } from '@/achievements/Achievements'
 import { useIsAdmin } from '@/admin/useAdmin'
 import { useUser } from '@/auth/session-context'
 import { AvatarPicker } from '@/profile/AvatarPicker'
@@ -46,7 +46,7 @@ export default function ProfilePage() {
 
       <Trophies />
 
-      <Achievements />
+      <AchievementsCard />
 
       <div className={styles.list}>
         <Link className={styles.listRow} href="/estilos">

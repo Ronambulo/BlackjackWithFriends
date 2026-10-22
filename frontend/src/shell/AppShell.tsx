@@ -36,7 +36,7 @@ const TABS = [
 function isActive(href: string, pathname: string) {
   if (href === '/') return pathname === '/'
   // Settings lives under the profile tab.
-  if (href === '/perfil') return ['/perfil', '/ajustes', '/novedades'].some((path) => pathname.startsWith(path))
+  if (href === '/perfil') return ['/perfil', '/ajustes', '/novedades', '/logros', '/estadisticas'].some((path) => pathname.startsWith(path))
   return pathname.startsWith(href)
 }
 

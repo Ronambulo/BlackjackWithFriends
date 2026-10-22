@@ -1,5 +1,6 @@
 import { handValue, type RoundState } from '@bwf/engine'
 import { and, desc, eq, gte, inArray, isNull, sql } from 'drizzle-orm'
+import { syncAchievements } from '../lib/achievements.js'
 import { isAdmin } from '../lib/admin.js'
 import { requireUser } from '../lib/auth.js'
 import { db } from '../lib/db.js'
@@ -218,6 +219,7 @@ export async function postMessage(request: Request): Promise<Response> {
   throttle(me.id)
 
   db().insert(messages).values({ id: crypto.randomUUID(), groupId, userId: me.id, texto, replyTo }).run()
+  db().transaction((tx) => syncAchievements(tx, me.id))
   markRead(groupId, me.id)
   notifyChat(groupId)
   pushMessage(me.id, groupId, { texto }, pushMentions(me.id, groupId, texto))
@@ -321,6 +323,7 @@ export async function postReaction(request: Request): Promise<Response> {
       .values({ messageId, userId: me.id, emoji })
       .onConflictDoUpdate({ target: [reactions.messageId, reactions.userId], set: { emoji, createdAt: new Date() } })
       .run()
+    db().transaction((tx) => syncAchievements(tx, me.id))
     // Not again for tapping the same one.
     if (before?.emoji !== emoji) {
       const content: ChatContent = message.texto !== null ? { texto: message.texto } : message.mano ? { mano: true } : { estadisticas: true }

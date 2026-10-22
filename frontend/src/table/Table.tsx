@@ -197,6 +197,8 @@ export function Table() {
   const [added, setAdded] = useState<number[]>([])
   const bet = added.reduce((sum, amount) => sum + amount, 0)
   const raiseBet = (amount: number) => amount > 0 && setAdded((a) => [...a, amount])
+  // The chips of the last bet dealt, newest on top, so the stack keeps its order through the hand
+  const [dealt, setDealt] = useState<{ bet: number; chips: ChipValue[] } | null>(null)
   const [lastBet, setLastBet] = useState(readLastBet)
 
   // The recordings are tiny: fetch them as soon as the table opens.
@@ -239,6 +241,8 @@ export function Table() {
   const fmt = (n: number) => formatNumber(n, lang)
 
   const deal = (amount: number) => {
+    const order = amount === bet && added.length > 0 ? added.toReversed().flatMap(chipsFor) : null
+    setDealt({ bet: amount, chips: order ?? (dealt?.bet === amount ? dealt.chips : chipsFor(amount)) })
     setLastBet(amount)
     saveLastBet(amount)
     setAdded([])
@@ -273,7 +277,7 @@ export function Table() {
         </div>
 
         {hand ? (
-          <FeltHand key={hand.id} hand={hand} schedule={schedule} ready={ready} />
+          <FeltHand key={hand.id} hand={hand} schedule={schedule} ready={ready} dealt={dealt} />
         ) : (
           <div className={styles.idle}>
             <FeltPrint />
@@ -282,7 +286,9 @@ export function Table() {
                 <BetStack amount={bet} chips={added.toReversed().flatMap(chipsFor)} />
               </button>
             ) : (
-              <div className={styles.spot}>{pendingBet !== null && <BetStack amount={pendingBet} />}</div>
+              <div className={styles.spot}>
+                {pendingBet !== null && <BetStack amount={pendingBet} chips={dealt?.bet === pendingBet ? dealt.chips : undefined} />}
+              </div>
             )}
             <p className={styles.spotLabel}>
               {t('play.yourBet')} · {t('play.betLimits', { min: fmt(table.minBet), max: fmt(table.maxBet) })}
@@ -528,17 +534,49 @@ export function FeltPrint({ compact = false, payout, rules }: { compact?: boolea
       </text>
     </svg>
   )
-  // A felt that draws its own board (the ouija) prints the same words straight, in its letters,
-  // in the same place with or without a hand on the table
+  // A felt that draws its own board (the ouija): a suit in each corner, yes and no, the letters
+  // in two arcs over the same words in its lettering and the numbers under them, and goodbye
+  // over the player's chips. Always in the same place; under a hand it fades so the cards read.
+  const arcs = `ouija${useId().replace(/[^\w-]/g, '')}`
   const board = (
-    <svg className={styles.board} viewBox="0 0 390 110" aria-hidden="true">
-      <text className={styles.boardPayout} x="195" y="52" textAnchor="middle" textLength="330" lengthAdjust="spacingAndGlyphs">
-        {(payout ?? t('play.payout')).toUpperCase()}
-      </text>
-      <text className={styles.boardRules} x="195" y="84" textAnchor="middle" textLength="300" lengthAdjust="spacing">
-        {(rules ?? t('play.rules')).toUpperCase()}
-      </text>
-    </svg>
+    <div className={`${styles.ouija} ${compact ? styles.ouijaFaded : ''}`} aria-hidden="true">
+      <span className={styles.ouijaCorner} data-at="top-left">
+        ♠<b>SÍ</b>
+      </span>
+      <span className={styles.ouijaCorner} data-at="top-right">
+        ♣<b>NO</b>
+      </span>
+      <span className={styles.ouijaCorner} data-at="bottom-left">
+        ♥
+      </span>
+      <span className={styles.ouijaCorner} data-at="bottom-right">
+        ♦
+      </span>
+      <svg className={styles.ouijaBoard} viewBox="0 104 360 216">
+        <path id={`${arcs}a`} d="M34 214Q180 70 326 214" fill="none" />
+        <path id={`${arcs}b`} d="M62 236Q180 124 298 236" fill="none" />
+        <text fontSize="22">
+          <textPath href={`#${arcs}a`} startOffset="50%" textAnchor="middle" textLength="300" lengthAdjust="spacing">
+            ABCDEFGHIJKLM
+          </textPath>
+        </text>
+        <text fontSize="22">
+          <textPath href={`#${arcs}b`} startOffset="50%" textAnchor="middle" textLength="246" lengthAdjust="spacing">
+            NOPQRSTUVWXYZ
+          </textPath>
+        </text>
+        <text x="180" y="262" fontSize="25" textAnchor="middle" textLength="270" lengthAdjust="spacingAndGlyphs">
+          {(payout ?? t('play.payout')).toUpperCase()}
+        </text>
+        <text className={styles.ouijaRules} x="180" y="281" fontSize="10" textAnchor="middle" textLength="240" lengthAdjust="spacing">
+          {(rules ?? t('play.rules')).toUpperCase()}
+        </text>
+        <text x="180" y="314" fontSize="19" textAnchor="middle" textLength="230" lengthAdjust="spacing">
+          1234567890
+        </text>
+      </svg>
+      <span className={styles.ouijaBye}>ADIÓS</span>
+    </div>
   )
   return (
     <>
@@ -551,15 +589,17 @@ export function FeltPrint({ compact = false, payout, rules }: { compact?: boolea
 /** A stack of chips for an amount, the top one showing the total. */
 export function BetStack({ amount, chips, small = false }: { amount: number; chips?: ChipValue[]; small?: boolean }) {
   const lang = currentLanguage()
-  // `chips` is the order they went down in, the newest on top; otherwise the biggest goes on top
-  const [top, ...rest] = (chips ?? chipsFor(amount))
-    .slice(0, 7)
-    .map(chipColors)
+  // `chips` is the order they went down in, the newest on top; otherwise the biggest goes on top.
+  // Seven at most: the newest six on the first one down
+  const all = chips ?? chipsFor(amount)
+  const [top, ...rest] = (all.length > 7 ? [...all.slice(0, 6), ...all.slice(-1)] : all).map(chipColors)
   if (!top) return null
   const u = small ? 2 : 4
   // Each chip's darker side, unless the style draws its chips flat (pixel art)
   const rim = (edge: string) => `0 calc(var(--chip-rim, 1) * ${u}px) 0 ${edge}`
-  const depth = 2 * u * rest.length + u
+  // The first chip down stays put and the rest go on top of it, except in the hand's small
+  // spot, where the whole stack sits centred in its ring
+  const lift = small ? (2 * u * rest.length + u) / 2 : 2 * u * rest.length
   const style: CSSProperties = {
     background: top.background,
     color: top.text,
@@ -567,7 +607,7 @@ export function BetStack({ amount, chips, small = false }: { amount: number; chi
     boxShadow: rim(top.edge),
   }
   return (
-    <span className={styles.stackWrap} style={{ transform: `translateY(${-depth / 2}px)` }} role="img" aria-label={formatNumber(amount, lang)}>
+    <span className={styles.stackWrap} style={{ transform: `translateY(${-lift}px)` }} role="img" aria-label={formatNumber(amount, lang)}>
       {/* The chips underneath, whole, so a sprite's own edge shows on the side; the deepest first */}
       {rest
         .map((c, i) => (
@@ -585,7 +625,25 @@ export function BetStack({ amount, chips, small = false }: { amount: number; chi
   )
 }
 
-export function FeltHand({ hand, schedule, ready }: { hand: HandView; schedule: Schedule; ready: boolean }) {
+/** The chips a bet went down as, if the hand still has it, or twice them once it's doubled. */
+function dealtChips(dealt: { bet: number; chips: ChipValue[] } | null | undefined, bet: number) {
+  if (dealt?.bet === bet) return dealt.chips
+  if (dealt && bet === 2 * dealt.bet) return [...dealt.chips, ...dealt.chips]
+  return undefined
+}
+
+export function FeltHand({
+  hand,
+  schedule,
+  ready,
+  dealt,
+}: {
+  hand: HandView
+  schedule: Schedule
+  ready: boolean
+  /** The chips the bet went down as, kept for a hand that still has that bet (or twice it, doubled) */
+  dealt?: { bet: number; chips: ChipValue[] } | null
+}) {
   const { t } = useTranslation()
   const lang = currentLanguage()
   const settled = hand.settlement
@@ -652,7 +710,7 @@ export function FeltHand({ hand, schedule, ready }: { hand: HandView; schedule: 
                   {text}
                 </Badge>
                 <span className={styles.spotSmall}>
-                  <BetStack amount={h.bet} small />
+                  <BetStack amount={h.bet} small chips={dealtChips(dealt, h.bet)} />
                 </span>
               </span>
             </div>

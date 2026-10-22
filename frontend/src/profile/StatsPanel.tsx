@@ -7,29 +7,22 @@ import { useUser } from '@/auth/session-context'
 import { currentLanguage } from '@/i18n'
 import { formatNumber } from '@/lib/format'
 import { ShareSheet } from '@/social/ShareSheet'
-import { CardsIcon, ChatIcon, CheckIcon, ShareIcon } from '@/ui/icons'
+import { CardsIcon, ChartIcon, ChatIcon, CheckIcon, ChevronRightIcon, ShareIcon } from '@/ui/icons'
+import { percent, signed } from './numbers'
 import { storyImage } from './storyImage'
 import { useProfile } from './useProfile'
 import { useStats, type Stats } from './useStats'
 import styles from './Stats.module.css'
 
-type Range = 'week' | 'total'
+export type Range = 'week' | 'total'
 
 // As many hands as the server sends back (routes/stats.ts).
 const SLOTS = 30
-
-function signed(value: number) {
-  const number = formatNumber(Math.abs(value), currentLanguage())
-  return value > 0 ? `+${number}` : value < 0 ? `−${number}` : number
-}
 
 function netTone(net: number) {
   return net > 0 ? 'win' : net < 0 ? 'lose' : 'push'
 }
 
-function percent(part: number, whole: number) {
-  return whole ? Math.round((part / whole) * 100) : 0
-}
 
 /** Won, pushed and lost as one bar, with the shares underneath. */
 function Outcomes({ stats }: { stats: Stats }) {
@@ -62,7 +55,7 @@ function Outcomes({ stats }: { stats: Stats }) {
 }
 
 /** The last hands as bars above (won) or below (lost) a middle line. */
-function Recent({ nets }: { nets: number[] }) {
+export function Recent({ nets }: { nets: number[] }) {
   const max = Math.max(1, ...nets.map(Math.abs))
   const slot = 10
   // Room for a full row from the start, so a few hands aren't drawn as fat bars.
@@ -230,12 +223,6 @@ export function StatsPanel() {
   const pastWeeks = data.total.hands > data.week.hands
   const shown = pastWeeks ? range : 'week'
   const stats = data[shown]
-  const tiles = [
-    { label: t('stats.hands'), value: formatNumber(stats.hands, language) },
-    { label: t('stats.blackjacks'), value: formatNumber(stats.blackjacks, language) },
-    { label: t('stats.bestWin'), value: stats.bestWin > 0 ? signed(stats.bestWin) : '—' },
-    { label: t('stats.bestStreak'), value: formatNumber(stats.bestStreak, language) },
-  ]
 
   return (
     <section className={styles.panel} aria-label={t('profile.stats')}>
@@ -268,31 +255,16 @@ export function StatsPanel() {
         <Outcomes stats={stats} />
       </div>
 
-      <div className={`card ${styles.tiles}`}>
-        {/* Since the first hand, whichever range is in view. */}
-        <div className={`${styles.tile} ${styles.wide}`}>
-          <span className={`${styles.tileValue} ${data.total.net > 0 ? styles.up : data.total.net < 0 ? styles.down : ''}`}>
-            {signed(data.total.net)}
-          </span>
-          <span className={styles.tileLabel}>{t('stats.globalNet', { count: data.total.hands })}</span>
-        </div>
-        {tiles.map((tile) => (
-          <div key={tile.label} className={styles.tile}>
-            <span className={styles.tileValue}>{tile.value}</span>
-            <span className={styles.tileLabel}>{tile.label}</span>
-          </div>
-        ))}
-      </div>
-
-      {data.recent.length > 0 && (
-        <div className={`card ${styles.recent}`}>
-          <div className={styles.recentHead}>
-            <span className="label">{t('stats.recent', { count: data.recent.length })}</span>
-            {data.total.streak >= 2 && <span className={styles.streak}>{t('stats.streak', { count: data.total.streak })}</span>}
-          </div>
-          <Recent nets={data.recent} />
-        </div>
-      )}
+      <Link href="/estadisticas" className={styles.link}>
+        <span className={styles.linkIcon} aria-hidden="true">
+          <ChartIcon width={20} height={20} />
+        </span>
+        <span className={styles.linkText}>
+          <b>{t('profile.stats')}</b>
+          <small className="muted">{t('stats.more')}</small>
+        </span>
+        <ChevronRightIcon className={styles.chevron} width={18} height={18} />
+      </Link>
     </section>
   )
 }

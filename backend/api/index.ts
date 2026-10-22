@@ -119,7 +119,7 @@ import { getDaily, getDailyPreview, getDailyRanking, postDaily, postDailySeen } 
 import { getPushKey, getPushPrefs, patchPushPrefs, postPushTest, postSubscribe, postUnsubscribe } from '../routes/push.js'
 import { getProfile, patchProfile, postAvatar } from '../routes/profile.js'
 import { getCeremony, getCeremonyReplay, getGroupSeasons, postCeremonySeen } from '../routes/season.js'
-import { getStats } from '../routes/stats.js'
+import { getStats, getStatsDetail } from '../routes/stats.js'
 import { postReport } from '../routes/reports.js'
 
 type Route = (request: Request) => Promise<Response> | Response
@@ -191,6 +191,7 @@ const routes: Routes = {
   },
   '/api/profile/avatar': { POST: live(postAvatar) },
   '/api/profile/stats': { GET: getStats },
+  '/api/profile/stats/detail': { GET: getStatsDetail },
   '/api/achievements': { GET: getAchievements },
   '/api/achievements/seen': { POST: postAchievementsSeen },
   '/api/challenges': { GET: getChallenges },

@@ -16,6 +16,9 @@ export type AchievementId =
   | 'winWeek'
   | 'hands1000'
   | 'podium10'
+  | 'surrender25'
+  | 'chatty'
+  | 'dealerBust500'
   | 'allIn'
   | 'blackjack100'
 
@@ -35,6 +38,8 @@ export interface Achievement {
   unlockedAt: string | null
   /** Unlocked and not seen yet. */
   isNew: boolean
+  /** Only the counted ones still locked (play 1.000 hands…): how far along. */
+  progress?: { done: number; goal: number }
 }
 
 export function useAchievements() {
