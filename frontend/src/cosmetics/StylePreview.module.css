@@ -68,7 +68,8 @@
   z-index: -1;
   width: calc(100% / var(--felt-scale, 0.5));
   height: calc(100% / var(--felt-scale, 0.5));
-  background: var(--felt-art, var(--felt-bg, #0c5a34));
+  /* A felt the table draws on itself (the ouija) brings a drawing of it for here */
+  background: var(--felt-preview-board, none), var(--felt-art, var(--felt-bg, #0c5a34));
   transform: scale(var(--felt-scale, 0.5));
   transform-origin: 0 0;
   pointer-events: none;

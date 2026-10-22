@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Metadata, Viewport } from 'next'
-import { Fraunces, Manrope, Tiny5 } from 'next/font/google'
+import { Fraunces, IM_Fell_English_SC, Manrope, Tiny5 } from 'next/font/google'
 import type { ReactNode } from 'react'
 import './globals.css'
 import { Providers } from './providers'
@@ -9,6 +9,8 @@ import { Providers } from './providers'
 const manrope = Manrope({ subsets: ['latin'], variable: '--font-sans', display: 'swap' })
 // Only for the lettering printed on the felt.
 const fraunces = Fraunces({ subsets: ['latin'], style: 'italic', weight: '600', variable: '--font-felt', display: 'swap' })
+// Only for the letters on the ouija felt, so it isn't preloaded.
+const fell = IM_Fell_English_SC({ subsets: ['latin'], weight: '400', variable: '--font-ouija', display: 'swap', preload: false })
 // Only for the numbers on the pixel-art chips, so it isn't preloaded.
 const tiny5 = Tiny5({ subsets: ['latin'], weight: '400', variable: '--font-pixel', display: 'swap', preload: false })
 
@@ -66,7 +68,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="es" className={`${manrope.variable} ${fraunces.variable} ${tiny5.variable}`} suppressHydrationWarning>
+    <html lang="es" className={`${manrope.variable} ${fraunces.variable} ${tiny5.variable} ${fell.variable}`} suppressHydrationWarning>
       <body>
         <Providers>{children}</Providers>
       </body>

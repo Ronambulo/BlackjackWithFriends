@@ -44,6 +44,13 @@ const felt = (background: string, bar: string, print = 'rgb(242 193 78)'): Vars 
   '--felt-ink': '244 241 232',
   '--felt-text': '#f4f1e8',
   '--felt-printed': 'block',
+  '--felt-preview-board': 'none',
+  '--felt-board': 'none',
+  '--felt-spot-art': 'none',
+  '--felt-spot-size': '112px',
+  '--felt-spot-gap': '14px',
+  '--felt-spot-drop': '0px',
+  '--felt-spot-rise': '0px',
 })
 
 /** An SVG drawing as a CSS image. */
@@ -51,6 +58,17 @@ const svg = (width: number, height: number, body: string) =>
   `url("data:image/svg+xml,${encodeURIComponent(
     `<svg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}' viewBox='0 0 ${width} ${height}'>${body}</svg>`,
   )}")`
+
+/** A 96 × 96 tile of the four suits, faint, as a print over a felt. */
+const suitsTile = (opacity: number, colour = 'white') =>
+  svg(
+    96,
+    96,
+    ['♠:18:30', '♥:66:30', '♦:42:78', '♣:90:78', '♣:-6:78']
+      .map((spec) => spec.split(':'))
+      .map(([suit, x, y]) => `<text x='${x}' y='${y}' font-size='22' text-anchor='middle' fill='${colour}' fill-opacity='${opacity}'>${suit}</text>`)
+      .join(''),
+  )
 
 /**
  * A 260 × 260 tile of stars, scattered the same way every time (a fixed seed),
@@ -176,50 +194,38 @@ function bareTrees() {
 }
 
 /**
- * The words on an ouija board, around the middle where the table prints its rules in
- * the board's own letters (FeltPrint): yes and no in the top corners (40 × 30 each), clear
- * of the dealer's cards and the shoe, and the letters and numbers at the foot (200 × 96),
- * faded so the cards read over them.
+ * An old wooden ouija board. The table draws it itself in the board's own lettering
+ * (FeltPrint), so the felt only brings the wood, the planchette the bet goes on
+ * (120 × 144, its lens the bet spot itself) and, for the small previews of the style, the
+ * whole board drawn at once (360 × 560).
  */
 function ouijaBoard() {
-  const ink = '#1c150e'
-  // Letters spread along an arc, each turned to face out from its middle
-  const arc = (letters: string, cx: number, cy: number, r: number, from: number, to: number, size: number) =>
-    [...letters]
-      .map((letter, i) => {
-        const angle = ((from + ((to - from) * i) / (letters.length - 1)) * Math.PI) / 180
-        const [x, y] = [(cx + r * Math.cos(angle)).toFixed(1), (cy + r * Math.sin(angle)).toFixed(1)]
-        return `<text x='${x}' y='${y}' font-size='${size}' transform='rotate(${((angle * 180) / Math.PI + 90).toFixed(1)} ${x} ${y})' text-anchor='middle'>${letter}</text>`
-      })
-      .join('')
-  const words = (content: string) => `<g fill='${ink}' font-family='Georgia,serif' font-weight='700' text-anchor='middle'>${content}</g>`
+  const ink = '#2b1a0c'
   return {
-    // In the top corners, either side of the dealer's cards
-    yes: svg(40, 30, words(`<text x='20' y='24' font-size='20'>SÍ</text>`)),
-    no: svg(40, 30, words(`<text x='20' y='24' font-size='20'>NO</text>`)),
-    bottom: svg(
-      200,
-      96,
-      words(
-        `<g opacity='0.3'>${arc('ABCDEFGHIJKLM', 100, 110, 92, -136, -44, 12.5)}${arc('NOPQRSTUVWXYZ', 100, 110, 72, -139, -41, 12)}` +
-          `<text x='100' y='92' font-size='12' textLength='118' lengthAdjust='spacing'>1234567890</text></g>`,
-      ),
+    planchette: svg(
+      120,
+      144,
+      `<path d='M60 4C82 30 112 58 112 94C112 124 88 140 60 140C32 140 8 124 8 94C8 58 38 30 60 4Z' fill='#ead2a6' stroke='${ink}' stroke-width='2'/>` +
+        `<circle cx='60' cy='94' r='27' fill='#d9b98a'/><circle cx='60' cy='24' r='2.5' fill='${ink}'/>`,
+    ),
+    preview: svg(
+      360,
+      560,
+      `<defs><path id='a' d='M34 214Q180 70 326 214'/><path id='b' d='M62 236Q180 124 298 236'/></defs>` +
+        `<rect x='12' y='12' width='336' height='536' rx='22' fill='none' stroke='${ink}' stroke-width='2'/>` +
+        `<g fill='${ink}' fill-opacity='0.8' font-family='Georgia,serif' text-anchor='middle'>` +
+        `<text x='40' y='54' font-size='26'>♠</text><text x='40' y='92' font-size='30'>SÍ</text>` +
+        `<text x='320' y='54' font-size='26'>♣</text><text x='320' y='92' font-size='30'>NO</text>` +
+        `<text x='40' y='534' font-size='26'>♥</text><text x='320' y='534' font-size='26'>♦</text>` +
+        `<text font-size='22'><textPath href='#a' startOffset='50%' textLength='300' lengthAdjust='spacing'>ABCDEFGHIJKLM</textPath></text>` +
+        `<text font-size='22'><textPath href='#b' startOffset='50%' textLength='246' lengthAdjust='spacing'>NOPQRSTUVWXYZ</textPath></text>` +
+        `<text x='180' y='262' font-size='25' textLength='270' lengthAdjust='spacingAndGlyphs'>BLACKJACK PAGA 3 A 2</text>` +
+        `<text x='180' y='314' font-size='19' textLength='230' lengthAdjust='spacing'>1234567890</text></g>`,
     ),
   }
 }
 
-/** A rectangle's outline `inset` px in from the edges, `width` px thick, as four background layers. */
-const outline = (colour: string, inset: number, width: number) => {
-  const line = `linear-gradient(${colour}, ${colour})`
-  const across = `calc(100% - ${2 * inset}px) ${width}px no-repeat`
-  const down = `${width}px calc(100% - ${2 * inset}px) no-repeat`
-  return [
-    `${line} ${inset}px ${inset}px / ${across}`,
-    `${line} ${inset}px calc(100% - ${inset}px) / ${across}`,
-    `${line} ${inset}px ${inset}px / ${down}`,
-    `${line} calc(100% - ${inset}px) ${inset}px / ${down}`,
-  ]
-}
+const OUIJA_WOOD = 'radial-gradient(ellipse 75% 75% at 50% 45%, transparent 55%, rgb(58 36 16 / 0.5)), linear-gradient(#d9b98a, #c49a64)'
 
 const CRYPT_SKY = 'radial-gradient(ellipse 90% 75% at 50% 40%, #3d2457 0%, #1c0f2c 70%, #0b0612 100%)'
 
@@ -270,7 +276,12 @@ const TAPETES: Record<string, Vars> = {
     '#0c1029',
     'rgb(222 228 255)',
   ),
-  'tapete.campeon': felt(lit('#c9921f', '#8a5f10', '#4a3006'), '#6e4c0c', 'rgb(255 244 200)'),
+  // The week's winner: gold, with the suits printed over it like the daily deck's table.
+  'tapete.campeon': felt(
+    [`${suitsTile(0.09, '#fff4c8')} 0 0 / 96px 96px`, lit('#c9921f', '#8a5f10', '#4a3006')].join(', '),
+    '#6e4c0c',
+    'rgb(255 244 200)',
+  ),
   'tapete.coral': felt(lit('#e0705a', '#b24a39', '#6e2a1f'), '#8e3b2d', 'rgb(255 236 210)'),
   'tapete.oliva': felt(lit('#7d8a3c', '#566126', '#2f3613'), '#454e1d'),
   // Beach awning stripes.
@@ -360,23 +371,24 @@ const TAPETES: Record<string, Vars> = {
       CRYPT_SKY,
     ].join(', '),
   },
-  // An ouija board on old cream paper. Its own words take the place of what's
-  // printed on the felt, so that goes, and the writing on it turns dark.
+  // An old wooden ouija board. The table draws its letters, in place of what's printed on
+  // the felt (FeltPrint), the writing on it turns dark, and the bet goes on the planchette.
   'tapete.ouija': {
-    ...felt('#ece2c8', '#2a1d10', 'rgb(28 21 14)'),
-    '--felt-art': [
-      `${ouijaBoard().yes} left 36px top 56px / 40px 30px no-repeat`,
-      `${ouijaBoard().no} right 36px top 56px / 40px 30px no-repeat`,
-      `${ouijaBoard().bottom} center bottom 9% / auto min(19%, 140px) no-repeat`,
-      ...outline('#1c150e', 10, 5),
-      ...outline('#1c150e', 18, 1),
-      'radial-gradient(ellipse 75% 75% at 50% 50%, transparent 60%, rgb(90 61 28 / 0.45))',
-      '#ece2c8',
-    ].join(', '),
-    '--felt-ink': '28 21 14',
-    '--felt-text': '#1c150e',
+    ...felt('#d0ad7a', '#2a1d10', 'rgb(43 26 12)'),
+    '--felt-art': OUIJA_WOOD,
+    '--felt-preview-board': `${ouijaBoard().preview} center / contain no-repeat`,
+    '--felt-ink': '43 26 12',
+    '--felt-text': '#2b1a0c',
     '--felt-printed': 'none',
     '--felt-board': 'block',
+    '--felt-spot-art': ouijaBoard().planchette,
+    // The planchette's lens, a little smaller than a chip, so it sits on it
+    '--felt-spot-size': '56px',
+    '--felt-spot-gap': '30px',
+    // Centred between the board's numbers, wherever the board's width puts them (see .ouijaBoard),
+    // and goodbye over the balance; the drop counts the planchette's tip, 42px over the spot's box
+    '--felt-spot-drop': 'calc(79px + min(60cqw, 252px))',
+    '--felt-spot-rise': '44px',
   },
 }
 
@@ -1083,23 +1095,14 @@ export function themeStyle(equipped: Partial<Equipped> | undefined): CSSProperti
   } as CSSProperties
 }
 
-/** The frame's class (globals.css), null for none. */
 // The daily deck's own table: not in the shop, so it can only be the daily deck.
-const SUITS_TILE = svg(
-  96,
-  96,
-  ['♠:18:30', '♥:66:30', '♦:42:78', '♣:90:78', '♣:-6:78']
-    .map((spec) => spec.split(':'))
-    .map(([suit, x, y]) => `<text x='${x}' y='${y}' font-size='22' text-anchor='middle' fill='white' fill-opacity='0.055'>${suit}</text>`)
-    .join(''),
-)
-
 export const DAILY_FELT = felt(
-  [`${SUITS_TILE} 0 0 / 96px 96px`, lit('#1d5566', '#0e3542', '#061a22')].join(', '),
+  [`${suitsTile(0.055)} 0 0 / 96px 96px`, lit('#1d5566', '#0e3542', '#061a22')].join(', '),
   '#0a2a35',
   'rgb(242 193 78)',
 ) as CSSProperties
 
+/** The frame's class (globals.css), null for none. */
 export function frameClass(frame: string | null | undefined): string | null {
   if (!frame || frame === 'marco.ninguno') return null
   return `frame frame-${frame.slice('marco.'.length)}`
