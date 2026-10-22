@@ -537,7 +537,6 @@ export function FeltPrint({ compact = false, payout, rules }: { compact?: boolea
   // A felt that draws its own board (the ouija): a suit in each corner, yes and no, the letters
   // in two arcs over the same words in its lettering and the numbers under them, and goodbye
   // over the player's chips. Always in the same place; under a hand it fades so the cards read.
-  const arcs = `ouija${useId().replace(/[^\w-]/g, '')}`
   const board = (
     <div className={`${styles.ouija} ${compact ? styles.ouijaFaded : ''}`} aria-hidden="true">
       <span className={styles.ouijaCorner} data-at="top-left">
@@ -553,18 +552,11 @@ export function FeltPrint({ compact = false, payout, rules }: { compact?: boolea
         ♦
       </span>
       <svg className={styles.ouijaBoard} viewBox="0 104 360 216">
-        <path id={`${arcs}a`} d="M34 214Q180 70 326 214" fill="none" />
-        <path id={`${arcs}b`} d="M62 236Q180 124 298 236" fill="none" />
-        <text fontSize="22">
-          <textPath href={`#${arcs}a`} startOffset="50%" textAnchor="middle" textLength="300" lengthAdjust="spacing">
-            ABCDEFGHIJKLM
-          </textPath>
-        </text>
-        <text fontSize="22">
-          <textPath href={`#${arcs}b`} startOffset="50%" textAnchor="middle" textLength="246" lengthAdjust="spacing">
-            NOPQRSTUVWXYZ
-          </textPath>
-        </text>
+        {[...OUIJA_ARC_A, ...OUIJA_ARC_B].map(({ letter, x, y, angle }) => (
+          <text key={letter} x={x} y={y} fontSize="22" textAnchor="middle" transform={`rotate(${angle} ${x} ${y})`}>
+            {letter}
+          </text>
+        ))}
         <text x="180" y="262" fontSize="25" textAnchor="middle" textLength="270" lengthAdjust="spacingAndGlyphs">
           {(payout ?? t('play.payout')).toUpperCase()}
         </text>
@@ -624,6 +616,35 @@ export function BetStack({ amount, chips, small = false }: { amount: number; chi
     </span>
   )
 }
+
+/**
+ * Letters spread evenly over the middle `length` of a curve (M x0 y0 Q cx cy x1 y1), each one
+ * standing on it, as a text on a path would put them. Placed one by one because Safari ignores
+ * how long a text on a path is asked to be and runs the letters off the end.
+ */
+function lettersOnCurve(letters: string, [x0, y0, cx, cy, x1, y1]: number[], length: number) {
+  const at = (t: number) => [
+    (1 - t) ** 2 * x0 + 2 * (1 - t) * t * cx + t ** 2 * x1,
+    (1 - t) ** 2 * y0 + 2 * (1 - t) * t * cy + t ** 2 * y1,
+  ]
+  const steps = 400
+  const points = Array.from({ length: steps + 1 }, (_, i) => at(i / steps))
+  const run = [0]
+  for (let i = 1; i <= steps; i++) run.push(run[i - 1] + Math.hypot(points[i][0] - points[i - 1][0], points[i][1] - points[i - 1][1]))
+  const total = run[steps]
+  return [...letters].map((letter, i) => {
+    const want = (total - length) / 2 + ((i + 0.5) * length) / letters.length
+    const k = Math.max(1, run.findIndex((d) => d >= want))
+    const t = (k - 1 + (want - run[k - 1]) / (run[k] - run[k - 1])) / steps
+    const [x, y] = at(t)
+    const angle = (Math.atan2(2 * (1 - t) * (cy - y0) + 2 * t * (y1 - cy), 2 * (1 - t) * (cx - x0) + 2 * t * (x1 - cx)) * 180) / Math.PI
+    const round = (n: number) => Math.round(n * 10) / 10
+    return { letter, x: round(x), y: round(y), angle: round(angle) }
+  })
+}
+
+const OUIJA_ARC_A = lettersOnCurve('ABCDEFGHIJKLM', [34, 214, 180, 70, 326, 214], 300)
+const OUIJA_ARC_B = lettersOnCurve('NOPQRSTUVWXYZ', [62, 236, 180, 124, 298, 236], 246)
 
 /** The chips a bet went down as, if the hand still has it, or twice them once it's doubled. */
 function dealtChips(dealt: { bet: number; chips: ChipValue[] } | null | undefined, bet: number) {

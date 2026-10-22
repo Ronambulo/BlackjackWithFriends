@@ -34,6 +34,8 @@
   /* Sized by the space left, never by its content, so the rail always stays on screen */
   min-height: 0;
   container: felt / size;
+  /* The ouija's scale: its design is a 360 × 560 felt (rounded frame 12px in), fitted to this one */
+  --ou: min(tan(atan2(100cqw + 2 * var(--page-x), 360px)), tan(atan2(100cqh + 16px, 560px)), 1.15);
   /* Keeps what's drawn under the cards (the ouija's board) above the felt itself */
   isolation: isolate;
   padding: 0 var(--page-x) 16px;
@@ -128,7 +130,7 @@
   z-index: -1;
   display: var(--felt-board, none);
   border: 2px solid rgb(var(--felt-ink, 244 241 232));
-  border-radius: 22px;
+  border-radius: calc(22px * var(--ou));
   color: rgb(var(--felt-ink, 244 241 232) / 0.8);
   font-family: var(--font-ouija), Georgia, serif;
   line-height: 1;
@@ -140,38 +142,37 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  font-size: 26px;
+  gap: calc(10px * var(--ou));
+  font-size: calc(26px * var(--ou));
 }
 
 .ouijaCorner b {
-  font-size: 30px;
+  font-size: calc(30px * var(--ou));
   font-weight: 400;
 }
 
 .ouijaCorner[data-at^='top'] {
-  top: 18px;
+  top: calc(18px * var(--ou));
 }
 
 .ouijaCorner[data-at^='bottom'] {
-  bottom: 14px;
+  bottom: calc(14px * var(--ou));
 }
 
 .ouijaCorner[data-at$='left'] {
-  left: 16px;
+  left: calc(16px * var(--ou));
 }
 
 .ouijaCorner[data-at$='right'] {
-  right: 16px;
+  right: calc(16px * var(--ou));
 }
 
-/* As wide as the felt up to 420px, its top letters 80px down the felt; the bet spot goes
-   under its numbers by the same sum (--felt-spot-drop on the ouija) */
+/* Where the design has it: 104 down a 360-wide felt, less the frame's 14px (see .idle) */
 .ouijaBoard {
   position: absolute;
-  top: 68px;
+  top: calc(104px * var(--ou) - 14px);
   left: 50%;
-  width: min(100% + 24px, 420px);
+  width: calc(360px * var(--ou));
   overflow: visible;
   fill: currentColor;
   transform: translateX(-50%);
@@ -186,10 +187,10 @@
   position: absolute;
   bottom: 44px;
   left: 50%;
-  padding: 3px 16px 2px;
+  padding: calc(3px * var(--ou)) calc(16px * var(--ou)) calc(2px * var(--ou));
   border: 1.5px solid currentColor;
   border-radius: 4px;
-  font-size: 17px;
+  font-size: calc(17px * var(--ou));
   transform: translateX(-50%);
   transition: opacity 0.3s ease;
 }
@@ -211,9 +212,13 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  /* A felt with its rules drawn in the middle (the ouija) centres the spot in what's left under them */
-  padding-top: var(--felt-spot-drop, 0px);
-  padding-bottom: var(--felt-spot-rise, 0px);
+  /* On the ouija the planchette, a bit smaller than in its design so it fits the chips' row
+     too, goes in the middle of what's left between the board's numbers (318 down the design,
+     less the 40px felt top, its tip 38px over the spot's box) and goodbye (24 tall, over the
+     balance) */
+  --spot-zoom: calc(1 + var(--felt-ouija, 0) * (0.85 * var(--ou) - 1));
+  padding-top: calc(var(--felt-ouija, 0) * (318px * var(--ou) - 32px + 38px * var(--spot-zoom)));
+  padding-bottom: calc(var(--felt-ouija, 0) * (24px * var(--ou) + 6px));
 }
 
 .spot {
@@ -223,6 +228,7 @@
   grid-template: minmax(0, 1fr) / minmax(0, 1fr);
   place-items: center;
   width: var(--felt-spot-size, 112px);
+  zoom: var(--spot-zoom, 1);
   height: var(--felt-spot-size, 112px);
   margin-top: 28px;
   border: 2px dashed color-mix(in srgb, var(--felt-print, rgb(242 193 78)) 60%, transparent);
@@ -256,6 +262,7 @@
 
 .spotLabel {
   margin-top: var(--felt-spot-gap, 14px);
+  zoom: var(--spot-zoom, 1);
   color: rgb(var(--felt-ink, 244 241 232) / 0.55);
   text-shadow: 0 1px 3px var(--felt-shadow, transparent);
   font-size: 12px;
@@ -505,14 +512,15 @@
   text-align: center;
 }
 
+/* On the rail, which stays dark whatever the felt, so never in a felt's ink (the ouija's is dark) */
 .note {
-  color: rgb(var(--felt-ink, 244 241 232) / 0.85);
+  color: rgb(244 241 232 / 0.85);
   font-size: 0.9rem;
   text-align: center;
 }
 
 .note small {
-  color: rgb(var(--felt-ink, 244 241 232) / 0.55);
+  color: rgb(244 241 232 / 0.55);
   font-size: 0.8rem;
 }
 
