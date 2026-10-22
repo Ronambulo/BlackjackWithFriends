@@ -853,8 +853,8 @@
   }
 
   .spot {
-    width: 96px;
-    height: 96px;
+    width: min(var(--felt-spot-size, 112px), 96px);
+    height: min(var(--felt-spot-size, 112px), 96px);
     margin-top: 8px;
   }
 
@@ -945,8 +945,8 @@
   }
 
   .spot {
-    width: 132px;
-    height: 132px;
+    width: var(--felt-spot-size-wide, 132px);
+    height: var(--felt-spot-size-wide, 132px);
   }
 
   .rail {
