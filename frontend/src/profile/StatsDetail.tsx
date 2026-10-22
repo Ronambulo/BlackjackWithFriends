@@ -194,10 +194,13 @@ export function StatsDetail() {
       )}
 
       <div className={`card ${base.tiles}`}>
-        {/* Since the first hand, whichever range is in view. */}
         <div className={`${base.tile} ${base.wide}`}>
-          <span className={`${base.tileValue} ${tone(data.total.net)}`}>{signed(data.total.net)}</span>
-          <span className={base.tileLabel}>{t('stats.globalNet', { count: data.total.hands })}</span>
+          <span className={`${base.tileValue} ${tone(current.net)}`}>{signed(current.net)}</span>
+          <span className={base.tileLabel}>
+            {shown === 'week'
+              ? t('stats.detail.weekNet', { count: current.hands, n: formatNumber(current.hands, lang) })
+              : t('stats.globalNet', { count: current.hands })}
+          </span>
         </div>
         {tiles.map((tile) => (
           <div key={tile.label} className={base.tile}>

@@ -474,6 +474,8 @@ export const es = {
     more: 'Saldo, jugadas, la banca y más',
     detail: {
       balance: 'Evolución del saldo',
+      weekNet_one: 'Neto de la semana · {{n}} mano',
+      weekNet_other: 'Neto de la semana · {{n}} manos',
       betting: 'Apuestas',
       avgBet: 'Apuesta media',
       maxBet: 'Mayor apuesta',

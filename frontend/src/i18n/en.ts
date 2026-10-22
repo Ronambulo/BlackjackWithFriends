@@ -474,6 +474,8 @@ export const en: Messages = {
     more: 'Balance, moves, the dealer and more',
     detail: {
       balance: 'Balance over time',
+      weekNet_one: 'This week · {{n}} hand',
+      weekNet_other: 'This week · {{n}} hands',
       betting: 'Betting',
       avgBet: 'Average bet',
       maxBet: 'Biggest bet',
