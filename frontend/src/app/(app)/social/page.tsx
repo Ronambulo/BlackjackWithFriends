@@ -7,6 +7,7 @@ import { Ranking } from '@/groups/Ranking'
 import { useGroups } from '@/groups/useGroups'
 import { useGlobalRanking } from '@/groups/useRankings'
 import { currentLanguage } from '@/i18n'
+import { MinimumRule } from '@/league/MinimumProgress'
 import { formatNumber } from '@/lib/format'
 import { Chat } from '@/social/Chat'
 import { ChatHeader, ChatList, chatsOf } from '@/social/ChatList'
@@ -106,6 +107,7 @@ function GlobalRanking() {
         {data && (
           <>
             <p className="muted">{t('social.players', { count: data.players, formatted: formatNumber(data.players, currentLanguage()) })}</p>
+            <MinimumRule className="muted" />
             <Ranking members={data.members} />
             {!inList && data.me && (
               <>

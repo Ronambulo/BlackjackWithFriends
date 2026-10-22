@@ -54,6 +54,8 @@ export function usePlay() {
         void queryClient.invalidateQueries({ queryKey: ['groups', user.id] })
         void queryClient.invalidateQueries({ queryKey: ['group', user.id] })
         void queryClient.invalidateQueries({ queryKey: ['stats', user.id] })
+        // The hand counts towards the week's minimum to enter the prizes.
+        void queryClient.invalidateQueries({ queryKey: ['league', user.id] })
         void queryClient.invalidateQueries({ queryKey: challengesKey(user.id) })
       }
       if (table.unlocked?.length || table.challenges?.length) refreshAchievements()

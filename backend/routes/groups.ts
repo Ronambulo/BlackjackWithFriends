@@ -4,7 +4,7 @@ import { unreadCounts } from './chat.js'
 import { requireUser } from '../lib/auth.js'
 import { db, sqliteCode, type Tx } from '../lib/db.js'
 import { HttpError, json } from '../lib/http.js'
-import { currentBalance, dayStartBalance, leagueClock, rollover, rulesFor } from '../lib/league.js'
+import { currentBalance, dayStartBalance, leagueClock, leaguePlace, rollover, rulesFor, weekHands, weekQualified } from '../lib/league.js'
 import { frameColumn } from '../lib/cosmetics.js'
 import { groupMembers, groups, hands, pays, profiles, user, type GroupRole, type GroupSettings } from '../lib/schema.js'
 
@@ -63,6 +63,8 @@ interface MemberRow {
   marco: string | null
   balance: number
   dayStart: number
+  hands: number
+  qualified: boolean
 }
 
 export interface RankedMember {
@@ -78,16 +80,18 @@ export interface RankedMember {
   rank: number
   /** Places gained today (negative if lost). */
   rankChange: number
+  /** Hands played this week, towards the minimum. */
+  hands: number
+  /** Reached the week's minimum to enter the prizes (lib/league.ts). */
+  qualified: boolean
 }
 
-/** Standard competition ranking (1, 2, 2, 4) by balance, plus today's change. */
+/** Standard competition ranking (1, 2, 2, 4) by balance, the minimum reached first, plus today's change. */
 function rank(members: MemberRow[]): RankedMember[] {
-  const place = (value: number, all: number[]) => 1 + all.filter((other) => other > value).length
-  const now = members.map((m) => m.balance)
-  const before = members.map((m) => m.dayStart)
+  const before = members.map((m) => ({ balance: m.dayStart, qualified: m.qualified }))
   return members
     .map((m) => {
-      const current = place(m.balance, now)
+      const current = leaguePlace(m, members)
       return {
         userId: m.userId,
         nombre: m.nombre,
@@ -97,7 +101,9 @@ function rank(members: MemberRow[]): RankedMember[] {
         balance: m.balance,
         dayChange: m.balance - m.dayStart,
         rank: current,
-        rankChange: place(m.dayStart, before) - current,
+        rankChange: leaguePlace({ balance: m.dayStart, qualified: m.qualified }, before) - current,
+        hands: m.hands,
+        qualified: m.qualified,
       }
     })
     .sort((a, b) => a.rank - b.rank || a.nombre.localeCompare(b.nombre))
@@ -116,6 +122,8 @@ function selectMembers(tx: Tx, groupIds: string[] | SQL): MemberRow[] {
       marco: frameColumn(),
       balance: currentBalance(clock),
       dayStart: dayStartBalance(clock),
+      hands: weekHands(clock),
+      qualified: sql<boolean>`${weekQualified(clock)}`.mapWith(Boolean),
     })
     .from(groupMembers)
     .innerJoin(profiles, eq(profiles.id, groupMembers.userId))
@@ -157,6 +165,7 @@ export async function listGroups(request: Request): Promise<Response> {
         members: ranking.length,
         rank: self?.rank ?? ranking.length,
         rankChange: self?.rankChange ?? 0,
+        qualified: self?.qualified ?? false,
         top: ranking.slice(0, 3),
         unread: unread.get(group.id) ?? 0,
       }

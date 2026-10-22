@@ -45,7 +45,7 @@ function Week({ week }: { week: GroupWeek }) {
             {winners.length ? winners.map((w) => nameOf(w.userId, w.nombre)).join(', ') : t('season.noPrizes')}
           </small>
         </span>
-        {mine && week.conPremios && (
+        {mine && week.conPremios && mine.clasificado && (
           <span className={styles.weekPlace} style={medal(mine.posicion)}>
             {t('season.place', { place: mine.posicion })}
           </span>
@@ -58,11 +58,12 @@ function Week({ week }: { week: GroupWeek }) {
           <li
             key={s.userId}
             className={s.userId === me.id ? styles.me : undefined}
-            style={medal(week.conPremios ? s.posicion : 0)}
+            style={medal(week.conPremios && s.clasificado ? s.posicion : 0)}
           >
             <span className={styles.standingPlace}>{s.posicion}</span>
             <Avatar seed={s.userId} name={s.nombre} src={s.avatarUrl} size={28} />
             <span className={styles.standingName}>{nameOf(s.userId, s.nombre)}</span>
+            {!s.clasificado && <small className="muted">{t('ranking.noMinimum')}</small>}
             <span className={styles.standingBalance}>{formatNumber(s.saldo, lang)}</span>
           </li>
         ))}

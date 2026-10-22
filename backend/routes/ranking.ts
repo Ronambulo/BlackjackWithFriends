@@ -2,7 +2,7 @@ import { and, desc, eq, gt, inArray, isNotNull, or, sql } from 'drizzle-orm'
 import { requireUser } from '../lib/auth.js'
 import { db, type Tx } from '../lib/db.js'
 import { json } from '../lib/http.js'
-import { currentBalance, dayStartBalance, leagueClock, rollover, type LeagueClock } from '../lib/league.js'
+import { currentBalance, dayStartBalance, leagueClock, leaguePlace, rollover, weekHands, weekQualified, type LeagueClock } from '../lib/league.js'
 import { frameColumn } from '../lib/cosmetics.js'
 import { groupMembers, profiles, user } from '../lib/schema.js'
 
@@ -19,6 +19,8 @@ interface PlayerRow {
   marco: string | null
   balance: number
   dayStart: number
+  hands: number
+  qualified: boolean
 }
 
 export interface RankedPlayer {
@@ -30,6 +32,10 @@ export interface RankedPlayer {
   dayChange: number
   rank: number
   rankChange: number
+  /** Hands played this week, towards the minimum. */
+  hands: number
+  /** Reached the week's minimum to enter the prizes (lib/league.ts). */
+  qualified: boolean
 }
 
 function columns(c: LeagueClock) {
@@ -40,17 +46,17 @@ function columns(c: LeagueClock) {
     marco: frameColumn(),
     balance: currentBalance(c),
     dayStart: dayStartBalance(c),
+    hands: weekHands(c),
+    qualified: sql<boolean>`${weekQualified(c)}`.mapWith(Boolean),
   }
 }
 
-/** Standard competition ranking (1, 2, 2, 4), like the groups'. */
+/** Standard competition ranking (1, 2, 2, 4), the minimum reached first, like the groups'. */
 function rank(rows: PlayerRow[]): RankedPlayer[] {
-  const place = (value: number, all: number[]) => 1 + all.filter((other) => other > value).length
-  const now = rows.map((row) => row.balance)
-  const before = rows.map((row) => row.dayStart)
+  const before = rows.map((row) => ({ balance: row.dayStart, qualified: row.qualified }))
   return rows
     .map((row) => {
-      const current = place(row.balance, now)
+      const current = leaguePlace(row, rows)
       return {
         userId: row.userId,
         nombre: row.nombre,
@@ -59,7 +65,9 @@ function rank(rows: PlayerRow[]): RankedPlayer[] {
         balance: row.balance,
         dayChange: row.balance - row.dayStart,
         rank: current,
-        rankChange: place(row.dayStart, before) - current,
+        rankChange: leaguePlace({ balance: row.dayStart, qualified: row.qualified }, before) - current,
+        hands: row.hands,
+        qualified: row.qualified,
       }
     })
     .sort((a, b) => a.rank - b.rank || a.nombre.localeCompare(b.nombre))
@@ -99,18 +107,23 @@ export async function getGlobalRanking(request: Request): Promise<Response> {
     // A balance from an older week has already gone back to the start: those players aren't in this one.
     const thisWeek = and(eq(profiles.semana, clock.weekStart), isNotNull(profiles.nombre))
     const balance = currentBalance(clock)
+    const qualified = weekQualified(clock)
     const top = tx
       .select(columns(clock))
       .from(profiles)
       .innerJoin(user, eq(user.id, profiles.id))
       .where(thisWeek)
-      .orderBy(desc(balance), profiles.nombre)
+      .orderBy(desc(qualified), desc(balance), profiles.nombre)
       .limit(GLOBAL_LIMIT)
       .all()
     const players = tx.select({ n: sql<number>`count(*)` }).from(profiles).where(thisWeek).get()?.n ?? 0
     const self = tx.select(columns(clock)).from(profiles).innerJoin(user, eq(user.id, profiles.id)).where(eq(profiles.id, me.id)).get()
     const above = self
-      ? (tx.select({ n: sql<number>`count(*)` }).from(profiles).where(and(thisWeek, gt(balance, self.balance))).get()?.n ?? 0)
+      ? (tx
+          .select({ n: sql<number>`count(*)` })
+          .from(profiles)
+          .where(and(thisWeek, self.qualified ? and(qualified, gt(balance, self.balance)) : or(qualified, gt(balance, self.balance))))
+          .get()?.n ?? 0)
       : 0
     return { top, players, self, above }
   })

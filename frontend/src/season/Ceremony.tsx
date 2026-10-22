@@ -77,7 +77,8 @@ function Ceremony({ ceremony, onDone }: { ceremony: CeremonyData; onDone?: () =>
   // Which half was just tapped, lit for a moment as in stories; the count replays it on every tap.
   const [flash, setFlash] = useState<{ side: 'left' | 'right'; n: number } | null>(null)
   const step = steps[index]
-  const places = group?.conPremios ? group.standings.slice(0, 3) : []
+  // Only those who reached the week's minimum take a place.
+  const places = group?.conPremios ? group.standings.filter((s) => s.clasificado).slice(0, 3) : []
   const podiumDone = revealed >= places.length
 
   // Watching it again only closes it.
@@ -249,7 +250,15 @@ function PodiumStep({ ceremony, revealed }: { ceremony: CeremonyData; revealed: 
       </>
     )
   }
-  const places = group.standings.slice(0, 3)
+  const places = group.standings.filter((s) => s.clasificado).slice(0, 3)
+  if (places.length === 0) {
+    return (
+      <>
+        <p className={styles.kicker}>{group.nombre}</p>
+        <p className={styles.text}>{t('season.noQualified')}</p>
+      </>
+    )
+  }
   // Second on the left, first in the middle, third on the right.
   const columns = [1, 0, 2].filter((i) => i < places.length)
   return (
@@ -336,6 +345,7 @@ function Coins({ ceremony }: { ceremony: CeremonyData }) {
           ? t('season.youPlaced', { place: placed, group: ceremony.group.nombre })
           : t('season.youPlayed', { count: ceremony.stats.hands })}
       </p>
+      {!ceremony.qualified && <p className={styles.text}>{t('season.notQualified')}</p>}
       <h2 className={styles.title}>{t('season.youWon')}</h2>
       <div className={styles.coins}>
         <span className={styles.coin} aria-hidden="true" />

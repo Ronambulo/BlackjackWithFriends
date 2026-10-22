@@ -2,7 +2,7 @@ import { and, asc, desc, eq, gte, inArray, lt, lte, sql } from 'drizzle-orm'
 import { syncAchievements } from './achievements.js'
 import { db, type Tx } from './db.js'
 import { notifyAll } from './events.js'
-import { addDays, leagueClock, madridMidnight, type LeagueClock } from './league.js'
+import { addDays, leagueClock, leaguePlace, madridMidnight, qualifies, type LeagueClock } from './league.js'
 import { pushCeremony } from './push.js'
 import {
   JOKE_PRIZES,
@@ -137,11 +137,6 @@ function statsOf(played: Played[]): SeasonStats {
   return stats
 }
 
-/** Standard competition ranking (1, 2, 2, 4), highest first. */
-function places<T>(rows: T[], value: (row: T) => number): Map<T, number> {
-  return new Map(rows.map((row) => [row, 1 + rows.filter((other) => value(other) > value(row)).length]))
-}
-
 /** Closes one week: standings, prizes and each player's numbers. */
 function closeWeek(tx: Tx, semana: string) {
   const begin = madridMidnight(semana)
@@ -179,17 +174,18 @@ function closeWeek(tx: Tx, semana: string) {
   const userIds = [...new Set(played.map((hand) => hand.userId))]
   if (userIds.length === 0) return []
 
-  const balances = new Map(
-    tx
-      .select({ id: profiles.id, saldo: profiles.saldo })
-      .from(profiles)
-      .where(inArray(profiles.id, userIds))
-      .all()
-      .map((row) => [row.id, row.saldo]),
-  )
+  const profileRows = tx
+    .select({ id: profiles.id, saldo: profiles.saldo, hands: profiles.manosSemana, wagered: profiles.apostadoSemana })
+    .from(profiles)
+    .where(inArray(profiles.id, userIds))
+    .all()
+  const balances = new Map(profileRows.map((row) => [row.id, row.saldo]))
+  // The same counts the player watched all week (lib/league.ts).
+  const qualified = new Set(profileRows.filter((row) => qualifies(row.hands, row.wagered)).map((row) => row.id))
   const stats = new Map(userIds.map((id) => [id, statsOf(played.filter((hand) => hand.userId === id))]))
 
-  // Each group ranks the members who played.
+  // Each group ranks the members who played: those who reached the minimum first,
+  // and only they take places, the trophy and joke prizes.
   const memberships = tx
     .select({ groupId: groupMembers.groupId, userId: groupMembers.userId })
     .from(groupMembers)
@@ -201,19 +197,29 @@ function closeWeek(tx: Tx, semana: string) {
   for (const groupId of new Set(memberships.map((m) => m.groupId))) {
     const players = memberships.filter((m) => m.groupId === groupId).map((m) => m.userId)
     const conPremios = players.length >= MIN_PLAYERS
-    const rank = places(players, (id) => balances.get(id) ?? 0)
+    const rank = new Map(
+      players.map((id) => [
+        id,
+        leaguePlace(
+          { balance: balances.get(id) ?? 0, qualified: qualified.has(id) },
+          players.map((other) => ({ balance: balances.get(other) ?? 0, qualified: qualified.has(other) })),
+        ),
+      ]),
+    )
     const jokes = new Map<string, JokePrize[]>(players.map((id) => [id, []]))
     for (const prize of drawn) {
       const of = (id: string) => stats.get(id)![JOKE_STAT[prize]]
       const top = Math.max(...players.map(of))
       const winners = players.filter((id) => of(id) === top)
       // Everyone tied (all at the top bet, say) is no prize; alone in the group still is.
+      // Whoever won it without the minimum doesn't take it, and nobody else does either.
       if (top > 0 && (winners.length < players.length || players.length === 1))
-        for (const id of winners) jokes.get(id)!.push(prize)
+        for (const id of winners) if (qualified.has(id)) jokes.get(id)!.push(prize)
     }
     for (const userId of players) {
       const posicion = rank.get(userId)!
-      if (conPremios) {
+      const clasificado = qualified.has(userId)
+      if (conPremios && clasificado) {
         best.set(userId, Math.min(best.get(userId) ?? Infinity, posicion))
         for (const prize of jokes.get(userId)!) titles.get(userId)!.add(prize)
       }
@@ -225,7 +231,8 @@ function closeWeek(tx: Tx, semana: string) {
           posicion,
           saldoFinal: balances.get(userId) ?? 0,
           conPremios,
-          trofeo: conPremios && posicion === 1,
+          clasificado,
+          trofeo: conPremios && clasificado && posicion === 1,
           premios: jokes.get(userId)!,
         })
         .run()
@@ -308,6 +315,8 @@ export interface WeekStanding {
   avatarUrl: string | null
   posicion: number
   saldo: number
+  /** Reached the week's minimum; without it, the place gave no prize. */
+  clasificado: boolean
   trofeo: boolean
   premios: JokePrize[]
 }
@@ -337,6 +346,7 @@ export function groupWeeks(tx: Tx, groupId: string, semanas?: string[]): GroupWe
       posicion: seasonStandings.posicion,
       saldo: seasonStandings.saldoFinal,
       conPremios: seasonStandings.conPremios,
+      clasificado: seasonStandings.clasificado,
       trofeo: seasonStandings.trofeo,
       premios: seasonStandings.premios,
       stats: seasonResults.estadisticas,
@@ -362,6 +372,7 @@ export function groupWeeks(tx: Tx, groupId: string, semanas?: string[]): GroupWe
       avatarUrl: row.avatarUrl,
       posicion: row.posicion,
       saldo: row.saldo,
+      clasificado: row.clasificado,
       trofeo: row.trofeo,
       premios: row.premios,
     })
@@ -382,6 +393,8 @@ export interface Ceremony {
   semana: string
   coins: number
   bestPlace: number | null
+  /** Whether the player reached the week's minimum; without it, places gave no prize. */
+  qualified: boolean
   stats: SeasonStats
   group: (GroupWeek & { id: string; nombre: string }) | null
   /** Other groups the player was ranked in that week. */
@@ -426,6 +439,7 @@ function buildCeremony(tx: Tx, userId: string, result: typeof seasonResults.$inf
       nombre: groups.nombre,
       posicion: seasonStandings.posicion,
       conPremios: seasonStandings.conPremios,
+      clasificado: seasonStandings.clasificado,
       players: sql<number>`(select count(*) from ${seasonStandings} s
         where s.semana = ${seasonStandings.semana} and s.group_id = ${seasonStandings.groupId})`,
     })
@@ -440,6 +454,7 @@ function buildCeremony(tx: Tx, userId: string, result: typeof seasonResults.$inf
     semana: result.semana,
     coins: result.monedas,
     bestPlace: result.mejorPuesto,
+    qualified: mine.length === 0 || mine.some((m) => m.clasificado),
     stats: result.estadisticas,
     group: top && week ? { ...week, id: top.groupId, nombre: top.nombre } : null,
     otherGroups: Math.max(0, mine.length - 1),

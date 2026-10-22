@@ -20,6 +20,18 @@ import { payMultiplier } from './schedule.js'
 export const START_BALANCE = 1000
 export const DAILY_PAY = 1000
 
+/**
+ * The minimum to enter the week's prizes and the top of the rankings: this many
+ * settled hands and this many chips wagered (doubles, splits and insurance
+ * included). Below it a player still shows, after everyone who reached it.
+ */
+export const MIN_HANDS = 100
+export const MIN_WAGERED = 15_000
+
+export function qualifies(hands: number, wagered: number) {
+  return hands >= MIN_HANDS && wagered >= MIN_WAGERED
+}
+
 export interface EconomyRules {
   startBalance: number
   dailyPay: number
@@ -110,6 +122,37 @@ export function currentBalance(c: LeagueClock) {
   return sql<number>`(case when ${profiles.semana} < ${c.weekStart} then ${rulesFor(c.weekStart).startBalance} else ${profiles.saldo} end)`
 }
 
+/** A profile's settled hands this week. */
+export function weekHands(c: LeagueClock) {
+  return sql<number>`(case when ${profiles.semana} < ${c.weekStart} then 0 else ${profiles.manosSemana} end)`
+}
+
+/** A profile's chips wagered this week. */
+export function weekWagered(c: LeagueClock) {
+  return sql<number>`(case when ${profiles.semana} < ${c.weekStart} then 0 else ${profiles.apostadoSemana} end)`
+}
+
+/** Whether a profile has reached this week's minimum, as 1 or 0. */
+export function weekQualified(c: LeagueClock) {
+  return sql<number>`(${weekHands(c)} >= ${MIN_HANDS} and ${weekWagered(c)} >= ${MIN_WAGERED})`
+}
+
+/** Counts a settled hand towards the week's minimum. */
+export function countHand(tx: Tx, userId: string, wagered: number) {
+  tx.update(profiles)
+    .set({ manosSemana: sql`${profiles.manosSemana} + 1`, apostadoSemana: sql`${profiles.apostadoSemana} + ${wagered}` })
+    .where(eq(profiles.id, userId))
+    .run()
+}
+
+/**
+ * Standard competition ranking (1, 2, 2, 4) by balance, with everyone who reached
+ * the minimum ahead of everyone who didn't.
+ */
+export function leaguePlace(row: { balance: number; qualified: boolean }, all: { balance: number; qualified: boolean }[]) {
+  return 1 + all.filter((o) => (o.qualified && !row.qualified) || (o.qualified === row.qualified && o.balance > row.balance)).length
+}
+
 /** A profile's balance when today started. */
 export function dayStartBalance(c: LeagueClock) {
   return sql<number>`(case
@@ -134,6 +177,8 @@ export function rollover(tx: Tx, userId: string, c = leagueClock()) {
     update ${profiles}
     set saldo = case when semana < ${c.weekStart} then ${startBalance} else saldo end,
         ultima_paga = case when semana < ${c.weekStart} then null else ultima_paga end,
+        manos_semana = case when semana < ${c.weekStart} then 0 else manos_semana end,
+        apostado_semana = case when semana < ${c.weekStart} then 0 else apostado_semana end,
         saldo_inicio_dia = case when semana < ${c.weekStart} then ${startBalance} else saldo end,
         semana = ${c.weekStart},
         dia = ${c.today}
@@ -150,15 +195,22 @@ export interface LeagueState {
   balance: number
   /** Chips the pay button gives right now; 0 if today's is already claimed. */
   pendingPay: number
+  /** The week's rules, as set in the admin panel. */
+  startBalance: number
   dailyPay: number
   /** When the week closes (ISO date). */
   weekEndsAt: string
+  /** This week's settled hands and chips wagered, against the minimum to enter the prizes. */
+  hands: number
+  wagered: number
+  minHands: number
+  minWagered: number
 }
 
 /** The league state of a rolled over profile. */
 export function selectLeague(tx: Tx, userId: string, c = leagueClock()): LeagueState {
   const row = tx
-    .select({ balance: profiles.saldo, pendingDays: pendingDays(c) })
+    .select({ balance: profiles.saldo, pendingDays: pendingDays(c), hands: profiles.manosSemana, wagered: profiles.apostadoSemana })
     .from(profiles)
     .where(eq(profiles.id, userId))
     .get()
@@ -166,8 +218,13 @@ export function selectLeague(tx: Tx, userId: string, c = leagueClock()): LeagueS
   return {
     balance: row?.balance ?? rules.startBalance,
     pendingPay: Math.max(0, row?.pendingDays ?? 0) * rules.dailyPay,
+    startBalance: rules.startBalance,
     dailyPay: rules.dailyPay,
     weekEndsAt: c.weekEnd.toISOString(),
+    hands: row?.hands ?? 0,
+    wagered: row?.wagered ?? 0,
+    minHands: MIN_HANDS,
+    minWagered: MIN_WAGERED,
   }
 }
 

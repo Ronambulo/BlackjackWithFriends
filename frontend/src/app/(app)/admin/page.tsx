@@ -21,7 +21,7 @@ import { InboxTab } from './InboxTab'
 import { LeagueTab } from './LeagueTab'
 import { LogTab } from './LogTab'
 import { useMasonry } from './masonry'
-import { ModerationTab } from './ModerationTab'
+import { ModerationTab, useOpenFlags } from './ModerationTab'
 import { NoticesTab } from './NoticesTab'
 import { Palette } from './Palette'
 import { PollsTab } from './PollsTab'
@@ -105,6 +105,7 @@ function AdminPanel({ initialTab }: { initialTab: Tab }) {
     go('users')
   }
   const { data: moderation } = useModeration()
+  const openFlags = useOpenFlags(moderation?.flags)
   const { data: reports } = useReports()
   const { data: inbox } = useInbox()
 
@@ -126,7 +127,7 @@ function AdminPanel({ initialTab }: { initialTab: Tab }) {
   const urgent = inbox?.filter((item) => item.level !== 'low').length ?? 0
   const badges: Partial<Record<Tab, { n: number; quiet?: boolean }>> = {
     inbox: { n: inbox?.length ?? 0, quiet: urgent === 0 },
-    moderation: { n: (moderation?.flags.length ?? 0) + (moderation?.reviews.length ?? 0) },
+    moderation: { n: openFlags.length + (moderation?.reviews.length ?? 0) },
     system: { n: reports?.filter((report) => !report.resuelto).length ?? 0 },
   }
   const badge = (key: Tab) => {
